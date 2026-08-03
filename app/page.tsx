@@ -1,5 +1,7 @@
 'use client';
 
+import { nanoid } from 'nanoid';
+import { supabase } from '@/lib/supabase';
 import React, { useEffect } from 'react';
 
 export default function Home() {
@@ -424,6 +426,42 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
       document.body.removeChild(textarea);
     };
 
+    // Função para salvar no Supabase e gerar a URL curta (dentro do escopo seguro)
+    (window as any).handlePublicarSite = async () => {
+      const codigoGeradoEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+      const htmlContent = codigoGeradoEl ? codigoGeradoEl.value : '';
+      
+      if (!htmlContent) {
+        (window as any).showNotification('Gere um site primeiro antes de publicar.', 'error');
+        return;
+      }
+
+      const titulo = prompt('Digite um título para identificar este site:') || 'Landing Page';
+      const userId = '00000000-0000-0000-0000-000000000000'; 
+      const slug = nanoid(6);
+
+      const { error } = await supabase
+        .from('sites_gerados')
+        .insert([
+          { 
+            user_id: userId, 
+            slug: slug, 
+            titulo: titulo, 
+            html_content: htmlContent 
+          }
+        ]);
+
+      if (error) {
+        console.error("Erro ao salvar no Supabase:", error);
+        (window as any).showNotification('Erro ao publicar o site: ' + error.message, 'error');
+        return;
+      }
+
+      const linkPublico = `${window.location.origin}/s/${slug}`;
+      navigator.clipboard.writeText(linkPublico);
+      alert(`Site publicado com sucesso!\n\nLink curto copiado para a área de transferência:\n${linkPublico}`);
+    };
+
   }, []);
 
   return (
@@ -596,9 +634,14 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
                         <i className="fas fa-code mr-2"></i> Código HTML
                     </button>
                 </div>
-                <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300 transition">
-                    <i className="fas fa-copy mr-1"></i> <span id="btnCopyText">Copiar</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1">
+                        <i className="fas fa-globe"></i> Publicar & Link Curto
+                    </button>
+                    <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300 transition">
+                        <i className="fas fa-copy mr-1"></i> <span id="btnCopyText">Copiar</span>
+                    </button>
+                </div>
             </div>
             
             <div className="flex-grow bg-gray-200 relative">
