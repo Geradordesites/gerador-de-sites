@@ -549,15 +549,7 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
         <div className="w-full md:w-80 lg:w-96 bg-white shadow-xl flex flex-col h-full border-r border-gray-200 flex-shrink-0 z-10" id="leftPanel">
             
             <div className="p-5 border-b border-gray-100 bg-gray-50 pb-0">
-                <div className="flex justify-between items-center mb-2">
-                  <h1 className="text-xl font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Pro</h1>
-                  <button 
-                    onClick={carregarMeusSites}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"
-                  >
-                    <i className="fas fa-folder-open"></i> Meus Sites
-                  </button>
-                </div>
+                <h1 className="text-xl font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Visual Pro</h1>
                 <p className="text-xs text-gray-500 mt-1 mb-4">Engenharia reversa e Copywriting IA em alta performance.</p>
                 
                 {/* ABAS DE NAVEGAÇÃO */}
@@ -676,7 +668,7 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
             </div>
         </div>
 
-       {/* PAINEL DIREITO (PREVIEW E CÓDIGO) */}
+        {/* PAINEL DIREITO (PREVIEW E CÓDIGO) */}
         <div className="flex-grow flex flex-col bg-white relative">
             <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
                 <div className="flex h-full">
@@ -688,7 +680,7 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
                     </button>
                 </div>
                 
-                {/* AQUI ESTÃO OS BOTÕES NO TOPO DIREITO */}
+                {/* BOTÕES NO TOPO DIREITO INCLUÍDOS AQUI */}
                 <div className="flex items-center gap-2">
                     <button 
                       onClick={carregarMeusSites} 
@@ -726,7 +718,6 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
         <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
             
-            {/* Cabeçalho do Modal */}
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <div>
                 <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
@@ -742,7 +733,6 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
               </button>
             </div>
 
-            {/* Conteúdo / Lista */}
             <div className="p-6 flex-1 overflow-y-auto bg-slate-50/50">
               {carregandoSites ? (
                 <div className="flex flex-col items-center justify-center py-12 space-y-3">
@@ -774,7 +764,6 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
                         </div>
 
                         <div className="space-y-2 pt-3 border-t border-slate-100">
-                          {/* Campo do Link Curto */}
                           <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1.5">
                             <input 
                               type="text" 
@@ -794,7 +783,6 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
                             </button>
                           </div>
 
-                          {/* Botões de Ação (Abrir, Editar, Deletar) */}
                           <div className="flex items-center justify-between pt-1">
                             <a 
                               href={`/s/${site.slug}`} 
@@ -830,7 +818,6 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
               )}
             </div>
 
-            {/* Rodapé do Modal */}
             <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-end">
               <button 
                 onClick={() => setModalMeusSitesAberto(false)}
