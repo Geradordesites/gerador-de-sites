@@ -676,7 +676,7 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
             </div>
         </div>
 
-        {/* PAINEL DIREITO (PREVIEW E CÓDIGO) */}
+       {/* PAINEL DIREITO (PREVIEW E CÓDIGO) */}
         <div className="flex-grow flex flex-col bg-white relative">
             <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
                 <div className="flex h-full">
@@ -687,11 +687,25 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
                         <i className="fas fa-code mr-2"></i> Código HTML
                     </button>
                 </div>
+                
+                {/* AQUI ESTÃO OS BOTÕES NO TOPO DIREITO */}
                 <div className="flex items-center gap-2">
-                    <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1">
+                    <button 
+                      onClick={carregarMeusSites} 
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"
+                    >
+                        <i className="fas fa-folder-open"></i> Meus Sites
+                    </button>
+                    <button 
+                      onClick={() => (window as any).handlePublicarSite()} 
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"
+                    >
                         <i className="fas fa-globe"></i> Publicar & Link Curto
                     </button>
-                    <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300 transition">
+                    <button 
+                      onClick={() => (window as any).copiarCodigo()} 
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300 transition"
+                    >
                         <i className="fas fa-copy mr-1"></i> <span id="btnCopyText">Copiar</span>
                     </button>
                 </div>
