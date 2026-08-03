@@ -8,20 +8,46 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { systemInstruction, promptParts } = body;
 
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      systemInstruction: {
-        role: "system",
-        parts: [{ text: systemInstruction }]
-      }
-    });
+    // SISTEMA DE CASCATA AUTOMÁTICA: 
+    // Se o Google atualizar ou descontinuar um modelo, o servidor testa o próximo automaticamente sem quebrar o site!
+    const modelosParaTentar = [
+      process.env.GEMINI_MODEL,
+      "gemini-2.5-flash",
+      "gemini-1.5-flash",
+      "gemini-2.0-flash"
+    ].filter(Boolean) as string[];
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: promptParts }],
-      generationConfig: {
-        responseMimeType: "application/json",
+    let result: any = null;
+    let ultimoErro: any = null;
+
+    for (const nomeModelo of modelosParaTentar) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: nomeModelo,
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: systemInstruction }]
+          }
+        });
+
+        result = await model.generateContent({
+          contents: [{ role: "user", parts: promptParts }],
+          generationConfig: {
+            responseMimeType: "application/json",
+          }
+        });
+        
+        // Se gerou com sucesso, interrompe o loop e usa este resultado
+        break;
+      } catch (err: any) {
+        ultimoErro = err;
+        console.warn(`Tentativa com o modelo ${nomeModelo} falhou. Tentando próximo...`);
       }
-    });
+    }
+
+    if (!result) {
+      throw ultimoErro || new Error("Nenhum modelo do Gemini respondeu com sucesso.");
+    }
 
     const responseText = result.response.text();
     let htmlCode = '';
