@@ -2,20 +2,79 @@
 
 import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function Home() {
+  const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
+  const [listaSites, setListaSites] = useState<any[]>([]);
+  const [carregandoSites, setCarregandoSites] = useState(false);
+
+  // Função para buscar todos os sites salvos no Supabase
+  const carregarMeusSites = async () => {
+    setCarregandoSites(true);
+    const userId = '00000000-0000-0000-0000-000000000000'; // ID padrão temporário
+
+    const { data, error } = await supabase
+      .from('sites_gerados')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Erro ao buscar sites:", error);
+      (window as any).showNotification('Erro ao carregar os sites.', 'error');
+    } else {
+      setListaSites(data || []);
+    }
+    setCarregandoSites(false);
+    setModalMeusSitesAberto(true);
+  };
+
+  // Função para deletar um site do Supabase
+  const deletarSite = async (id: string, slug: string) => {
+    if (!confirm(`Tem certeza que deseja deletar o site de slug "${slug}"?`)) return;
+
+    const { error } = await supabase
+      .from('sites_gerados')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao deletar o site.');
+    } else {
+      setListaSites(listaSites.filter(site => site.id !== id));
+      (window as any).showNotification('Site deletado com sucesso!', 'success');
+    }
+  };
+
+  // Função para carregar o site de volta no editor para edição
+  const editarSite = (htmlContent: string) => {
+    const codigoGeradoEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const previewFrameEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+
+    if (codigoGeradoEl) codigoGeradoEl.value = htmlContent;
+    if (previewFrameEl) previewFrameEl.srcdoc = htmlContent;
+
+    if ((window as any).mapearElementosGerados) {
+      (window as any).mapearElementosGerados(htmlContent);
+    }
+
+    if ((window as any).mudarSeparador) {
+      (window as any).mudarSeparador('preview');
+    }
+
+    setModalMeusSitesAberto(false);
+    (window as any).showNotification('Site carregado no editor para edição!', 'success');
+  };
+
   useEffect(() => {
-    // Inicialização da Lógica do Sistema Visual e Copywriting
     let uploadedImagesData: any[] = [];
     let uploadedCoverData: any = null;
     const domParser = new DOMParser();
 
-    // Previne que o navegador abra arquivos arrastados fora da zona
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
 
-    // Sistema de Drag & Drop avançado
     setTimeout(() => {
       document.querySelectorAll('.drop-zone').forEach(zone => {
         zone.addEventListener('dragover', (e: any) => {
@@ -46,7 +105,6 @@ export default function Home() {
       });
     }, 500);
 
-    // Funções globais mapeadas para o escopo window para garantir compatibilidade com os atributos onclick do HTML
     (window as any).mudarModoApp = (modo: string) => {
       const btnVisual = document.getElementById('btnTabVisual');
       const btnCopy = document.getElementById('btnTabCopy');
@@ -143,7 +201,6 @@ export default function Home() {
       }
     });
 
-    // 🟢 COMUNICAÇÃO SEGURA COM A API DO NEXT.JS (VERCEL BACKEND)
     async function chamarIA(systemInstructionText: string, promptParts: any[], isRefinement = false, customLoadingMsg: string | null = null) {
       let loadingMsg = isRefinement ? "Aplicando alterações cirúrgicas..." : "Engenharia Reversa em andamento...";
       if (customLoadingMsg) loadingMsg = customLoadingMsg;
@@ -207,16 +264,6 @@ export default function Home() {
 Sua missão é modelar o layout das imagens fornecidas em UM ÚNICO arquivo HTML usando Tailwind CSS.
 A estrutura base do site deve ser orientada a DESKTOP, mas adaptar-se perfeitamente a MOBILE.
 Retorne um objeto JSON contendo APENAS a chave "codigo_html".
-
-APLIQUE RIGOROSAMENTE ESTAS DIRETRIZES DE ALTA PERFORMANCE E CARREGAMENTO RÁPIDO NO HTML GERADO:
-1. PRÉ-CONEXÃO E DNS PREFETCH para CDNs críticos.
-2. PRELOAD DA IMAGEM PRINCIPAL (LCP).
-3. OTIMIZAÇÃO DE TIPOGRAFIA com &display=swap.
-4. CSS INLINE ANTI-FOUC.
-5. SCRIPT DO TAILWIND CDN NO HEAD sem async/defer.
-6. LAZY LOADING ESTRITO para elementos abaixo da dobra.
-7. RODAPÉ SEM DATAS: É ESTRITAMENTE PROIBIDO colocar anos (2026, etc) no rodapé.
-
 DIRETRIZ DE LAYOUT E MODOS: ${diretrizModo}`;
 
       let promptParts: any[] = [{ text: "Crie a página web de alta conversão baseada nestas referências visuais:" }];
@@ -239,8 +286,7 @@ DIRETRIZ DE LAYOUT E MODOS: ${diretrizModo}`;
 
       const systemInstruction = `Você é um Copywriter Sênior de Elite e Engenheiro Front-end Especialista em Alta Conversão e Web Performance.
 Sua missão é ler o conteúdo fornecido, extrair a essência e escrever uma Landing Page Profissional completa em um ÚNICO arquivo HTML usando Tailwind CSS.
-Retorne um objeto JSON contendo APENAS a chave "codigo_html".
-REGRAS: Use Tailwind, garanta performance, inclua seções essenciais, use placehold.co para imagens e PROIBIDO colocar datas/anos no rodapé.`;
+Retorne um objeto JSON contendo APENAS a chave "codigo_html".`;
 
       let textoMestre = `CONTEÚDO DO PRODUTO (Para basear a Copy):\n${productContent}\n\n`;
       if (authorBio) {
@@ -426,7 +472,6 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
       document.body.removeChild(textarea);
     };
 
-    // Função para salvar no Supabase e gerar a URL curta (dentro do escopo seguro)
     (window as any).handlePublicarSite = async () => {
       const codigoGeradoEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const htmlContent = codigoGeradoEl ? codigoGeradoEl.value : '';
@@ -504,7 +549,15 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
         <div className="w-full md:w-80 lg:w-96 bg-white shadow-xl flex flex-col h-full border-r border-gray-200 flex-shrink-0 z-10" id="leftPanel">
             
             <div className="p-5 border-b border-gray-100 bg-gray-50 pb-0">
-                <h1 className="text-xl font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Visual Pro</h1>
+                <div className="flex justify-between items-center mb-2">
+                  <h1 className="text-xl font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Pro</h1>
+                  <button 
+                    onClick={carregarMeusSites}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"
+                  >
+                    <i className="fas fa-folder-open"></i> Meus Sites
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1 mb-4">Engenharia reversa e Copywriting IA em alta performance.</p>
                 
                 {/* ABAS DE NAVEGAÇÃO */}
@@ -652,7 +705,131 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
             </div>
         </div>
 
-    </div>
+      </div>
+
+      {/* MODAL DE GERENCIAMENTO DE SITES PUBLICADOS (MEUS SITES) */}
+      {modalMeusSitesAberto && (
+        <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+            
+            {/* Cabeçalho do Modal */}
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                  <i className="fas fa-folder-open text-blue-600"></i> Meus Sites Publicados
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Gerencie todos os seus links curtos, visualize, edite ou remova.</p>
+              </div>
+              <button 
+                onClick={() => setModalMeusSitesAberto(false)}
+                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Conteúdo / Lista */}
+            <div className="p-6 flex-1 overflow-y-auto bg-slate-50/50">
+              {carregandoSites ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs text-slate-500">Carregando seus sites do Supabase...</p>
+                </div>
+              ) : listaSites.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 space-y-2">
+                  <i className="fas fa-inbox text-4xl mb-2 text-slate-300"></i>
+                  <p className="text-sm font-semibold">Nenhum site publicado ainda.</p>
+                  <p className="text-xs">Gere um site no painel e clique em "Publicar & Link Curto".</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {listaSites.map((site) => {
+                    const linkUrl = `${window.location.origin}/s/${site.slug}`;
+                    return (
+                      <div key={site.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <h3 className="font-bold text-slate-800 text-sm truncate" title={site.titulo}>{site.titulo}</h3>
+                            <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-100 uppercase tracking-wider">
+                              /{site.slug}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 mb-4">
+                            Criado em: {new Date(site.created_at).toLocaleDateString('pt-BR')} às {new Date(site.created_at).toLocaleTimeString('pt-BR')}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 pt-3 border-t border-slate-100">
+                          {/* Campo do Link Curto */}
+                          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1.5">
+                            <input 
+                              type="text" 
+                              readOnly 
+                              value={linkUrl} 
+                              className="bg-transparent text-[11px] text-slate-600 w-full outline-none px-1 font-mono"
+                            />
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(linkUrl);
+                                (window as any).showNotification('Link copiado para a área de transferência!', 'success');
+                              }}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-semibold px-2 py-1 rounded transition"
+                              title="Copiar Link"
+                            >
+                              Copiar
+                            </button>
+                          </div>
+
+                          {/* Botões de Ação (Abrir, Editar, Deletar) */}
+                          <div className="flex items-center justify-between pt-1">
+                            <a 
+                              href={`/s/${site.slug}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1"
+                            >
+                              <i className="fas fa-external-link-alt"></i> Abrir Site
+                            </a>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => editarSite(site.html_content)}
+                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded border border-amber-200 transition flex items-center gap-1"
+                                title="Carregar no editor para modificar"
+                              >
+                                <i className="fas fa-edit"></i> Editar
+                              </button>
+                              <button 
+                                onClick={() => deletarSite(site.id, site.slug)}
+                                className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded border border-red-200 transition flex items-center gap-1"
+                                title="Deletar permanentemente"
+                              >
+                                <i className="fas fa-trash"></i> Deletar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé do Modal */}
+            <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-end">
+              <button 
+                onClick={() => setModalMeusSitesAberto(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition"
+              >
+                Fechar Painel
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
