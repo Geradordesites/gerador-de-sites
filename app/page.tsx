@@ -512,7 +512,8 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
         return;
       }
 
-      const linkPublico = `${window.location.origin}/s/${slug}`;
+      // REMOVIDO O /s/ DAQUI!
+      const linkPublico = `${window.location.origin}/${slug}`;
       navigator.clipboard.writeText(linkPublico);
       alert(`Site publicado com sucesso!\n\nLink copiado para a área de transferência:\n${linkPublico}`);
     };
@@ -758,7 +759,8 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {listaSites.map((site) => {
-                    const linkUrl = `${window.location.origin}/s/${site.slug}`;
+                    // REMOVIDO O /s/ DAQUI TAMBÉM!
+                    const linkUrl = `${window.location.origin}/${site.slug}`;
                     return (
                       <div key={site.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-between hover:shadow-md transition">
                         <div>
@@ -794,8 +796,9 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
                           </div>
 
                           <div className="flex items-center justify-between pt-1">
+                            {/* REMOVIDO O /s/ DO BOTÃO ABRIR SITE */}
                             <a 
-                              href={`/s/${site.slug}`} 
+                              href={`/${site.slug}`} 
                               target="_blank" 
                               rel="noreferrer"
                               className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1"
