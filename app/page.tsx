@@ -8,13 +8,20 @@ export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
   const [listaSites, setListaSites] = useState<any[]>([]);
   const [carregandoSites, setCarregandoSites] = useState(false);
+  
+  // ESTADOS DO SISTEMA DE PAGINAÇÃO
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const SITES_POR_PAGINA = 6; // Quantidade de sites por página
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
     const userId = '00000000-0000-0000-0000-000000000000';
     const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', userId).order('created_at', { ascending: false });
     if (error) { (window as any).showNotification('Erro ao carregar os sites.', 'error'); } 
-    else { setListaSites(data || []); }
+    else { 
+      setListaSites(data || []); 
+      setPaginaAtual(1); // Sempre volta para a página 1 ao abrir
+    }
     setCarregandoSites(false);
     setModalMeusSitesAberto(true);
   };
@@ -24,7 +31,15 @@ export default function Home() {
     const { error } = await supabase.from('sites_gerados').delete().eq('id', id);
     if (error) alert('Erro ao deletar o site.');
     else {
-      setListaSites(listaSites.filter(site => site.id !== id));
+      const novaLista = listaSites.filter(site => site.id !== id);
+      setListaSites(novaLista);
+      
+      // Ajusta a página se deletar o último item da página atual
+      const totalPaginasRestantes = Math.ceil(novaLista.length / SITES_POR_PAGINA);
+      if (paginaAtual > totalPaginasRestantes && totalPaginasRestantes > 0) {
+        setPaginaAtual(totalPaginasRestantes);
+      }
+      
       (window as any).showNotification('Site deletado com sucesso!', 'success');
     }
   };
@@ -200,7 +215,6 @@ export default function Home() {
       chamarIA(sys, [{text: `CÓDIGO:\n${codigo}\nPEDIDO:\n${prompt}`}], true);
     };
 
-    // NOVA FUNÇÃO: FAZER UPLOAD DE IMAGEM DO PC DIRETO PARA O ELEMENTO HTML (ROBUSTO!)
     (window as any).handleElementImageUpload = (event: any, index: number) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -208,8 +222,8 @@ export default function Home() {
       reader.onload = (e: any) => {
         const input = document.getElementById(`img_replace_${index}`) as HTMLInputElement;
         if (input) {
-            input.value = e.target.result; // Coloca o código Base64 gigante direto no input
-            (window as any).aplicarNovosElementos(); // Aplica automaticamente no site!
+            input.value = e.target.result;
+            (window as any).aplicarNovosElementos();
         }
       };
       reader.readAsDataURL(file);
@@ -232,7 +246,6 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           const div = document.createElement('div');
           
-          // NOVO CAMPO COM BOTÃO DE UPLOAD INCLUÍDO
           div.innerHTML = `
             <label class="text-[9px] font-bold text-gray-500 uppercase flex justify-between items-center mb-1">
                 <span class="truncate pr-2">${label}</span>
@@ -322,16 +335,14 @@ export default function Home() {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) { (window as any).showNotification('Gere um site primeiro.', 'error'); return; }
 
-      // 1. Pergunta o título. Se clicar em cancelar (null), ele aborta tudo!
       const promptTitulo = prompt('Digite um título para identificar este site (Ex: Finanças):');
-      if (promptTitulo === null) return; // USUÁRIO CLICOU EM CANCELAR!
+      if (promptTitulo === null) return; 
       
       const titulo = promptTitulo || 'Landing Page';
       const slugSugerido = titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       
-      // 2. Confirma o Link. Se clicar em cancelar (null), ele aborta tudo!
       let slug = prompt('Personalize o link final do seu site (não use espaços):', slugSugerido);
-      if (slug === null) return; // USUÁRIO CLICOU EM CANCELAR NOVAMENTE!
+      if (slug === null) return; 
       
       if (!slug) slug = slugSugerido + '-' + nanoid(4); 
 
@@ -339,13 +350,18 @@ export default function Home() {
 
       if (error) { (window as any).showNotification('Erro: Link já em uso.', 'error'); return; }
 
-      // LINK DEFINITIVO TOTALMENTE LIMPO SEM /s/
       const linkPublico = `${window.location.origin}/${slug}`;
       navigator.clipboard.writeText(linkPublico);
       alert(`Site publicado com sucesso!\n\nLink copiado: \n${linkPublico}`);
     };
 
   }, []);
+
+  // LÓGICA DE CÁLCULO DA PAGINAÇÃO
+  const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
+  const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
+  const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
+  const totalPaginas = Math.ceil(listaSites.length / SITES_POR_PAGINA);
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
@@ -480,25 +496,55 @@ export default function Home() {
             </div>
             <div className="p-6 flex-1 overflow-y-auto">
               {carregandoSites ? <p className="text-center text-sm text-slate-500">Carregando...</p> : 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {listaSites.map((site) => {
-                    // O LINK AQUI DENTRO DO MODAL TAMBÉM FOI CORRIGIDO (SEM /s/)
-                    const linkUrl = `${window.location.origin}/${site.slug}`;
-                    return (
-                      <div key={site.id} className="bg-white border rounded-xl p-4 shadow-sm flex flex-col">
-                        <h3 className="font-bold text-sm mb-2">{site.titulo}</h3>
-                        <input type="text" readOnly value={linkUrl} className="bg-slate-50 border rounded text-[11px] w-full p-1.5 mb-3" />
-                        <div className="flex justify-between items-center">
-                          <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-semibold">Abrir Site</a>
-                          <div className="flex gap-2">
-                            <button onClick={() => editarSite(site.html_content)} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200">Editar</button>
-                            <button onClick={() => deletarSite(site.id, site.slug)} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200">Deletar</button>
+                listaSites.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400 space-y-2">
+                    <p className="text-sm font-semibold">Nenhum site publicado ainda.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {sitesAtuais.map((site) => {
+                        const linkUrl = `${window.location.origin}/${site.slug}`;
+                        return (
+                          <div key={site.id} className="bg-white border rounded-xl p-4 shadow-sm flex flex-col">
+                            <h3 className="font-bold text-sm mb-2">{site.titulo}</h3>
+                            <input type="text" readOnly value={linkUrl} className="bg-slate-50 border rounded text-[11px] w-full p-1.5 mb-3" />
+                            <div className="flex justify-between items-center">
+                              <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-semibold">Abrir Site</a>
+                              <div className="flex gap-2">
+                                <button onClick={() => editarSite(site.html_content)} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200">Editar</button>
+                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200">Deletar</button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* CONTROLES DE PAGINAÇÃO */}
+                    {totalPaginas > 1 && (
+                      <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-slate-100">
+                        <button
+                          onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
+                          disabled={paginaAtual === 1}
+                          className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition"
+                        >
+                          Anterior
+                        </button>
+                        <span className="text-xs font-semibold text-slate-500">
+                          Página {paginaAtual} de {totalPaginas}
+                        </span>
+                        <button
+                          onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
+                          disabled={paginaAtual === totalPaginas}
+                          className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition"
+                        >
+                          Próxima
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </>
+                )
               }
             </div>
           </div>
