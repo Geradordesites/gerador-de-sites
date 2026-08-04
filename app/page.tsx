@@ -14,7 +14,6 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
-  // ESTADO DA PALETA PERSONALIZADA
   const [corSelecionada, setCorSelecionada] = useState('auto');
 
   useEffect(() => {
