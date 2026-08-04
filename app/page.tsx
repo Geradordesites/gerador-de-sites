@@ -2,7 +2,7 @@
 
 import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -15,7 +15,7 @@ export default function Home() {
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   const [corSelecionada, setCorSelecionada] = useState('auto');
   
-  // ESTADOS DE IMAGENS E HISTÓRICO DE CÓDIGO (UNDO)
+  // ESTADOS DE IMAGENS E HISTÓRICO DE CÓDIGO (UNDO ROBUSTO)
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
@@ -150,7 +150,6 @@ export default function Home() {
         const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
         
         if (codEl) {
-          // Salva histórico antes de substituir
           if (codEl.value) {
             setHistoricoCodigo(prev => [...prev, codEl.value]);
           }
@@ -431,7 +430,7 @@ export default function Home() {
       (window as any).showNotification('Download iniciado com sucesso!', 'success');
     };
 
-    // ALTERNÂNCIA DE ABAS COM SINCRONIZAÇÃO AUTOMÁTICA DO CÓDIGO
+    // ALTERNÂNCIA DE ABAS COM DETECÇÃO E HISTÓRICO AUTOMÁTICO DE CÓDIGO
     (window as any).mudarSeparador = (aba: string) => {
       setAbaAtiva(aba as any);
       const btnP = document.getElementById('tabPreview'), btnC = document.getElementById('tabCode');
@@ -441,8 +440,11 @@ export default function Home() {
       if (!btnP || !btnC || !boxP || !boxC) return;
 
       if (aba === 'preview') {
-        // Se indo para o visual, pega o código atualizado do textarea e aplica no iframe
         if (codEl && codEl.value) {
+          const currentPreview = boxP.getAttribute('srcdoc') || '';
+          if (currentPreview && currentPreview !== codEl.value) {
+            setHistoricoCodigo(prev => [...prev, currentPreview]);
+          }
           boxP.setAttribute('srcdoc', codEl.value);
           if ((window as any).mapearElementosGerados) {
             (window as any).mapearElementosGerados(codEl.value);
@@ -505,7 +507,7 @@ export default function Home() {
 
   }, [siteEditando]); 
 
-  // FUNÇÃO DE DESFAZER CÓDIGO (UNDO)
+  // FUNÇÃO DE DESFAZER CÓDIGO (UNDO ROBUSTO)
   const desfazerCodigo = () => {
     if (historicoCodigo.length === 0) {
       (window as any).showNotification('Nenhum histórico anterior para retornar.', 'error');
@@ -705,9 +707,8 @@ export default function Home() {
             <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
                 <div className="flex h-full items-center gap-2">
                     <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center">Visualização</button>
-                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 font-medium text-sm flex items-center transition">Código HTML</button>
+                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center transition">Código HTML</button>
                     
-                    {/* BOTÃO DE RETORNAR CÓDIGO ANTERIOR (UNDO) */}
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-semibold py-1 px-2.5 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[10px]"></i> Desfazer Código
                     </button>
