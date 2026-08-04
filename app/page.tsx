@@ -13,8 +13,10 @@ export default function Home() {
   const SITES_POR_PAGINA = 6; 
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
-
   const [corSelecionada, setCorSelecionada] = useState('auto');
+  
+  // ESTADO REATIVO PARA AS IMAGENS DE REFERÊNCIA
+  const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -69,30 +71,49 @@ export default function Home() {
     (window as any).showNotification(`Modo de Edição ativado: ${site.titulo}`, 'success');
   };
 
+  // GERENCIAMENTO DE UPLOAD DE IMAGENS (CLIQUE, DRAG&DROP E PASTE)
+  const processFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const base64Data = e.target.result.split(',')[1];
+      setUploadedImages(prev => [...prev, { mimeType: file.type, data: base64Data }]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUploadInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      Array.from(e.target.files).forEach(file => processFile(file));
+      e.target.value = '';
+    }
+  };
+
+  const removerImagem = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   useEffect(() => {
-    let uploadedImagesData: any[] = [];
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) processFile(file);
+        }
+      }
+    };
+
+    document.body.addEventListener('paste', handlePaste);
+    return () => document.body.removeEventListener('paste', handlePaste);
+  }, []);
+
+  useEffect(() => {
     const domParser = new DOMParser();
 
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
-
-    setTimeout(() => {
-      document.querySelectorAll('.drop-zone').forEach(zone => {
-        zone.addEventListener('dragover', (e: any) => { e.preventDefault(); zone.classList.add('bg-blue-100', 'border-blue-500'); });
-        zone.addEventListener('dragleave', (e: any) => { e.preventDefault(); zone.classList.remove('bg-blue-100', 'border-blue-500'); });
-        zone.addEventListener('drop', (e: any) => {
-          e.preventDefault(); zone.classList.remove('bg-blue-100', 'border-blue-500');
-          try {
-            const inputId = zone.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-            const input = document.getElementById(inputId || '') as HTMLInputElement;
-            if (e.dataTransfer.files?.length > 0 && input) {
-              input.files = e.dataTransfer.files;
-              input.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-          } catch (err) {}
-        });
-      });
-    }, 500);
 
     (window as any).mudarModoApp = (modo: string) => {
       const btnV = document.getElementById('btnTabVisual'), btnC = document.getElementById('btnTabCopy');
@@ -109,40 +130,6 @@ export default function Home() {
         contC.style.display = 'block'; contV.style.display = 'none';
       }
     };
-
-    const renderImagePreviewGrid = () => {
-      const grid = document.getElementById('imagePreviewGrid'), countSpan = document.getElementById('imageCount');
-      if (!grid || !countSpan) return;
-      grid.innerHTML = ''; countSpan.textContent = uploadedImagesData.length.toString();
-      uploadedImagesData.forEach((imgObj, index) => {
-        const div = document.createElement('div');
-        div.className = 'image-preview-item shadow-sm';
-        div.innerHTML = `<img src="data:${imgObj.mimeType};base64,${imgObj.data}"><div class="remove-img" onclick="window.removerImagem(${index})"><i class="fas fa-times"></i></div>`;
-        grid.appendChild(div);
-      });
-    };
-
-    (window as any).removerImagem = (index: number) => { uploadedImagesData.splice(index, 1); renderImagePreviewGrid(); };
-
-    const processFile = (file: File) => {
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        uploadedImagesData.push({ mimeType: file.type, data: e.target.result.split(',')[1] });
-        renderImagePreviewGrid();
-      };
-      reader.readAsDataURL(file);
-    };
-
-    (window as any).handleImageUpload = (event: any) => { Array.from(event.target.files).forEach((file: any) => processFile(file)); event.target.value = ''; };
-
-    document.body.addEventListener('paste', function(e: any) {
-      const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
-      if (!items) return;
-      for (let index in items) {
-        if (items[index].kind === 'file' && items[index].type.startsWith('image/')) processFile(items[index].getAsFile());
-      }
-    });
 
     async function chamarIA(systemInstructionText: string, promptParts: any[], isRefinement = false) {
       const loadOverlay = document.getElementById('loadingOverlay');
@@ -184,8 +171,8 @@ export default function Home() {
 
     const getMegaPromptHero = () => {
       const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
-      if (hero === 'center') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Centralizado. A Headline principal, a Subheadline e o Botão de Compra devem ficar perfeitamente centralizados (text-center) e sozinhos na primeira tela, criando foco total na Copy. Não coloque imagem ao lado da headline.";
-      if (hero === 'split') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Dividido (Side-by-side no Desktop). Coloque a Headline, Textos e Botão de um lado (ex: esquerdo), e uma imagem de alta qualidade do outro lado (ex: direito). No mobile, empilhe as informações colocando a imagem logo abaixo do texto.";
+      if (hero === 'center') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Centralizado. A Headline principal, a Subheadline e o Botão de Compra devem ficar perfeitamente centralizados (text-center) e sozinhos na primeira tela, criando foco total na Copy.";
+      if (hero === 'split') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Dividido (Side-by-side no Desktop). Coloque a Headline, Textos e Botão de um lado, e uma imagem de alta qualidade do outro lado.";
       return "ESTRUTURA DO HERO: Crie a primeira dobra do site de acordo com o que julgar mais profissional e otimizado para o nicho.";
     };
 
@@ -200,24 +187,28 @@ export default function Home() {
          return `OVERRIDE - PALETA PERSONALIZADA DO CLIENTE: Ignore as classes de cor do Tailwind para o fundo e textos principais. USE INLINE STYLES (style="...") OBRIGATORIAMENTE para aplicar exatamente estas cores HEX:
          - Cor de Fundo do Site (body/sections): ${cf}
          - Cor Principal (Títulos, Headers e destaques de texto): ${cp}
-         - Cor de Ação/Destaque (Fundo de Botões de Compra): ${cd}. Garanta que o texto dentro do botão tenha contraste legível com o ${cd}.`;
+         - Cor de Ação/Destaque (Fundo de Botões de Compra): ${cd}.`;
       }
 
-      if (cor === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite (ex: slate-900 ou blue-950) como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado (amber-500) para botões.";
-      if (cor === 'verde') return "PALETA DE CORES OBRIGATÓRIA: Use Verde Esmeralda ou Musgo (emerald-800 ou teal-900) como cor principal, fundo claro (off-white ou bege) e botões de conversão em verde contrastante (emerald-500).";
-      if (cor === 'terracota') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Terracota, Nude e Areia (orange-900, stone-100, rose-50). Um design quente, elegante e acolhedor, com botões em tons terrosos médios.";
-      if (cor === 'roxo') return "PALETA DE CORES OBRIGATÓRIA: Use Roxo Real ou Violeta Escuro (purple-900 ou fuchsia-950), com fundos brancos ou cinza super claro, e detalhes em dourado ou lilás claro.";
-      if (cor === 'dark') return "PALETA DE CORES OBRIGATÓRIA: Fundo Preto ou Cinza muito escuro (Dark Mode: zinc-950 ou black). Textos off-white, com detalhes e botões de compra em Dourado (yellow-500 ou amber-400) vibrante.";
-      if (cor === 'cinza') return "PALETA DE CORES OBRIGATÓRIA: Monocromático elegante. Escala de cinza (slate-900 a slate-50), fundos brancos, textos escuros e botões de conversão em grafite ou preto sólido.";
-      if (cor === 'vermelho') return "PALETA DE CORES OBRIGATÓRIA: Vermelho Rubi e Bordô (rose-900, red-700), fundos claríssimos ou brancos, e botões de ação em vermelho vivo/escarlate.";
-      if (cor === 'amarelo') return "PALETA DE CORES OBRIGATÓRIA: Amarelo Solar e Preto. Alto contraste, fundo escuro ou branco limpo, detalhes e botões em amarelo vibrante (yellow-400) com texto preto.";
-      if (cor === 'rosa') return "PALETA DE CORES OBRIGATÓRIA: Rosa Pastel e Magenta. Tons super suaves (pink-50, rose-100) no fundo com botões vibrantes e femininos (fuchsia-600 ou pink-600).";
+      if (cor === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado para botões.";
+      if (cor === 'verde') return "PALETA DE CORES OBRIGATÓRIA: Use Verde Esmeralda ou Musgo como cor principal, fundo claro e botões de conversão em verde contrastante.";
+      if (cor === 'terracota') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Terracota, Nude e Areia. Design quente, elegante e acolhedor.";
+      if (cor === 'roxo') return "PALETA DE CORES OBRIGATÓRIA: Use Roxo Real ou Violeta Escuro, com fundos brancos ou cinza super claro.";
+      if (cor === 'dark') return "PALETA DE CORES OBRIGATÓRIA: Fundo Preto ou Cinza muito escuro (Dark Mode). Textos off-white, com detalhes e botões de compra em Dourado vibrante.";
+      if (cor === 'cinza') return "PALETA DE CORES OBRIGATÓRIA: Monocromático elegante. Escala de cinza, fundos brancos e textos escuros.";
+      if (cor === 'vermelho') return "PALETA DE CORES OBRIGATÓRIA: Vermelho Rubi e Bordô, fundos claríssimos ou brancos, e botões de ação em vermelho vivo.";
+      if (cor === 'amarelo') return "PALETA DE CORES OBRIGATÓRIA: Amarelo Solar e Preto. Alto contraste, fundo escuro ou branco limpo, detalhes e botões em amarelo vibrante.";
+      if (cor === 'rosa') return "PALETA DE CORES OBRIGATÓRIA: Rosa Pastel e Magenta. Tons suaves no fundo com botões vibrantes e femininos.";
       
-      return "PALETA DE CORES: Escolha uma paleta de cores altamente profissional e harmônica que combine perfeitamente com o contexto do site. Use as cores do Tailwind.";
+      return "PALETA DE CORES: Escolha uma paleta de cores altamente profissional e harmônica que combine perfeitamente com o contexto do site.";
     };
 
-    (window as any).gerarSite = () => {
-      if (uploadedImagesData.length === 0) { (window as any).showNotification('Anexe referências.', 'error'); return; }
+    // EXPOE A FUNÇÃO DE GERAR SITE REPASSANDO AS IMAGENS DO STATE
+    (window as any).executarGeracaoSite = (imagesList: any[]) => {
+      if (imagesList.length === 0) { 
+        (window as any).showNotification('Anexe referências visuais.', 'error'); 
+        return; 
+      }
       
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
@@ -232,7 +223,7 @@ export default function Home() {
       const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPromptEstilo} \n${megaPromptHero} \n${megaCores}`;
       
       let promptParts: any[] = [{ text: "Crie a página baseada nestas imagens:" }];
-      uploadedImagesData.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
+      imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
 
@@ -320,26 +311,21 @@ export default function Home() {
           }
 
           const div = document.createElement('div');
-          
           div.innerHTML = `
             <label class="text-[9px] font-bold text-gray-500 uppercase flex justify-between items-center mb-1">
                 <span class="truncate pr-2">${label}</span>
                 <span class="bg-gray-200 text-gray-600 px-1 py-0.5 rounded text-[8px]">${img.width || '?'}x${img.height || '?'}</span>
             </label>
-            
             <div class="flex gap-2 mb-1">
                 <input type="text" id="img_replace_${index}" class="input-style text-[11px] py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
-                
-                <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem aleatória no Unsplash">
+                <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem no Unsplash">
                     <i class="fas fa-sync-alt mr-1"></i> Nova Foto
                 </button>
-
                 <label class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
                     <i class="fas fa-upload mr-1"></i> Upload PC
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
                 </label>
             </div>
-            
             <div class="flex items-center gap-2 mt-2 bg-slate-50 p-1.5 rounded border border-slate-200 mb-4">
                 <span class="text-[9px] font-bold text-slate-500 w-12">Tamanho:</span>
                 <input type="range" id="img_scale_${index}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${index}').innerText = this.value + '%'; window.aplicarNovosElementos()">
@@ -423,7 +409,6 @@ export default function Home() {
         (window as any).showNotification('Gere um site primeiro para baixar!', 'error');
         return;
       }
-      
       const blob = new Blob([codigo], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -433,7 +418,6 @@ export default function Home() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
       (window as any).showNotification('Download iniciado com sucesso!', 'success');
     };
 
@@ -608,20 +592,36 @@ export default function Home() {
                 <div id="containerModoVisual">
                     <div className="card p-4 mb-4">
                         <h3 className="label-style"><i className="fas fa-images"></i>Referências Visuais</h3>
+                        
+                        {/* ZONA DE UPLOAD REATIVA CORRIGIDA */}
                         <div className="drop-zone" onClick={() => document.getElementById('imageUploadInput')?.click()}>
                             <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                             <p className="text-sm font-medium text-gray-600">Clique ou Cole (Ctrl+V)</p>
                         </div>
-                        <input type="file" id="imageUploadInput" multiple accept="image/png, image/jpeg, image/webp" className="hidden" onChange={(e) => (window as any).handleImageUpload(e)} />
-                        <div id="imagePreviewGrid" className="grid grid-cols-3 gap-2 mt-4"></div>
+                        <input type="file" id="imageUploadInput" multiple accept="image/png, image/jpeg, image/webp" className="hidden" onChange={handleImageUploadInput} />
+                        
+                        {/* GRADE DE PRÉ-VISUALIZAÇÃO DAS IMAGENS ANEXADAS */}
+                        {uploadedImages.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2 mt-4">
+                            {uploadedImages.map((imgObj, index) => (
+                              <div key={index} className="image-preview-item shadow-sm relative">
+                                <img src={`data:${imgObj.mimeType};base64,${imgObj.data}`} alt="Ref" className="w-full h-full object-cover rounded" />
+                                <div className="remove-img absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-xs" onClick={() => removerImagem(index)}>
+                                  <i className="fas fa-times"></i>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </div>
+
                     <div className="card p-4">
                         <h3 className="label-style"><i className="fas fa-cogs"></i>Modo de Construção</h3>
                         <select id="modoClonagem" className="input-style mb-4 font-medium text-gray-700">
                             <option value="exato">Recriação Fiel (Pixel Perfect)</option>
                             <option value="modelagem">Modelar (Conversão)</option>
                         </select>
-                        <button onClick={() => (window as any).gerarSite()} className="primary-btn w-full py-3 rounded-lg mt-2">
+                        <button onClick={() => (window as any).executarGeracaoSite(uploadedImages)} className="primary-btn w-full py-3 rounded-lg mt-2">
                             <i className="fas fa-magic mr-2"></i> Gerar Site Alta Performance
                         </button>
                     </div>
