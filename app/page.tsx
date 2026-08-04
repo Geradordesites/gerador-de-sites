@@ -14,13 +14,10 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
-  // CATRACA DE SEGURANÇA: VERIFICA SE ESTÁ LOGADO
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        window.location.href = '/login'; 
-      }
+      if (!session) { window.location.href = '/login'; }
     };
     verificarSessao();
   }, []);
@@ -171,13 +168,15 @@ export default function Home() {
       }
     }
 
-    // MEGA-PROMPTS DE ESTILOS PROFISSIONAIS
     const getMegaPromptEstilo = () => {
-      const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'premium';
-      if (estilo === 'premium') return "DIRETRIZ VISUAL OBRIGATÓRIA: Aplique um design sofisticado e de alto valor (Premium). Utilize tipografia serifada elegante para os títulos (ex: Playfair Display) e sans-serif limpa para leitura (ex: Inter). Estruture o layout aplicando um espaçamento exato de uma linha em branco entre os títulos dos tópicos e o início dos parágrafos subsequentes para garantir uma leitura fluida e elegante. Cores base: tons profundos com detalhes em dourado ou cores de destaque refinadas.";
-      if (estilo === 'terapia') return "DIRETRIZ VISUAL OBRIGATÓRIA: Crie um layout minimalista, transmitindo calma e autoridade. Use muito espaço em branco (white space), paletas em tons pastéis (verde sálvia, azul sereno ou areia). Os cantos das imagens e botões devem ser levemente arredondados. Mantenha a estrutura de texto limpa, exigindo um espaço de uma única linha separando os títulos principais dos parágrafos de texto.";
-      if (estilo === 'agressivo') return "DIRETRIZ VISUAL OBRIGATÓRIA: Layout de altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e botões em cores neon/vibrantes (verde limão, amarelo ou laranja). Estrutura de leitura em blocos curtos, respeitando a regra estrita de uma linha de espaço entre títulos de tópicos e parágrafos. Destaque máximo para a oferta e os botões de compra.";
-      if (estilo === 'corporativo') return "DIRETRIZ VISUAL OBRIGATÓRIA: Design corporativo, limpo e direto ao ponto. Foco em clareza, profissionalismo e confiança. Tons de azul marinho, cinza e branco. Tipografia moderna e legível. Elementos bem alinhados, cantos retos ou levemente arredondados, e espaçamentos consistentes (1 linha de espaço entre títulos e parágrafos).";
+      const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
+      if (estilo === 'nenhum') return "Crie um design profissional e equilibrado, focado em alta conversão e legibilidade impecável.";
+      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado e de alto valor (Premium). Tipografia serifada elegante (ex: Playfair Display). Cores base: tons profundos com detalhes refinados.";
+      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, transmitindo calma e autoridade. Muito espaço em branco, paletas pastéis (verde sálvia, azul sereno ou areia).";
+      if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e botões em cores vibrantes (verde limão/amarelo).";
+      if (estilo === 'corporativo') return "DIRETRIZ VISUAL: Corporativo, limpo e direto ao ponto. Tons de azul marinho, cinza e branco. Tipografia moderna e elementos bem alinhados.";
+      if (estilo === 'consultor') return "DIRETRIZ VISUAL: Elegante e focado em autoridade pessoal. Tons escuros contrastando com branco e dourado escuro/bege. Elementos imponentes.";
+      if (estilo === 'feminino') return "DIRETRIZ VISUAL: Sofisticado, suave e luxuoso. Paleta em tons de nude, rosê, terracota e branco. Fontes delicadas e imagens inspiradoras.";
       return "";
     };
 
@@ -229,6 +228,18 @@ export default function Home() {
       reader.readAsDataURL(file);
     };
 
+    // FUNÇÃO MÁGICA: BUSCAR NOVA IMAGEM ALEATÓRIA DO UNSPLASH
+    (window as any).gerarNovaImagem = (index: number, palavraChave: string) => {
+      const input = document.getElementById(`img_replace_${index}`) as HTMLInputElement;
+      if (input) {
+         // Cria uma assinatura única para forçar o navegador a baixar uma nova foto diferente
+         const termo = encodeURIComponent(palavraChave || 'professional');
+         input.value = `https://images.unsplash.com/random/1200x800/?${termo}&sig=${Date.now()}`;
+         (window as any).aplicarNovosElementos();
+         (window as any).showNotification('Nova imagem carregada!', 'success');
+      }
+    };
+
     (window as any).mapearElementosGerados = (html: string) => {
       const doc = domParser.parseFromString(html, 'text/html');
       const images = doc.querySelectorAll('img');
@@ -253,8 +264,13 @@ export default function Home() {
                 <span class="bg-gray-200 text-gray-600 px-1 py-0.5 rounded text-[8px]">${img.width || '?'}x${img.height || '?'}</span>
             </label>
             <div class="flex gap-2 mb-1">
-                <input type="text" id="img_replace_${index}" class="input-style text-xs py-1.5 px-2 flex-1" value="${img.src}" placeholder="Cole URL externa ou faça Upload">
-                <label class="bg-blue-100 hover:bg-blue-200 text-blue-700 cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload Local">
+                <input type="text" id="img_replace_${index}" class="input-style text-xs py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
+                
+                <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem aleatória no Unsplash">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+
+                <label class="bg-blue-100 hover:bg-blue-200 text-blue-700 cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
                     <i class="fas fa-upload"></i>
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
                 </label>
@@ -432,14 +448,16 @@ export default function Home() {
                     <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
                 </div>
                 
-                {/* MENU NOVO DE ESTILO E NICHO */}
                 <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-indigo-50 border border-indigo-100 rounded-lg shadow-inner">
                     <label htmlFor="nichoEstilo" className="text-[10px] font-bold text-indigo-800 uppercase"><i className="fas fa-paint-roller mr-1"></i> Estilo Visual do Site:</label>
                     <select id="nichoEstilo" className="input-style text-xs font-medium text-slate-700 bg-white border-indigo-200">
+                        <option value="nenhum">⚪ Nenhum (Layout Padrão Limpo)</option>
                         <option value="premium">💎 Infoproduto Premium (Elegante)</option>
                         <option value="terapia">🌿 Saúde e Terapia (Calmo)</option>
                         <option value="agressivo">⚡ Lançamento (Dark Mode/Urgência)</option>
                         <option value="corporativo">🏢 Corporativo (Limpo & Direto)</option>
+                        <option value="consultor">💼 Mentor/Consultor (Autoridade)</option>
+                        <option value="feminino">✨ Nicho Feminino (Suave & Luxo)</option>
                     </select>
                 </div>
 

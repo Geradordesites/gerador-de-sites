@@ -9,34 +9,43 @@ export async function POST(req: Request) {
     const { systemInstruction, promptParts } = body;
 
     const regrasObrigatorias = `
-=== REGRAS OBRIGATÓRIAS DE PERFORMANCE, COMPLIANCE E UI/UX ===
-1. ESTRUTURA E RESPONSIVIDADE:
-- Tag Viewport obrigatória: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">.
+=== REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
+1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-- Botões de compra DEVEM estar centralizados no mobile. A 1ª dobra deve ter Headline -> Imagem -> Botão.
+- ESPAÇAMENTO ESTRITO: Organize o layout para que os títulos dos tópicos tenham sempre um espaço exato de uma linha em branco entre eles e os parágrafos subsequentes.
+- ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (adicione <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> no <head>).
 
-2. NAVEGAÇÃO SILENCIOSA (SEM HASHTAG NA URL):
-- Se houver menu superior, a navegação NÃO DEVE alterar a URL (proibido aparecer #secao no link do navegador).
-- Use Javascript puro para interceptar o clique no menu, usar 'event.preventDefault()', e rolar suavemente até a seção correspondente usando 'document.querySelector(id).scrollIntoView({ behavior: "smooth" })'.
-- Inclua o fechamento automático do menu mobile após o clique.
+2. IMAGENS IDEAIS E REAIS (UNSPLASH):
+- Para imagens, utilize: https://images.unsplash.com/random/1200x800/?{palavra-chave}
+- REGRA ABSOLUTA DE IMAGENS: Não quero desenhos e sim imagens reais, REAIS. Não use imagens de tecnologia, animações ou ficção científica. Apenas fotografias humanas e cenários reais.
+- TAMANHO IDEAL: As imagens nunca devem estourar na tela. Aplique classes Tailwind obrigatórias nas imagens: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
 
-3. COMPLIANCE PARA FACEBOOK/GOOGLE ADS (RODAPÉ):
-- O rodapé DEVE conter seções de "Política de Privacidade", "Termos de Uso" e "Política de Cookies".
-- Utilize a tag HTML <details> e <summary> para criar uma sanfona expansível.
-- DENTRO de cada <details>, escreva PELO MENOS 3 parágrafos profissionais e longos contendo textos padrão sobre LGPD, Isenção de Responsabilidade e uso de dados. Seja exaustivo nestes textos para blindar a página.
+3. COMPLIANCE E RODAPÉ PROFISSIONAL (SANFONAS INTERLIGADAS):
+- O rodapé DEVE conter links REAIS (ex: <a href="#termos" class="legal-link">Termos</a>, <a href="#privacidade" class="legal-link">Privacidade</a>).
+- Abaixo dos links, crie DIVs compactas para o conteúdo (id="termos", id="privacidade") inicialmente ocultas (hidden).
+- Insira textos jurídicos profissionais, densos e extensos (LGPD, Isenção de Responsabilidade, Cookies).
+- ADICIONE OBRIGATORIAMENTE ESTE SCRIPT JS NO FINAL DO BODY para controlar as sanfonas:
+  <script>
+    document.querySelectorAll('.legal-link').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        document.querySelectorAll('.legal-content').forEach(content => {
+          if(content.id === targetId) {
+            content.classList.toggle('hidden');
+          } else {
+            content.classList.add('hidden');
+          }
+        });
+        setTimeout(() => document.getElementById(targetId)?.scrollIntoView({behavior: 'smooth', block: 'start'}), 100);
+      });
+    });
+  </script>
+- Adicione a classe "legal-content hidden" nas divs de texto legal.
 
-4. IMAGENS E ANTI-FOUC:
-- Imagens acima da dobra não devem ter lazy loading. Abaixo da dobra DEVEM ter loading="lazy".
-- Adicione <style> após o <title> com o fundo do site para evitar tela branca.
-
-5. CONVERSÃO DIRETA E SUPORTE (PROIBIDO FORMULÁRIOS):
-- É EXPRESSAMENTE PROIBIDO criar formulários de contato (<form>, <input type="text">, <textarea>).
-- Para qualquer seção de contato, suporte, orçamento ou dúvidas, utilize APENAS botões estilizados direcionando para o WhatsApp.
-
-6. IMAGENS AUTOMÁTICAS REAIS (LOREMFLICKR):
-- Se o usuário NÃO enviar imagens próprias nas referências, você DEVE preencher as tags <img> usando a API LoremFlickr.
-- Formato EXATO e OBRIGATÓRIO: https://loremflickr.com/1200/800/palavra1,palavra2 (use palavras-chave em inglês baseadas no nicho).
-- REGRA ABSOLUTA: Foque EXCLUSIVAMENTE em fotografias reais de pessoas e cenários reais. É ESTRITAMENTE PROIBIDO o uso de desenhos, ilustrações, gráficos animados, tecnologia irreal ou ficção científica nas palavras-chave geradas ou nos placeholders.
+4. NAVEGAÇÃO SILENCIOSA E CONVERSÃO:
+- Sem hashtag na URL para menus superiores. Use JS para 'event.preventDefault()' e 'scrollIntoView'.
+- PROIBIDO formulários (<form>). Use apenas botões de WhatsApp elegantes.
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
