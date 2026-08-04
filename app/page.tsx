@@ -14,6 +14,9 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
+  // NOVO ESTADO: Controle da paleta de cores para exibir o campo customizado
+  const [paletaSelecionada, setPaletaSelecionada] = useState('auto');
+
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -171,8 +174,8 @@ export default function Home() {
     const getMegaPromptEstilo = () => {
       const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
       if (estilo === 'nenhum') return "Crie um design profissional e equilibrado, focado em alta conversão e legibilidade impecável.";
-      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado e de alto valor (Premium). Tipografia serifada elegante (ex: Playfair Display). Textos com muito respiro.";
-      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, transmitindo calma e autoridade. Muito espaço em branco, bordas arredondadas e suavidade.";
+      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado e de alto valor (Premium). Tipografia serifada elegante (ex: Playfair Display). Textos com muito respiro e uma linha exata de espaço entre títulos e parágrafos.";
+      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, transmitindo calma e autoridade. Muito espaço em branco, bordas arredondadas e suavidade. Espaço exato de uma linha entre títulos e textos.";
       if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e estrutura em blocos de impacto.";
       if (estilo === 'corporativo') return "DIRETRIZ VISUAL: Corporativo, limpo e direto ao ponto. Tipografia moderna e elementos alinhados rigidamente para transmitir segurança e escala.";
       if (estilo === 'consultor') return "DIRETRIZ VISUAL: Elegante e focado em autoridade pessoal. Elementos imponentes, fotos de alta qualidade ocupando boas seções e tipografia marcante.";
@@ -181,14 +184,28 @@ export default function Home() {
     };
 
     const getMegaPromptCores = () => {
-      const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      if (cor === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite (ex: slate-900 ou blue-950) como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado (amber-500) para botões.";
-      if (cor === 'verde') return "PALETA DE CORES OBRIGATÓRIA: Use Verde Esmeralda ou Musgo (emerald-800 ou teal-900) como cor principal, fundo claro (off-white ou bege) e botões de conversão em verde contrastante (emerald-500).";
-      if (cor === 'terracota') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Terracota, Nude e Areia (orange-900, stone-100, rose-50). Um design quente, elegante e acolhedor, com botões em tons terrosos médios.";
-      if (cor === 'roxo') return "PALETA DE CORES OBRIGATÓRIA: Use Roxo Real ou Violeta Escuro (purple-900 ou fuchsia-950), com fundos brancos ou cinza super claro, e detalhes em dourado ou lilás claro.";
-      if (cor === 'dark') return "PALETA DE CORES OBRIGATÓRIA: Fundo Preto ou Cinza muito escuro (Dark Mode: zinc-950 ou black). Textos off-white, com detalhes e botões de compra em Dourado (yellow-500 ou amber-400) vibrante.";
-      if (cor === 'cinza') return "PALETA DE CORES OBRIGATÓRIA: Monocromático elegante. Escala de cinza (slate-900 a slate-50), fundos brancos, textos escuros e botões de conversão em grafite ou preto sólido.";
+      // Usa o estado local para garantir que pegamos o valor correto
+      if (paletaSelecionada === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite (ex: slate-900 ou blue-950) como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado (amber-500) para botões.";
+      if (paletaSelecionada === 'verde') return "PALETA DE CORES OBRIGATÓRIA: Use Verde Esmeralda ou Musgo (emerald-800 ou teal-900) como cor principal, fundo claro (off-white ou bege) e botões de conversão em verde contrastante (emerald-500).";
+      if (paletaSelecionada === 'terracota') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Terracota, Nude e Areia (orange-900, stone-100, rose-50). Um design quente, elegante e acolhedor, com botões em tons terrosos médios.";
+      if (paletaSelecionada === 'roxo') return "PALETA DE CORES OBRIGATÓRIA: Use Roxo Real ou Violeta Escuro (purple-900 ou fuchsia-950), com fundos brancos ou cinza super claro, e detalhes em dourado ou lilás claro.";
+      if (paletaSelecionada === 'dark') return "PALETA DE CORES OBRIGATÓRIA: Fundo Preto ou Cinza muito escuro (Dark Mode: zinc-950 ou black). Textos off-white, com detalhes e botões de compra em Dourado (yellow-500 ou amber-400) vibrante.";
+      if (paletaSelecionada === 'cinza') return "PALETA DE CORES OBRIGATÓRIA: Monocromático elegante. Escala de cinza (slate-900 a slate-50), fundos brancos, textos escuros e botões de conversão em grafite ou preto sólido.";
+      if (paletaSelecionada === 'vermelho') return "PALETA DE CORES OBRIGATÓRIA: Tons de Vermelho Escuro ou Vinho (red-900, rose-950), fundo elegante escuro ou claro, com detalhes e botões em Vermelho Vibrante (red-600) para forte Call to Action.";
+      if (paletaSelecionada === 'laranja') return "PALETA DE CORES OBRIGATÓRIA: Tons quentes e enérgicos. Fundo cinza escuro ou branco puro. Botões e destaques em Laranja Forte ou Neon (orange-500 ou orange-600).";
+      if (paletaSelecionada === 'custom') {
+         const customCores = (document.getElementById('paletaCustomizadaInput') as HTMLInputElement)?.value || '';
+         return `PALETA DE CORES OBRIGATÓRIA PERSONALIZADA: ${customCores}. Siga estritamente esta instrução de cores para o fundo, textos e botões.`;
+      }
       return "PALETA DE CORES: Escolha uma paleta de cores altamente profissional e harmônica que combine perfeitamente com o contexto do site. Use as cores do Tailwind.";
+    };
+
+    // NOVA FUNÇÃO: INTELIGÊNCIA DE LAYOUT DO TOPO (HERO)
+    const getMegaPromptLayout = () => {
+      const layout = (document.getElementById('layoutCabecalho') as HTMLSelectElement)?.value || 'auto';
+      if (layout === 'centro') return "LAYOUT DA PRIMEIRA DOBRA (HERO SECTION): A primeira seção do site DEVE ter o texto e os botões 100% centralizados. NENHUMA imagem ao lado da headline. Foco total na copy central.";
+      if (layout === 'lado_a_lado') return "LAYOUT DA PRIMEIRA DOBRA (HERO SECTION): A primeira seção do site DEVE ser dividida em duas colunas (lado a lado no Desktop). Na coluna da esquerda coloque a Headline, Subtítulo e o botão de CTA. Na coluna da direita, insira uma imagem de altíssimo impacto visual relacionada ao nicho.";
+      return "LAYOUT DA PRIMEIRA DOBRA (HERO SECTION): Estruture a primeira dobra do site com foco total em conversão e impacto visual.";
     };
 
     (window as any).gerarSite = () => {
@@ -202,7 +219,9 @@ export default function Home() {
       
       const megaPrompt = getMegaPromptEstilo();
       const megaCores = getMegaPromptCores();
-      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPrompt} \n${megaCores}`;
+      const megaLayout = getMegaPromptLayout();
+      
+      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPrompt} \n${megaCores} \n${megaLayout}`;
       
       let promptParts: any[] = [{ text: "Crie a página baseada nestas imagens:" }];
       uploadedImagesData.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
@@ -218,7 +237,9 @@ export default function Home() {
 
       const megaPrompt = getMegaPromptEstilo();
       const megaCores = getMegaPromptCores();
-      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. \n${megaPrompt} \n${megaCores}`;
+      const megaLayout = getMegaPromptLayout();
+
+      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. \n${megaPrompt} \n${megaCores} \n${megaLayout}`;
       
       chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
@@ -273,7 +294,7 @@ export default function Home() {
       imgContainer.innerHTML = ''; linkContainer.innerHTML = '';
       
       let temImagens = false, temLinks = false;
-      let htmlModificado = false; // Flag para atualizar o site se precisarmos aplicar o tamanho ideal de 70%
+      let htmlModificado = false;
 
       if (images.length > 0) {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
@@ -281,7 +302,6 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
-          // TRAVA INTELIGENTE: Se a imagem não tiver escala, aplica 70% automaticamente para não ficar gigante
           if (!currentScale) {
               currentScale = '70';
               img.setAttribute('data-scale', '70');
@@ -302,12 +322,10 @@ export default function Home() {
             <div class="flex gap-2 mb-1">
                 <input type="text" id="img_replace_${index}" class="input-style text-[11px] py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
                 
-                <!-- BOTÃO COM TEXTO CLARO E ÍCONE -->
                 <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem aleatória no Unsplash">
                     <i class="fas fa-sync-alt mr-1"></i> Nova Foto
                 </button>
 
-                <!-- BOTÃO COM TEXTO CLARO E ÍCONE -->
                 <label class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
                     <i class="fas fa-upload mr-1"></i> Upload PC
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
@@ -338,7 +356,6 @@ export default function Home() {
         });
       } else { document.getElementById('linkSection')!.style.display = 'none'; }
 
-      // Se a IA entregou imagens a 100%, nós encolhemos para 70% no script e salvamos isso de volta no HTML
       if (htmlModificado) {
          const novoHtml = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
          const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
@@ -422,6 +439,25 @@ export default function Home() {
       document.body.removeChild(t);
     };
 
+    // NOVA FUNÇÃO: BAIXAR O ARQUIVO HTML
+    (window as any).baixarHtml = () => {
+      const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
+      if (!txt) {
+        (window as any).showNotification('Gere um site antes de baixar!', 'error');
+        return;
+      }
+      const blob = new Blob([txt], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'minha_landing_page.html'; // Nome do arquivo que será baixado
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      (window as any).showNotification('Download concluído!', 'success');
+    };
+
     (window as any).handlePublicarSite = async () => {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) { (window as any).showNotification('Gere um site primeiro.', 'error'); return; }
@@ -452,7 +488,7 @@ export default function Home() {
       alert(`Site publicado com sucesso!\n\nLink copiado: \n${linkPublico}`);
     };
 
-  }, [siteEditando]); 
+  }, [siteEditando, paletaSelecionada]); // paletaSelecionada adicionada nas dependências para refletir a escolha em tempo real
 
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
@@ -510,9 +546,14 @@ export default function Home() {
                     </select>
                 </div>
 
-                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-teal-50 border border-teal-100 rounded-lg shadow-inner">
+                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-teal-50 border border-teal-100 rounded-lg shadow-inner">
                     <label htmlFor="paletaCores" className="text-[10px] font-bold text-teal-800 uppercase"><i className="fas fa-palette mr-1"></i> Paleta de Cores:</label>
-                    <select id="paletaCores" className="input-style text-xs font-medium text-slate-700 bg-white border-teal-200">
+                    <select 
+                      id="paletaCores" 
+                      value={paletaSelecionada}
+                      onChange={(e) => setPaletaSelecionada(e.target.value)}
+                      className="input-style text-xs font-medium text-slate-700 bg-white border-teal-200"
+                    >
                         <option value="auto">🎨 Automático (A IA escolhe)</option>
                         <option value="azul">🔵 Azul Meia-Noite (Confiança & Corporativo)</option>
                         <option value="verde">🟢 Verde Esmeralda (Saúde & Prosperidade)</option>
@@ -520,6 +561,29 @@ export default function Home() {
                         <option value="roxo">🟣 Roxo Real (Luxo & Exclusividade)</option>
                         <option value="dark">⚫ Preto & Dourado (Alto Padrão & Mentorias)</option>
                         <option value="cinza">⚪ Cinza & Grafite (Minimalista & Tech)</option>
+                        <option value="vermelho">🔴 Vermelho Escuro & Vinho (Poder & Ação)</option>
+                        <option value="laranja">🔥 Laranja & Âmbar (Energia & Urgência)</option>
+                        <option value="custom">🖌️ Personalizada (Digitar Minhas Cores)</option>
+                    </select>
+                    
+                    {/* CAMPO DE DIGITAÇÃO PARA PALETA CUSTOMIZADA QUE APARECE SÓ QUANDO SELECIONADO */}
+                    {paletaSelecionada === 'custom' && (
+                      <input 
+                        type="text" 
+                        id="paletaCustomizadaInput" 
+                        placeholder="Ex: Fundo #121212, Texto Branco, Botões #FF0055" 
+                        className="input-style text-xs mt-2 border-teal-400 focus:border-teal-500 shadow-sm"
+                      />
+                    )}
+                </div>
+
+                {/* NOVO MENU: LAYOUT DA PRIMEIRA DOBRA (HERO) */}
+                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-amber-50 border border-amber-100 rounded-lg shadow-inner">
+                    <label htmlFor="layoutCabecalho" className="text-[10px] font-bold text-amber-800 uppercase"><i className="fas fa-heading mr-1"></i> Layout do Topo (Hero):</label>
+                    <select id="layoutCabecalho" className="input-style text-xs font-medium text-slate-700 bg-white border-amber-200">
+                        <option value="auto">🤖 Automático (A IA escolhe)</option>
+                        <option value="centro">🎯 Foco na Headline (Texto Centralizado)</option>
+                        <option value="lado_a_lado">🖼️ Headline à Esquerda + Imagem à Direita</option>
                     </select>
                 </div>
 
@@ -606,7 +670,12 @@ export default function Home() {
                         <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"><i className="fas fa-globe"></i> Publicar</button>
                     )}
 
-                    <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300">Copiar</button>
+                    {/* NOVO BOTÃO DE BAIXAR HTML */}
+                    <button onClick={() => (window as any).baixarHtml()} className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border border-indigo-300 text-xs font-semibold py-1.5 px-3 rounded transition">
+                      <i className="fas fa-download"></i> Baixar HTML
+                    </button>
+
+                    <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300 transition">Copiar</button>
                     
                     <button onClick={handleLogout} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold py-1.5 px-3 rounded transition ml-2">
                       <i className="fas fa-sign-out-alt"></i> Sair
