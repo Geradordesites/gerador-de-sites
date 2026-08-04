@@ -15,7 +15,6 @@ export default function Home() {
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   const [corSelecionada, setCorSelecionada] = useState('auto');
   
-  // ESTADOS DE IMAGENS E HISTÓRICO DE CÓDIGO (UNDO ROBUSTO)
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
@@ -73,7 +72,6 @@ export default function Home() {
     (window as any).showNotification(`Modo de Edição ativado: ${site.titulo}`, 'success');
   };
 
-  // GERENCIAMENTO DE UPLOAD DE IMAGENS ROBUSTO (CLIQUE, DRAG&DROP E PASTE)
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
@@ -95,7 +93,6 @@ export default function Home() {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // CAPTURA GLOBAL DE PASTE (CTRL+V) PARA IMAGENS
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -157,7 +154,7 @@ export default function Home() {
         }
         if (prevEl) prevEl.srcdoc = data.html;
         
-        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html);
+        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true); // true indica que é gerado pela IA
         (window as any).showNotification('Sucesso!', 'success');
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
@@ -292,7 +289,8 @@ export default function Home() {
       }
     };
 
-    (window as any).mapearElementosGerados = (html: string) => {
+    // MAPEAMENTO INTELIGENTE QUE RESPEITA O CÓDIGO EXTERNO OU APLICA PADRÃO DA IA
+    (window as any).mapearElementosGerados = (html: string, isFromAI = false) => {
       const doc = domParser.parseFromString(html, 'text/html');
       const images = doc.querySelectorAll('img');
       const links = Array.from(doc.querySelectorAll('a')).filter(a => a.hasAttribute('href') && !a.getAttribute('href')!.startsWith('javascript:'));
@@ -310,13 +308,19 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
+          // Se for gerado pela IA, aplicamos 70% padrão para organização. Se for código colado de fora, RESPEITAMOS 100% o tamanho original dele!
           if (!currentScale) {
-              currentScale = '70';
-              img.setAttribute('data-scale', '70');
-              img.style.width = '70%';
-              img.style.height = 'auto';
-              img.style.objectFit = 'contain';
-              htmlModificado = true;
+              if (isFromAI) {
+                  currentScale = '70';
+                  img.setAttribute('data-scale', '70');
+                  img.style.width = '70%';
+                  img.style.height = 'auto';
+                  img.style.objectFit = 'contain';
+                  htmlModificado = true;
+              } else {
+                  currentScale = '100';
+                  img.setAttribute('data-scale', '100');
+              }
           }
 
           const div = document.createElement('div');
@@ -430,7 +434,6 @@ export default function Home() {
       (window as any).showNotification('Download iniciado com sucesso!', 'success');
     };
 
-    // ALTERNÂNCIA DE ABAS COM DETECÇÃO E HISTÓRICO AUTOMÁTICO DE CÓDIGO
     (window as any).mudarSeparador = (aba: string) => {
       setAbaAtiva(aba as any);
       const btnP = document.getElementById('tabPreview'), btnC = document.getElementById('tabCode');
@@ -447,7 +450,7 @@ export default function Home() {
           }
           boxP.setAttribute('srcdoc', codEl.value);
           if ((window as any).mapearElementosGerados) {
-            (window as any).mapearElementosGerados(codEl.value);
+            (window as any).mapearElementosGerados(codEl.value, false); // false = código externo/manual, preserva formatação original
           }
         }
         btnP.className = "h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center";
@@ -507,7 +510,6 @@ export default function Home() {
 
   }, [siteEditando]); 
 
-  // FUNÇÃO DE DESFAZER CÓDIGO (UNDO ROBUSTO)
   const desfazerCodigo = () => {
     if (historicoCodigo.length === 0) {
       (window as any).showNotification('Nenhum histórico anterior para retornar.', 'error');
@@ -520,7 +522,7 @@ export default function Home() {
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) codEl.value = ultimoEstado;
     if (prevEl) prevEl.srcdoc = ultimoEstado;
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado);
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado, false);
     
     (window as any).showNotification('Retornado ao código anterior com sucesso!', 'success');
   };
