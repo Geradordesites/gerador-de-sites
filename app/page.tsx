@@ -13,13 +13,30 @@ export default function Home() {
   const SITES_POR_PAGINA = 6; 
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
-  
-  const [incluirMenu, setIncluirMenu] = useState(false);
+
+  // CATRACA DE SEGURANÇA: VERIFICA SE ESTÁ LOGADO
+  useEffect(() => {
+    const verificarSessao = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/login'; // Expulsa para o login se não tiver sessão
+      }
+    };
+    verificarSessao();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
-    const userId = '00000000-0000-0000-0000-000000000000';
-    const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    // AGORA BUSCA APENAS OS SITES DO USUÁRIO LOGADO!
+    const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
     if (!error) { 
       setListaSites(data || []); 
       setPaginaAtual(1); 
@@ -243,7 +260,6 @@ export default function Home() {
         temLinks = true; document.getElementById('linkSection')!.style.display = 'block';
         links.forEach((a, index) => {
           let label = a.innerText.trim() || a.getAttribute('aria-label') || a.title || `Link ${index + 1}`;
-          
           let isBuyButton = /comprar|adquirir|quero|checkout|garantir|acessar/i.test(label);
           let badgeCompra = isBuyButton ? `<span class="bg-green-100 text-green-700 px-1 py-0.5 rounded text-[8px] ml-2 border border-green-200 shadow-sm"><i class="fas fa-shopping-cart mr-1"></i>BOTÃO DE COMPRA</span>` : '';
 
@@ -294,7 +310,6 @@ export default function Home() {
       }
     };
 
-    // FUNÇÃO QUE NOTIFICA E SALVA
     (window as any).dispararAtualizacao = () => {
       (window as any).aplicarNovosElementos();
       (window as any).showNotification('Elementos atualizados no painel visual!', 'success');
@@ -348,7 +363,11 @@ export default function Home() {
       let slug = titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       if (!slug) slug = nanoid(6); 
 
-      const { error } = await supabase.from('sites_gerados').insert([{ user_id: '00000000-0000-0000-0000-000000000000', slug, titulo, html_content: htmlContent }]);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { alert('Sessão expirada. Faça login novamente.'); window.location.href = '/login'; return; }
+
+      // INSERE USANDO O ID DO USUÁRIO LOGADO
+      const { error } = await supabase.from('sites_gerados').insert([{ user_id: session.user.id, slug, titulo, html_content: htmlContent }]);
 
       if (error) { (window as any).showNotification('Erro: Link já em uso.', 'error'); return; }
 
@@ -455,11 +474,9 @@ export default function Home() {
                         <div id="linkInputsContainer" className="space-y-3 max-h-40 overflow-y-auto pr-2"></div>
                     </div>
                     
-                    {/* O BOTÃO QUE ESTAVA FALTANDO VOLTOU AQUI! */}
                     <button onClick={() => (window as any).dispararAtualizacao()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 rounded mt-4 transition-colors">
                         <i className="fas fa-sync-alt mr-2"></i> Atualizar Elementos no Site
                     </button>
-
                 </div>
             </div>
 
@@ -490,6 +507,11 @@ export default function Home() {
                     )}
 
                     <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300">Copiar</button>
+                    
+                    {/* BOTÃO SAIR / LOGOUT ADICIONADO AQUI */}
+                    <button onClick={handleLogout} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold py-1.5 px-3 rounded transition ml-2">
+                      <i className="fas fa-sign-out-alt"></i> Sair
+                    </button>
                 </div>
             </div>
             
