@@ -31,7 +31,12 @@ export async function POST(req: Request) {
 
 5. CONVERSÃO DIRETA E SUPORTE (PROIBIDO FORMULÁRIOS):
 - É EXPRESSAMENTE PROIBIDO criar formulários de contato (<form>, <input type="text">, <textarea>).
-- Para qualquer seção de contato, suporte, orçamento ou dúvidas, utilize APENAS botões estilizados direcionando para o WhatsApp (Ex: <a href="https://wa.me/SEUNUMERO">Fale conosco no WhatsApp</a>).
+- Para qualquer seção de contato, suporte, orçamento ou dúvidas, utilize APENAS botões estilizados direcionando para o WhatsApp.
+
+6. IMAGENS AUTOMÁTICAS REAIS (LOREMFLICKR):
+- Se o usuário NÃO enviar imagens próprias nas referências, você DEVE preencher as tags <img> usando a API LoremFlickr.
+- Formato EXATO e OBRIGATÓRIO: https://loremflickr.com/1200/800/palavra1,palavra2 (use palavras-chave em inglês baseadas no nicho).
+- REGRA ABSOLUTA: Foque EXCLUSIVAMENTE em fotografias reais de pessoas e cenários reais. É ESTRITAMENTE PROIBIDO o uso de desenhos, ilustrações, gráficos animados, tecnologia irreal ou ficção científica nas palavras-chave geradas ou nos placeholders.
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;

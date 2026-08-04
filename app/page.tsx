@@ -19,7 +19,7 @@ export default function Home() {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        window.location.href = '/login'; // Expulsa para o login se não tiver sessão
+        window.location.href = '/login'; 
       }
     };
     verificarSessao();
@@ -35,7 +35,6 @@ export default function Home() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     
-    // AGORA BUSCA APENAS OS SITES DO USUÁRIO LOGADO!
     const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
     if (!error) { 
       setListaSites(data || []); 
@@ -172,6 +171,16 @@ export default function Home() {
       }
     }
 
+    // MEGA-PROMPTS DE ESTILOS PROFISSIONAIS
+    const getMegaPromptEstilo = () => {
+      const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'premium';
+      if (estilo === 'premium') return "DIRETRIZ VISUAL OBRIGATÓRIA: Aplique um design sofisticado e de alto valor (Premium). Utilize tipografia serifada elegante para os títulos (ex: Playfair Display) e sans-serif limpa para leitura (ex: Inter). Estruture o layout aplicando um espaçamento exato de uma linha em branco entre os títulos dos tópicos e o início dos parágrafos subsequentes para garantir uma leitura fluida e elegante. Cores base: tons profundos com detalhes em dourado ou cores de destaque refinadas.";
+      if (estilo === 'terapia') return "DIRETRIZ VISUAL OBRIGATÓRIA: Crie um layout minimalista, transmitindo calma e autoridade. Use muito espaço em branco (white space), paletas em tons pastéis (verde sálvia, azul sereno ou areia). Os cantos das imagens e botões devem ser levemente arredondados. Mantenha a estrutura de texto limpa, exigindo um espaço de uma única linha separando os títulos principais dos parágrafos de texto.";
+      if (estilo === 'agressivo') return "DIRETRIZ VISUAL OBRIGATÓRIA: Layout de altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e botões em cores neon/vibrantes (verde limão, amarelo ou laranja). Estrutura de leitura em blocos curtos, respeitando a regra estrita de uma linha de espaço entre títulos de tópicos e parágrafos. Destaque máximo para a oferta e os botões de compra.";
+      if (estilo === 'corporativo') return "DIRETRIZ VISUAL OBRIGATÓRIA: Design corporativo, limpo e direto ao ponto. Foco em clareza, profissionalismo e confiança. Tons de azul marinho, cinza e branco. Tipografia moderna e legível. Elementos bem alinhados, cantos retos ou levemente arredondados, e espaçamentos consistentes (1 linha de espaço entre títulos e parágrafos).";
+      return "";
+    };
+
     (window as any).gerarSite = () => {
       if (uploadedImagesData.length === 0) { (window as any).showNotification('Anexe referências.', 'error'); return; }
       
@@ -181,7 +190,9 @@ export default function Home() {
       const modo = (document.getElementById('modoClonagem') as HTMLSelectElement)?.value || 'exato';
       const diretrizModo = modo === 'exato' ? "Cópia exata." : "Focado em conversão.";
       
-      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}`;
+      const megaPrompt = getMegaPromptEstilo();
+      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. ${megaPrompt}`;
+      
       let promptParts: any[] = [{ text: "Crie a página baseada nestas imagens:" }];
       uploadedImagesData.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
@@ -194,7 +205,9 @@ export default function Home() {
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
 
-      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}`;
+      const megaPrompt = getMegaPromptEstilo();
+      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. ${megaPrompt}`;
+      
       chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
 
@@ -366,7 +379,6 @@ export default function Home() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { alert('Sessão expirada. Faça login novamente.'); window.location.href = '/login'; return; }
 
-      // INSERE USANDO O ID DO USUÁRIO LOGADO
       const { error } = await supabase.from('sites_gerados').insert([{ user_id: session.user.id, slug, titulo, html_content: htmlContent }]);
 
       if (error) { (window as any).showNotification('Erro: Link já em uso.', 'error'); return; }
@@ -414,11 +426,23 @@ export default function Home() {
             <div className="p-5 border-b border-gray-100 bg-gray-50 pb-0">
                 <h1 className="text-xl font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Visual Pro</h1>
                 <p className="text-xs text-gray-500 mt-1 mb-4">Engenharia reversa e Copywriting IA em alta performance.</p>
+                
                 <div className="flex border-b border-gray-200 mb-4">
                     <button id="btnTabVisual" onClick={() => (window as any).mudarModoApp('visual')} className="flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50">Modo Visual</button>
                     <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
                 </div>
                 
+                {/* MENU NOVO DE ESTILO E NICHO */}
+                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-indigo-50 border border-indigo-100 rounded-lg shadow-inner">
+                    <label htmlFor="nichoEstilo" className="text-[10px] font-bold text-indigo-800 uppercase"><i className="fas fa-paint-roller mr-1"></i> Estilo Visual do Site:</label>
+                    <select id="nichoEstilo" className="input-style text-xs font-medium text-slate-700 bg-white border-indigo-200">
+                        <option value="premium">💎 Infoproduto Premium (Elegante)</option>
+                        <option value="terapia">🌿 Saúde e Terapia (Calmo)</option>
+                        <option value="agressivo">⚡ Lançamento (Dark Mode/Urgência)</option>
+                        <option value="corporativo">🏢 Corporativo (Limpo & Direto)</option>
+                    </select>
+                </div>
+
                 <div className="flex items-center gap-2 mb-3 px-1 py-2 bg-blue-50 border border-blue-100 rounded-lg">
                     <input type="checkbox" id="checkComMenu" defaultChecked={false} className="w-4 h-4 ml-2 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" />
                     <label htmlFor="checkComMenu" className="text-[11px] font-bold text-blue-800 cursor-pointer">CRIAR SITE COM MENU SUPERIOR?</label>
@@ -453,10 +477,6 @@ export default function Home() {
                         <h3 className="label-style"><i className="fas fa-file-lines"></i>Conteúdo ou Prompt (Máx 5000)</h3>
                         <p className="text-[10px] text-gray-500 mb-3">Cole o texto base do seu produto OU digite um comando direto para a IA construir o site.</p>
                         <textarea id="productContent" maxLength={5000} rows={7} className="input-style resize-none text-xs" placeholder="Ex: Crie uma página de vendas para um e-book sobre..."></textarea>
-                    </div>
-                    <div className="card p-4 mb-4">
-                        <h3 className="label-style"><i className="fas fa-user-tie"></i>Descrição do Autor</h3>
-                        <textarea id="authorBio" rows={3} className="input-style resize-none text-xs" placeholder="Ex: Especialista em marketing digital..."></textarea>
                     </div>
                     <button onClick={() => (window as any).gerarSiteComCopy()} className="primary-btn w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700">
                         <i className="fas fa-pen-nib mr-2"></i> Gerar Página de Vendas
@@ -508,7 +528,6 @@ export default function Home() {
 
                     <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300">Copiar</button>
                     
-                    {/* BOTÃO SAIR / LOGOUT ADICIONADO AQUI */}
                     <button onClick={handleLogout} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold py-1.5 px-3 rounded transition ml-2">
                       <i className="fas fa-sign-out-alt"></i> Sair
                     </button>
