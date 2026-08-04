@@ -8,6 +8,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { systemInstruction, promptParts } = body;
 
+    // CAPTURA O ANO EXATO DO SERVIDOR AUTOMATICAMENTE
+    const anoAtual = new Date().getFullYear();
+
     const regrasObrigatorias = `
 === REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
 1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
@@ -22,6 +25,7 @@ export async function POST(req: Request) {
 
 3. COMPLIANCE E RODAPÉ PROFISSIONAL (SANFONAS INTERLIGADAS):
 - O rodapé DEVE conter links REAIS (ex: <a href="#termos" class="legal-link">Termos</a>, <a href="#privacidade" class="legal-link">Privacidade</a>).
+- COPYRIGHT DINÂMICO: O texto de Copyright deve obrigatoriamente exibir o ano atual (${anoAtual}). Exemplo: "© ${anoAtual} Todos os direitos reservados."
 - Abaixo dos links, crie DIVs compactas para o conteúdo (id="termos", id="privacidade") inicialmente ocultas (hidden).
 - Insira textos jurídicos profissionais, densos e extensos (LGPD, Isenção de Responsabilidade, Cookies).
 - ADICIONE OBRIGATORIAMENTE ESTE SCRIPT JS NO FINAL DO BODY para controlar as sanfonas:
@@ -46,6 +50,11 @@ export async function POST(req: Request) {
 4. NAVEGAÇÃO SILENCIOSA E CONVERSÃO:
 - Sem hashtag na URL para menus superiores. Use JS para 'event.preventDefault()' e 'scrollIntoView'.
 - PROIBIDO formulários (<form>). Use apenas botões de WhatsApp elegantes.
+
+5. HARMONIA DE CORES:
+- Leia atentamente a "PALETA DE CORES OBRIGATÓRIA" enviada na instrução.
+- Aplique essas cores usando classes avançadas do Tailwind CSS (ex: bg-slate-900, text-emerald-600, border-amber-500).
+- Garanta contraste perfeito e elegante entre fundo e textos.
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
@@ -90,6 +99,33 @@ export async function POST(req: Request) {
     const doctypeIndex = htmlCode.toLowerCase().indexOf('<!doctype html>');
     if (doctypeIndex !== -1) htmlCode = htmlCode.substring(doctypeIndex);
     htmlCode = htmlCode.replace(/```html/i, '').replace(/```/g, '').trim();
+
+    // =========================================================================
+    // 🔴 MÁGICA: INTERCEPTADOR DA API OFICIAL DO UNSPLASH
+    // =========================================================================
+    if (process.env.UNSPLASH_API_KEY) {
+      const regex = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
+      let match;
+      const urlsToReplace = [];
+
+      while ((match = regex.exec(htmlCode)) !== null) {
+        urlsToReplace.push({ fullMatch: match[0], keyword: match[1] });
+      }
+
+      for (const item of urlsToReplace) {
+        try {
+           const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${item.keyword}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
+           const uData = await unsplashRes.json();
+           if (uData.results && uData.results.length > 0) {
+             const randomIndex = Math.floor(Math.random() * uData.results.length);
+             const bestImg = uData.results[randomIndex].urls.regular;
+             htmlCode = htmlCode.replace(item.fullMatch, bestImg); 
+           }
+        } catch(e) {
+           console.error("Erro na API Unsplash:", e);
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, html: htmlCode });
 

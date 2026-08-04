@@ -14,6 +14,7 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
+  // CATRACA DE SEGURANÇA: VERIFICA SE ESTÁ LOGADO
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -32,6 +33,7 @@ export default function Home() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     
+    // AGORA BUSCA APENAS OS SITES DO USUÁRIO LOGADO!
     const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
     if (!error) { 
       setListaSites(data || []); 
@@ -171,13 +173,25 @@ export default function Home() {
     const getMegaPromptEstilo = () => {
       const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
       if (estilo === 'nenhum') return "Crie um design profissional e equilibrado, focado em alta conversão e legibilidade impecável.";
-      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado e de alto valor (Premium). Tipografia serifada elegante (ex: Playfair Display). Cores base: tons profundos com detalhes refinados.";
-      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, transmitindo calma e autoridade. Muito espaço em branco, paletas pastéis (verde sálvia, azul sereno ou areia).";
-      if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e botões em cores vibrantes (verde limão/amarelo).";
-      if (estilo === 'corporativo') return "DIRETRIZ VISUAL: Corporativo, limpo e direto ao ponto. Tons de azul marinho, cinza e branco. Tipografia moderna e elementos bem alinhados.";
-      if (estilo === 'consultor') return "DIRETRIZ VISUAL: Elegante e focado em autoridade pessoal. Tons escuros contrastando com branco e dourado escuro/bege. Elementos imponentes.";
-      if (estilo === 'feminino') return "DIRETRIZ VISUAL: Sofisticado, suave e luxuoso. Paleta em tons de nude, rosê, terracota e branco. Fontes delicadas e imagens inspiradoras.";
+      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado e de alto valor (Premium). Tipografia serifada elegante (ex: Playfair Display). Textos com muito respiro.";
+      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, transmitindo calma e autoridade. Muito espaço em branco, bordas arredondadas e suavidade.";
+      if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e estrutura em blocos de impacto.";
+      if (estilo === 'corporativo') return "DIRETRIZ VISUAL: Corporativo, limpo e direto ao ponto. Tipografia moderna e elementos alinhados rigidamente para transmitir segurança e escala.";
+      if (estilo === 'consultor') return "DIRETRIZ VISUAL: Elegante e focado em autoridade pessoal. Elementos imponentes, fotos de alta qualidade ocupando boas seções e tipografia marcante.";
+      if (estilo === 'feminino') return "DIRETRIZ VISUAL: Sofisticado, suave e luxuoso. Fontes delicadas (script para destaques e sans-serif fina para texto) e imagens super iluminadas.";
       return "";
+    };
+
+    // NOVA FUNÇÃO: INTELIGÊNCIA DE CORES
+    const getMegaPromptCores = () => {
+      const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
+      if (cor === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite (ex: slate-900 ou blue-950) como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado (amber-500) para botões.";
+      if (cor === 'verde') return "PALETA DE CORES OBRIGATÓRIA: Use Verde Esmeralda ou Musgo (emerald-800 ou teal-900) como cor principal, fundo claro (off-white ou bege) e botões de conversão em verde contrastante (emerald-500).";
+      if (cor === 'terracota') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Terracota, Nude e Areia (orange-900, stone-100, rose-50). Um design quente, elegante e acolhedor, com botões em tons terrosos médios.";
+      if (cor === 'roxo') return "PALETA DE CORES OBRIGATÓRIA: Use Roxo Real ou Violeta Escuro (purple-900 ou fuchsia-950), com fundos brancos ou cinza super claro, e detalhes em dourado ou lilás claro.";
+      if (cor === 'dark') return "PALETA DE CORES OBRIGATÓRIA: Fundo Preto ou Cinza muito escuro (Dark Mode: zinc-950 ou black). Textos off-white, com detalhes e botões de compra em Dourado (yellow-500 ou amber-400) vibrante.";
+      if (cor === 'cinza') return "PALETA DE CORES OBRIGATÓRIA: Monocromático elegante. Escala de cinza (slate-900 a slate-50), fundos brancos, textos escuros e botões de conversão em grafite ou preto sólido.";
+      return "PALETA DE CORES: Escolha uma paleta de cores altamente profissional e harmônica que combine perfeitamente com o contexto do site. Use as cores do Tailwind.";
     };
 
     (window as any).gerarSite = () => {
@@ -190,7 +204,8 @@ export default function Home() {
       const diretrizModo = modo === 'exato' ? "Cópia exata." : "Focado em conversão.";
       
       const megaPrompt = getMegaPromptEstilo();
-      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. ${megaPrompt}`;
+      const megaCores = getMegaPromptCores();
+      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPrompt} \n${megaCores}`;
       
       let promptParts: any[] = [{ text: "Crie a página baseada nestas imagens:" }];
       uploadedImagesData.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
@@ -205,7 +220,8 @@ export default function Home() {
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
 
       const megaPrompt = getMegaPromptEstilo();
-      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. ${megaPrompt}`;
+      const megaCores = getMegaPromptCores();
+      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. \n${megaPrompt} \n${megaCores}`;
       
       chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
@@ -228,15 +244,27 @@ export default function Home() {
       reader.readAsDataURL(file);
     };
 
-    // FUNÇÃO MÁGICA: BUSCAR NOVA IMAGEM ALEATÓRIA DO UNSPLASH
-    (window as any).gerarNovaImagem = (index: number, palavraChave: string) => {
+    // NOVA FUNÇÃO: BUSCA IMAGEM PREMIUM NA API OFICIAL DO UNSPLASH
+    (window as any).gerarNovaImagem = async (index: number, palavraChave: string) => {
       const input = document.getElementById(`img_replace_${index}`) as HTMLInputElement;
-      if (input) {
-         // Cria uma assinatura única para forçar o navegador a baixar uma nova foto diferente
-         const termo = encodeURIComponent(palavraChave || 'professional');
-         input.value = `https://images.unsplash.com/random/1200x800/?${termo}&sig=${Date.now()}`;
+      if (!input) return;
+
+      const iconBtn = input.nextElementSibling?.querySelector('i');
+      if (iconBtn) iconBtn.classList.add('fa-spin'); // Faz o ícone rodar enquanto busca
+
+      try {
+         const termo = palavraChave || 'professional';
+         // Chama a nossa nova rota segura do Unsplash
+         const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termo)}`);
+         const data = await res.json();
+
+         input.value = data.url; // Aplica a nova imagem de alta qualidade
          (window as any).aplicarNovosElementos();
-         (window as any).showNotification('Nova imagem carregada!', 'success');
+         (window as any).showNotification('Imagem Premium carregada!', 'success');
+      } catch (e) {
+         (window as any).showNotification('Erro ao buscar imagem.', 'error');
+      } finally {
+         if (iconBtn) iconBtn.classList.remove('fa-spin');
       }
     };
 
@@ -448,7 +476,7 @@ export default function Home() {
                     <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
                 </div>
                 
-                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-indigo-50 border border-indigo-100 rounded-lg shadow-inner">
+                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-indigo-50 border border-indigo-100 rounded-lg shadow-inner">
                     <label htmlFor="nichoEstilo" className="text-[10px] font-bold text-indigo-800 uppercase"><i className="fas fa-paint-roller mr-1"></i> Estilo Visual do Site:</label>
                     <select id="nichoEstilo" className="input-style text-xs font-medium text-slate-700 bg-white border-indigo-200">
                         <option value="nenhum">⚪ Nenhum (Layout Padrão Limpo)</option>
@@ -458,6 +486,19 @@ export default function Home() {
                         <option value="corporativo">🏢 Corporativo (Limpo & Direto)</option>
                         <option value="consultor">💼 Mentor/Consultor (Autoridade)</option>
                         <option value="feminino">✨ Nicho Feminino (Suave & Luxo)</option>
+                    </select>
+                </div>
+
+                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-teal-50 border border-teal-100 rounded-lg shadow-inner">
+                    <label htmlFor="paletaCores" className="text-[10px] font-bold text-teal-800 uppercase"><i className="fas fa-palette mr-1"></i> Paleta de Cores:</label>
+                    <select id="paletaCores" className="input-style text-xs font-medium text-slate-700 bg-white border-teal-200">
+                        <option value="auto">🎨 Automático (A IA escolhe)</option>
+                        <option value="azul">🔵 Azul Meia-Noite (Confiança & Corporativo)</option>
+                        <option value="verde">🟢 Verde Esmeralda (Saúde & Prosperidade)</option>
+                        <option value="terracota">🟠 Terracota & Nude (Elegante & Acolhedor)</option>
+                        <option value="roxo">🟣 Roxo Real (Luxo & Exclusividade)</option>
+                        <option value="dark">⚫ Preto & Dourado (Alto Padrão & Mentorias)</option>
+                        <option value="cinza">⚪ Cinza & Grafite (Minimalista & Tech)</option>
                     </select>
                 </div>
 
