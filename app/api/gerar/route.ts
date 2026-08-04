@@ -15,19 +15,19 @@ export async function POST(req: Request) {
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 - Botões de compra DEVEM estar centralizados no mobile. A 1ª dobra deve ter Headline -> Imagem -> Botão.
 
-2. NAVEGAÇÃO E MENUS (SE SOLICITADO):
-- Se houver menu superior, todos os links DEVEM obrigatoriamente usar âncoras para IDs reais da página (Ex: <a href="#beneficios">).
-- Crie as seções correspondentes com os IDs corretos (Ex: <section id="beneficios">).
-- Inclua um script Javascript simples para fechar o menu mobile ao clicar em um link.
+2. NAVEGAÇÃO SILENCIOSA (SEM HASHTAG NA URL):
+- Se houver menu superior, a navegação NÃO DEVE alterar a URL (proibido aparecer #secao no link do navegador).
+- Use Javascript puro para interceptar o clique no menu, usar 'event.preventDefault()', e rolar suavemente até a seção correspondente usando 'document.querySelector(id).scrollIntoView({ behavior: "smooth" })'.
+- Inclua o fechamento automático do menu mobile após o clique.
 
 3. COMPLIANCE PARA FACEBOOK/GOOGLE ADS (RODAPÉ):
 - O rodapé DEVE conter seções de "Política de Privacidade", "Termos de Uso" e "Política de Cookies".
-- Para evitar bloqueios de anúncios, NÃO coloque links vazios. Utilize a tag HTML <details> e <summary> para criar uma sanfona expansível.
-- DENTRO de cada <details>, escreva PELO MENOS 3 parágrafos profissionais e longos contendo textos padrão sobre LGPD, Isenção de Responsabilidade (Disclaimer de resultados) e uso de dados por terceiros. Seja exaustivo e profissional nestes textos para blindar a página.
+- Utilize a tag HTML <details> e <summary> para criar uma sanfona expansível.
+- DENTRO de cada <details>, escreva PELO MENOS 3 parágrafos profissionais e longos contendo textos padrão sobre LGPD, Isenção de Responsabilidade e uso de dados. Seja exaustivo nestes textos para blindar a página.
 
 4. IMAGENS E ANTI-FOUC:
 - Imagens acima da dobra não devem ter lazy loading. Abaixo da dobra DEVEM ter loading="lazy".
-- Adicione <style> após o <title> com o fundo do site (html, body { background-color: [COR]; }) para evitar tela branca.
+- Adicione <style> após o <title> com o fundo do site para evitar tela branca.
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;

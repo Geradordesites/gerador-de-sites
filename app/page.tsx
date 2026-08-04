@@ -14,7 +14,6 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   
-  // NOVO ESTADO: Controle do Menu
   const [incluirMenu, setIncluirMenu] = useState(false);
 
   const carregarMeusSites = async () => {
@@ -158,7 +157,7 @@ export default function Home() {
 
     (window as any).gerarSite = () => {
       if (uploadedImagesData.length === 0) { (window as any).showNotification('Anexe referências.', 'error'); return; }
-      // PEGA O ESTADO DO CHECKBOX PELO DOM
+      
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
       
@@ -215,7 +214,7 @@ export default function Home() {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
         images.forEach((img, index) => {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
-          let currentScale = img.getAttribute('data-scale') || '100'; // NOVO: Leitura da escala
+          let currentScale = img.getAttribute('data-scale') || '100'; 
           const div = document.createElement('div');
           
           div.innerHTML = `
@@ -230,7 +229,6 @@ export default function Home() {
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
                 </label>
             </div>
-            {/* CONTROLE DE TAMANHO DA IMAGEM SEM DISTORCER */}
             <div class="flex items-center gap-2 mt-2 bg-slate-50 p-1.5 rounded border border-slate-200 mb-4">
                 <span class="text-[9px] font-bold text-slate-500 w-12">Tamanho:</span>
                 <input type="range" id="img_scale_${index}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${index}').innerText = this.value + '%'; window.aplicarNovosElementos()">
@@ -246,7 +244,6 @@ export default function Home() {
         links.forEach((a, index) => {
           let label = a.innerText.trim() || a.getAttribute('aria-label') || a.title || `Link ${index + 1}`;
           
-          // NOVO: DESTAQUE PARA BOTÃO DE COMPRA
           let isBuyButton = /comprar|adquirir|quero|checkout|garantir|acessar/i.test(label);
           let badgeCompra = isBuyButton ? `<span class="bg-green-100 text-green-700 px-1 py-0.5 rounded text-[8px] ml-2 border border-green-200 shadow-sm"><i class="fas fa-shopping-cart mr-1"></i>BOTÃO DE COMPRA</span>` : '';
 
@@ -273,12 +270,11 @@ export default function Home() {
         
         if (inpUrl && inpUrl.value && inpUrl.value !== img.src) { img.src = inpUrl.value; alterou = true; }
         
-        // NOVO: APLICAÇÃO DO TAMANHO DA IMAGEM
         if (inpScale) {
             img.setAttribute('data-scale', inpScale.value);
             if (inpScale.value !== '100') {
                 img.style.width = `${inpScale.value}%`;
-                img.style.height = 'auto'; // Mantém a proporção perfeita!
+                img.style.height = 'auto'; 
                 img.style.objectFit = 'contain';
             } else {
                 img.style.width = ''; img.style.height = ''; img.style.objectFit = '';
@@ -296,6 +292,12 @@ export default function Home() {
         const novo = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
         codEl.value = novo; prevEl.srcdoc = novo;
       }
+    };
+
+    // FUNÇÃO QUE NOTIFICA E SALVA
+    (window as any).dispararAtualizacao = () => {
+      (window as any).aplicarNovosElementos();
+      (window as any).showNotification('Elementos atualizados no painel visual!', 'success');
     };
 
     (window as any).mudarSeparador = (aba: string) => {
@@ -398,7 +400,6 @@ export default function Home() {
                     <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
                 </div>
                 
-                {/* OPÇÃO DE LIGAR/DESLIGAR O MENU APARECENDO PARA OS DOIS MODOS */}
                 <div className="flex items-center gap-2 mb-3 px-1 py-2 bg-blue-50 border border-blue-100 rounded-lg">
                     <input type="checkbox" id="checkComMenu" defaultChecked={false} className="w-4 h-4 ml-2 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" />
                     <label htmlFor="checkComMenu" className="text-[11px] font-bold text-blue-800 cursor-pointer">CRIAR SITE COM MENU SUPERIOR?</label>
@@ -453,6 +454,12 @@ export default function Home() {
                         <p className="text-[10px] font-bold text-blue-800 border-b border-blue-200 pb-1 mb-2">LINKS (BOTÕES DE COMPRA)</p>
                         <div id="linkInputsContainer" className="space-y-3 max-h-40 overflow-y-auto pr-2"></div>
                     </div>
+                    
+                    {/* O BOTÃO QUE ESTAVA FALTANDO VOLTOU AQUI! */}
+                    <button onClick={() => (window as any).dispararAtualizacao()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 rounded mt-4 transition-colors">
+                        <i className="fas fa-sync-alt mr-2"></i> Atualizar Elementos no Site
+                    </button>
+
                 </div>
             </div>
 
