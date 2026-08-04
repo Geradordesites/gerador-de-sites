@@ -2,7 +2,7 @@
 
 import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -15,8 +15,10 @@ export default function Home() {
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   const [corSelecionada, setCorSelecionada] = useState('auto');
   
-  // ESTADO REATIVO PARA AS IMAGENS DE REFERÊNCIA
+  // ESTADOS DE IMAGENS E HISTÓRICO DE CÓDIGO (UNDO)
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
+  const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
+  const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -71,7 +73,7 @@ export default function Home() {
     (window as any).showNotification(`Modo de Edição ativado: ${site.titulo}`, 'success');
   };
 
-  // GERENCIAMENTO DE UPLOAD DE IMAGENS (CLIQUE, DRAG&DROP E PASTE)
+  // GERENCIAMENTO DE UPLOAD DE IMAGENS ROBUSTO (CLIQUE, DRAG&DROP E PASTE)
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
@@ -93,6 +95,7 @@ export default function Home() {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  // CAPTURA GLOBAL DE PASTE (CTRL+V) PARA IMAGENS
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -145,8 +148,16 @@ export default function Home() {
 
         const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
         const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-        if (codEl) codEl.value = data.html;
+        
+        if (codEl) {
+          // Salva histórico antes de substituir
+          if (codEl.value) {
+            setHistoricoCodigo(prev => [...prev, codEl.value]);
+          }
+          codEl.value = data.html;
+        }
         if (prevEl) prevEl.srcdoc = data.html;
+        
         if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html);
         (window as any).showNotification('Sucesso!', 'success');
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
@@ -203,7 +214,6 @@ export default function Home() {
       return "PALETA DE CORES: Escolha uma paleta de cores altamente profissional e harmônica que combine perfeitamente com o contexto do site.";
     };
 
-    // EXPOE A FUNÇÃO DE GERAR SITE REPASSANDO AS IMAGENS DO STATE
     (window as any).executarGeracaoSite = (imagesList: any[]) => {
       if (imagesList.length === 0) { 
         (window as any).showNotification('Anexe referências visuais.', 'error'); 
@@ -421,11 +431,23 @@ export default function Home() {
       (window as any).showNotification('Download iniciado com sucesso!', 'success');
     };
 
+    // ALTERNÂNCIA DE ABAS COM SINCRONIZAÇÃO AUTOMÁTICA DO CÓDIGO
     (window as any).mudarSeparador = (aba: string) => {
+      setAbaAtiva(aba as any);
       const btnP = document.getElementById('tabPreview'), btnC = document.getElementById('tabCode');
       const boxP = document.getElementById('previewFrame'), boxC = document.getElementById('codigoContainer');
+      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+      
       if (!btnP || !btnC || !boxP || !boxC) return;
+
       if (aba === 'preview') {
+        // Se indo para o visual, pega o código atualizado do textarea e aplica no iframe
+        if (codEl && codEl.value) {
+          boxP.setAttribute('srcdoc', codEl.value);
+          if ((window as any).mapearElementosGerados) {
+            (window as any).mapearElementosGerados(codEl.value);
+          }
+        }
         btnP.className = "h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center";
         btnC.className = "h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center transition";
         boxP.classList.add('active'); boxC.classList.remove('active');
@@ -482,6 +504,24 @@ export default function Home() {
     };
 
   }, [siteEditando]); 
+
+  // FUNÇÃO DE DESFAZER CÓDIGO (UNDO)
+  const desfazerCodigo = () => {
+    if (historicoCodigo.length === 0) {
+      (window as any).showNotification('Nenhum histórico anterior para retornar.', 'error');
+      return;
+    }
+    const ultimoEstado = historicoCodigo[historicoCodigo.length - 1];
+    setHistoricoCodigo(prev => prev.slice(0, prev.length - 1));
+
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    if (codEl) codEl.value = ultimoEstado;
+    if (prevEl) prevEl.srcdoc = ultimoEstado;
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado);
+    
+    (window as any).showNotification('Retornado ao código anterior com sucesso!', 'success');
+  };
 
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
@@ -593,14 +633,12 @@ export default function Home() {
                     <div className="card p-4 mb-4">
                         <h3 className="label-style"><i className="fas fa-images"></i>Referências Visuais</h3>
                         
-                        {/* ZONA DE UPLOAD REATIVA CORRIGIDA */}
                         <div className="drop-zone" onClick={() => document.getElementById('imageUploadInput')?.click()}>
                             <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                            <p className="text-sm font-medium text-gray-600">Clique ou Cole (Ctrl+V)</p>
+                            <p className="text-sm font-medium text-gray-600">Clique ou Arraste / Cole (Ctrl+V)</p>
                         </div>
                         <input type="file" id="imageUploadInput" multiple accept="image/png, image/jpeg, image/webp" className="hidden" onChange={handleImageUploadInput} />
                         
-                        {/* GRADE DE PRÉ-VISUALIZAÇÃO DAS IMAGENS ANEXADAS */}
                         {uploadedImages.length > 0 && (
                           <div className="grid grid-cols-3 gap-2 mt-4">
                             {uploadedImages.map((imgObj, index) => (
@@ -665,10 +703,16 @@ export default function Home() {
 
         <div className="flex-grow flex flex-col bg-white relative">
             <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
-                <div className="flex h-full">
-                    <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm">Visualização</button>
-                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 font-medium text-sm">Código HTML</button>
+                <div className="flex h-full items-center gap-2">
+                    <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center">Visualização</button>
+                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 font-medium text-sm flex items-center transition">Código HTML</button>
+                    
+                    {/* BOTÃO DE RETORNAR CÓDIGO ANTERIOR (UNDO) */}
+                    <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-semibold py-1 px-2.5 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
+                      <i className="fas fa-undo text-[10px]"></i> Desfazer Código
+                    </button>
                 </div>
+
                 <div className="flex items-center gap-2">
                     <button onClick={carregarMeusSites} className="bg-blue-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow"><i className="fas fa-folder-open"></i> Meus Sites</button>
                     
