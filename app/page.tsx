@@ -481,9 +481,19 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
         return;
       }
 
-      const titulo = prompt('Digite um título para identificar este site:') || 'Landing Page';
+      // 1. Pede o título do site
+      const titulo = prompt('Digite um título para identificar este site (Ex: Finanças):') || 'Landing Page';
+      
+      // 2. Limpa o título para criar um link bonito (tira acentos e espaços viram traço)
+      const slugSugerido = titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      
+      // 3. Deixa você escolher o link exato (O código aleatório não é mais obrigatório!)
+      let slug = prompt('Personalize o link final do seu site (não use espaços):', slugSugerido);
+      
+      // Se você apagar tudo e der OK, ele gera um código de segurança
+      if (!slug) slug = slugSugerido + '-' + nanoid(4); 
+
       const userId = '00000000-0000-0000-0000-000000000000'; 
-      const slug = nanoid(6);
 
       const { error } = await supabase
         .from('sites_gerados')
@@ -498,13 +508,13 @@ Altere APENAS o que foi expressamente pedido pelo utilizador. Mantenha todo o re
 
       if (error) {
         console.error("Erro ao salvar no Supabase:", error);
-        (window as any).showNotification('Erro ao publicar o site: ' + error.message, 'error');
+        (window as any).showNotification('Erro: Este link já está em uso por outro site.', 'error');
         return;
       }
 
       const linkPublico = `${window.location.origin}/s/${slug}`;
       navigator.clipboard.writeText(linkPublico);
-      alert(`Site publicado com sucesso!\n\nLink curto copiado para a área de transferência:\n${linkPublico}`);
+      alert(`Site publicado com sucesso!\n\nLink copiado para a área de transferência:\n${linkPublico}`);
     };
 
   }, []);
