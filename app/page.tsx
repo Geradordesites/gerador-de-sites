@@ -14,7 +14,7 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
-  // NOVO ESTADO: Controle da paleta personalizada
+  // ESTADO DA PALETA PERSONALIZADA
   const [corSelecionada, setCorSelecionada] = useState('auto');
 
   useEffect(() => {
@@ -183,7 +183,6 @@ export default function Home() {
       return "";
     };
 
-    // NOVA FUNÇÃO: MEGA PROMPT DO TOPO DO SITE
     const getMegaPromptHero = () => {
       const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
       if (hero === 'center') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Centralizado. A Headline principal, a Subheadline e o Botão de Compra devem ficar perfeitamente centralizados (text-center) e sozinhos na primeira tela, criando foco total na Copy. Não coloque imagem ao lado da headline.";
@@ -191,7 +190,6 @@ export default function Home() {
       return "ESTRUTURA DO HERO: Crie a primeira dobra do site de acordo com o que julgar mais profissional e otimizado para o nicho.";
     };
 
-    // FUNÇÃO ATUALIZADA: PALETA PERSONALIZADA E MAIS CORES
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
       
@@ -420,7 +418,6 @@ export default function Home() {
       (window as any).showNotification('Elementos atualizados no painel visual!', 'success');
     };
 
-    // NOVA FUNÇÃO: BAIXAR O CÓDIGO HTML
     (window as any).baixarHtmlGerado = () => {
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!codigo) {
@@ -559,13 +556,12 @@ export default function Home() {
                     </select>
                 </div>
 
-                {/* NOVO MENU: ESTRUTURA DO TOPO (HERO) */}
                 <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-amber-50 border border-amber-100 rounded-lg shadow-inner">
                     <label htmlFor="heroLayout" className="text-[10px] font-bold text-amber-800 uppercase"><i className="fas fa-heading mr-1"></i> Estrutura do Topo (Primeira Tela):</label>
                     <select id="heroLayout" className="input-style text-xs font-medium text-slate-700 bg-white border-amber-200">
                         <option value="auto">🤖 Automático (A IA escolhe)</option>
-                        <option value="center">📝 Centralizado (Foco total na Copy / Texto)</option>
-                        <option value="split">🖼️ Dividido (Texto de um lado, Imagem de outro)</option>
+                        <option value="center">📝 Centralizado (Foco total na Copy)</option>
+                        <option value="split">🖼️ Dividido (Texto lado a lado com a Imagem)</option>
                     </select>
                 </div>
 
@@ -585,7 +581,6 @@ export default function Home() {
                         <option value="personalizada">🖌️ Personalizada (Escolha as Cores Exatas)</option>
                     </select>
                     
-                    {/* NOVO: SELETORES DE CORES PERSONALIZADOS APARECEM AQUI */}
                     {corSelecionada === 'personalizada' && (
                       <div className="flex flex-col gap-2 mt-2 p-3 bg-white rounded border border-teal-200 shadow-sm">
                           <div className="flex items-center justify-between">
@@ -689,7 +684,6 @@ export default function Home() {
 
                     <button onClick={() => (window as any).copiarCodigo()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-1.5 px-3 rounded border border-slate-300 transition">Copiar</button>
                     
-                    {/* NOVO: BOTÃO BAIXAR HTML */}
                     <button onClick={() => (window as any).baixarHtmlGerado()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-1.5 px-3 rounded border border-slate-300 transition" title="Baixar arquivo .html">
                       <i className="fas fa-download text-blue-600"></i> Baixar HTML
                     </button>
