@@ -8,8 +8,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { systemInstruction, promptParts } = body;
 
-    // SISTEMA DE CASCATA AUTOMÁTICA: 
-    // Se o Google atualizar ou descontinuar um modelo, o servidor testa o próximo automaticamente sem quebrar o site!
+    // REGRAS TÉCNICAS OBRIGATÓRIAS INJETADAS AUTOMATICAMENTE NA IA
+    const regrasObrigatorias = `
+DIRETRIZES TÉCNICAS E DE NAVEGAÇÃO OBRIGATÓRIAS:
+1. No <head>, adicione obrigatoriamente: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">.
+2. Para TODOS os links de menu ou navegação, utilize estritamente âncoras locais baseadas em IDs com target="_self" (Ex: <a href="#recursos" target="_self">Recursos</a>). NUNCA aponte menus para links externos quebrados ou abas novas que façam o site sumir do preview.
+3. As seções de destino correspondentes devem possuir o ID exato correspondente (Ex: <section id="recursos">).
+4. Adicione CSS inline anti-FOUC no <head> e configure no CSS global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }.
+5. Estrutura mobile na primeira dobra: Headline no topo, imagem principal (com fetchpriority="high" e sem lazy loading) logo abaixo, e o botão de "comprar" centralizado logo em seguida.
+6. Imagens abaixo da dobra devem ter obrigatoriamente loading="lazy" e decoding="async".
+`;
+
+    // Combina a instrução recebida com as regras estritas de performance e menu
+    const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
+
     const modelosParaTentar = [
       process.env.GEMINI_MODEL,
       "gemini-2.5-flash",
@@ -26,7 +38,7 @@ export async function POST(req: Request) {
           model: nomeModelo,
           systemInstruction: {
             role: "system",
-            parts: [{ text: systemInstruction }]
+            parts: [{ text: systemInstructionFinal }]
           }
         });
 
@@ -37,7 +49,6 @@ export async function POST(req: Request) {
           }
         });
         
-        // Se gerou com sucesso, interrompe o loop e usa este resultado
         break;
       } catch (err: any) {
         ultimoErro = err;
@@ -73,15 +84,3 @@ export async function POST(req: Request) {
     );
   }
 }
-const systemInstruction = `Você é um Engenheiro de Performance Web Sênior e Especialista em UI/UX Mobile-First.
-Sua missão é gerar landing pages de alta conversão em UM ÚNICO arquivo HTML usando Tailwind CSS via CDN.
-
-REGRAS OBRIGATÓRIAS DE MOBILE E PERFORMANCE:
-1. No <head>, adicione <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">.
-2. Adicione links de preconnect e dns-prefetch para a CDN do Tailwind e Google Fonts.
-3. Garanta CSS inline anti-FOUC no <head> com o fundo e cor padrão do site.
-4. Para links de menu mobile, utilize sempre âncoras internas limpas baseadas em IDs (ex: <a href="#secao" target="_self">Menu</a>) para que a navegação ocorra de forma fluida na mesma página, sem abrir abas extras ou sumir com o layout.
-5. Estrutura mobile obrigatória na primeira dobra: Headline no topo, imagem principal (com fetchpriority="high" e sem lazy loading) logo em seguida, e o botão de "comprar" centralizado logo abaixo.
-6. Imagens abaixo da dobra devem ter obrigatoriamente loading="lazy" e decoding="async".
-7. Aplique no CSS global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }.
-`;
