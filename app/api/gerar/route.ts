@@ -28,6 +28,10 @@ export async function POST(req: Request) {
 4. IMAGENS E ANTI-FOUC:
 - Imagens acima da dobra não devem ter lazy loading. Abaixo da dobra DEVEM ter loading="lazy".
 - Adicione <style> após o <title> com o fundo do site para evitar tela branca.
+
+5. CONVERSÃO DIRETA E SUPORTE (PROIBIDO FORMULÁRIOS):
+- É EXPRESSAMENTE PROIBIDO criar formulários de contato (<form>, <input type="text">, <textarea>).
+- Para qualquer seção de contato, suporte, orçamento ou dúvidas, utilize APENAS botões estilizados direcionando para o WhatsApp (Ex: <a href="https://wa.me/SEUNUMERO">Fale conosco no WhatsApp</a>).
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
