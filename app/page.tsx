@@ -12,15 +12,16 @@ export default function Home() {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const SITES_POR_PAGINA = 6; 
 
-  // ESTADO PARA GERENCIAR A EDIÇÃO DO SITE
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
+  
+  // NOVO ESTADO: Controle do Menu
+  const [incluirMenu, setIncluirMenu] = useState(false);
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
     const userId = '00000000-0000-0000-0000-000000000000';
     const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-    if (error) { (window as any).showNotification('Erro ao carregar os sites.', 'error'); } 
-    else { 
+    if (!error) { 
       setListaSites(data || []); 
       setPaginaAtual(1); 
     }
@@ -31,20 +32,12 @@ export default function Home() {
   const deletarSite = async (id: string, slug: string) => {
     if (!confirm(`Tem certeza que deseja deletar o site "${slug}"?`)) return;
     const { error } = await supabase.from('sites_gerados').delete().eq('id', id);
-    if (error) alert('Erro ao deletar o site.');
-    else {
+    if (!error) {
       const novaLista = listaSites.filter(site => site.id !== id);
       setListaSites(novaLista);
       const totalPaginasRestantes = Math.ceil(novaLista.length / SITES_POR_PAGINA);
-      if (paginaAtual > totalPaginasRestantes && totalPaginasRestantes > 0) {
-        setPaginaAtual(totalPaginasRestantes);
-      }
-      
-      // Se estava editando o site deletado, cancela a edição
-      if (siteEditando && siteEditando.id === id) {
-        setSiteEditando(null);
-      }
-      
+      if (paginaAtual > totalPaginasRestantes && totalPaginasRestantes > 0) setPaginaAtual(totalPaginasRestantes);
+      if (siteEditando && siteEditando.id === id) setSiteEditando(null);
       (window as any).showNotification('Site deletado com sucesso!', 'success');
     }
   };
@@ -57,7 +50,6 @@ export default function Home() {
     if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content);
     if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
     
-    // ATIVA O MODO DE EDIÇÃO
     setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
     setModalMeusSitesAberto(false);
     (window as any).showNotification(`Modo de Edição ativado: ${site.titulo}`, 'success');
@@ -77,13 +69,9 @@ export default function Home() {
         zone.addEventListener('drop', (e: any) => {
           e.preventDefault(); zone.classList.remove('bg-blue-100', 'border-blue-500');
           try {
-            const onclickAttr = zone.getAttribute('onclick');
-            if (!onclickAttr) return;
-            const match = onclickAttr.match(/'([^']+)'/);
-            if (!match) return;
-            const inputId = match[1];
-            const input = document.getElementById(inputId) as HTMLInputElement;
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && input) {
+            const inputId = zone.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            const input = document.getElementById(inputId || '') as HTMLInputElement;
+            if (e.dataTransfer.files?.length > 0 && input) {
               input.files = e.dataTransfer.files;
               input.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -93,18 +81,18 @@ export default function Home() {
     }, 500);
 
     (window as any).mudarModoApp = (modo: string) => {
-      const btnVisual = document.getElementById('btnTabVisual'), btnCopy = document.getElementById('btnTabCopy');
-      const contVisual = document.getElementById('containerModoVisual'), contCopy = document.getElementById('containerModoCopy');
-      if (!btnVisual || !btnCopy || !contVisual || !contCopy) return;
+      const btnV = document.getElementById('btnTabVisual'), btnC = document.getElementById('btnTabCopy');
+      const contV = document.getElementById('containerModoVisual'), contC = document.getElementById('containerModoCopy');
+      if (!btnV || !btnC || !contV || !contC) return;
 
       if (modo === 'visual') {
-        btnVisual.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
-        btnCopy.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
-        contVisual.style.display = 'block'; contCopy.style.display = 'none';
+        btnV.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
+        btnC.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
+        contV.style.display = 'block'; contC.style.display = 'none';
       } else {
-        btnCopy.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
-        btnVisual.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
-        contCopy.style.display = 'block'; contVisual.style.display = 'none';
+        btnC.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
+        btnV.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
+        contC.style.display = 'block'; contV.style.display = 'none';
       }
     };
 
@@ -115,8 +103,7 @@ export default function Home() {
       uploadedImagesData.forEach((imgObj, index) => {
         const div = document.createElement('div');
         div.className = 'image-preview-item shadow-sm';
-        div.innerHTML = `<img src="data:${imgObj.mimeType};base64,${imgObj.data}">
-                         <div class="remove-img" onclick="window.removerImagem(${index})"><i class="fas fa-times"></i></div>`;
+        div.innerHTML = `<img src="data:${imgObj.mimeType};base64,${imgObj.data}"><div class="remove-img" onclick="window.removerImagem(${index})"><i class="fas fa-times"></i></div>`;
         grid.appendChild(div);
       });
     };
@@ -124,9 +111,7 @@ export default function Home() {
     (window as any).removerImagem = (index: number) => { uploadedImagesData.splice(index, 1); renderImagePreviewGrid(); };
 
     const processFile = (file: File) => {
-      if (uploadedImagesData.length >= 20) { (window as any).showNotification('Limite de 20 imagens.', 'error'); return; }
       if (!file.type.startsWith('image/')) return;
-      if (file.size > 5 * 1024 * 1024) { (window as any).showNotification('Imagem excede 5MB.', 'error'); return; }
       const reader = new FileReader();
       reader.onload = (e: any) => {
         uploadedImagesData.push({ mimeType: file.type, data: e.target.result.split(',')[1] });
@@ -145,11 +130,8 @@ export default function Home() {
       }
     });
 
-    async function chamarIA(systemInstructionText: string, promptParts: any[], isRefinement = false, customLoadingMsg: string | null = null) {
-      let loadingMsg = isRefinement ? "Aplicando alterações..." : "Construindo layout avançado...";
-      if (customLoadingMsg) loadingMsg = customLoadingMsg;
-      const loadText = document.getElementById('loadingText'), loadOverlay = document.getElementById('loadingOverlay');
-      if (loadText) loadText.textContent = loadingMsg;
+    async function chamarIA(systemInstructionText: string, promptParts: any[], isRefinement = false) {
+      const loadOverlay = document.getElementById('loadingOverlay');
       if (loadOverlay) loadOverlay.style.display = 'flex';
 
       try {
@@ -176,32 +158,35 @@ export default function Home() {
 
     (window as any).gerarSite = () => {
       if (uploadedImagesData.length === 0) { (window as any).showNotification('Anexe referências.', 'error'); return; }
+      // PEGA O ESTADO DO CHECKBOX PELO DOM
+      const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
+      
       const modo = (document.getElementById('modoClonagem') as HTMLSelectElement)?.value || 'exato';
-      const diretrizModo = modo === 'exato' ? "Cópia exata e fiel." : "Modelo focado em conversão.";
-      const systemInstruction = `Você é Especialista Sênior em UI/UX e Frontend. Retorne JSON com a chave "codigo_html". MODO: ${diretrizModo}`;
-      let promptParts: any[] = [{ text: "Crie a página:" }];
+      const diretrizModo = modo === 'exato' ? "Cópia exata." : "Focado em conversão.";
+      
+      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}`;
+      let promptParts: any[] = [{ text: "Crie a página baseada nestas imagens:" }];
       uploadedImagesData.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
 
     (window as any).gerarSiteComCopy = () => {
       const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
-      const bio = (document.getElementById('authorBio') as HTMLTextAreaElement)?.value.trim();
-      if (!content) { (window as any).showNotification('Insira conteúdo ou o comando.', 'error'); return; }
-      const systemInstruction = `Você é Copywriter Sênior de Elite e Engenheiro Front-end. Retorne JSON com a chave "codigo_html".`;
-      let textoMestre = `CONTEÚDO / COMANDO:\n${content}\n`;
-      if (bio) textoMestre += `AUTOR:\n${bio}\n`;
-      let promptParts: any[] = [{ text: "Gere a Landing Page a partir das informações abaixo:\n" + textoMestre }];
+      if (!content) { (window as any).showNotification('Insira conteúdo ou comando.', 'error'); return; }
       
-      chamarIA(systemInstruction, promptParts, false, "Lendo texto e gerando layout...");
+      const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
+
+      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}`;
+      chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
 
     (window as any).refinarSiteEstrito = () => {
       const prompt = (document.getElementById('promptRefinamento') as HTMLTextAreaElement)?.value.trim();
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!prompt || !codigo) { (window as any).showNotification('Gere um site e escreva algo.', 'error'); return; }
-      const sys = `Compilador estrito. Retorne JSON com a chave "codigo_html". Altere apenas o solicitado.`;
-      chamarIA(sys, [{text: `CÓDIGO:\n${codigo}\nPEDIDO:\n${prompt}`}], true);
+      if (!prompt || !codigo) return;
+      chamarIA(`Compilador estrito. Retorne JSON com chave "codigo_html".`, [{text: `CÓDIGO:\n${codigo}\nPEDIDO:\n${prompt}`}], true);
     };
 
     (window as any).handleElementImageUpload = (event: any, index: number) => {
@@ -210,10 +195,7 @@ export default function Home() {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         const input = document.getElementById(`img_replace_${index}`) as HTMLInputElement;
-        if (input) {
-            input.value = e.target.result;
-            (window as any).aplicarNovosElementos();
-        }
+        if (input) { input.value = e.target.result; (window as any).aplicarNovosElementos(); }
       };
       reader.readAsDataURL(file);
     };
@@ -233,6 +215,7 @@ export default function Home() {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
         images.forEach((img, index) => {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
+          let currentScale = img.getAttribute('data-scale') || '100'; // NOVO: Leitura da escala
           const div = document.createElement('div');
           
           div.innerHTML = `
@@ -240,12 +223,18 @@ export default function Home() {
                 <span class="truncate pr-2">${label}</span>
                 <span class="bg-gray-200 text-gray-600 px-1 py-0.5 rounded text-[8px]">${img.width || '?'}x${img.height || '?'}</span>
             </label>
-            <div class="flex gap-2">
+            <div class="flex gap-2 mb-1">
                 <input type="text" id="img_replace_${index}" class="input-style text-xs py-1.5 px-2 flex-1" value="${img.src}" placeholder="Cole URL externa ou faça Upload">
-                <label class="bg-blue-100 hover:bg-blue-200 text-blue-700 cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Fazer Upload do Computador">
+                <label class="bg-blue-100 hover:bg-blue-200 text-blue-700 cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload Local">
                     <i class="fas fa-upload"></i>
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
                 </label>
+            </div>
+            {/* CONTROLE DE TAMANHO DA IMAGEM SEM DISTORCER */}
+            <div class="flex items-center gap-2 mt-2 bg-slate-50 p-1.5 rounded border border-slate-200 mb-4">
+                <span class="text-[9px] font-bold text-slate-500 w-12">Tamanho:</span>
+                <input type="range" id="img_scale_${index}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${index}').innerText = this.value + '%'; window.aplicarNovosElementos()">
+                <span id="img_scale_val_${index}" class="text-[9px] font-mono text-blue-700 font-bold w-8 text-right">${currentScale}%</span>
             </div>
           `;
           imgContainer.appendChild(div);
@@ -256,9 +245,14 @@ export default function Home() {
         temLinks = true; document.getElementById('linkSection')!.style.display = 'block';
         links.forEach((a, index) => {
           let label = a.innerText.trim() || a.getAttribute('aria-label') || a.title || `Link ${index + 1}`;
+          
+          // NOVO: DESTAQUE PARA BOTÃO DE COMPRA
+          let isBuyButton = /comprar|adquirir|quero|checkout|garantir|acessar/i.test(label);
+          let badgeCompra = isBuyButton ? `<span class="bg-green-100 text-green-700 px-1 py-0.5 rounded text-[8px] ml-2 border border-green-200 shadow-sm"><i class="fas fa-shopping-cart mr-1"></i>BOTÃO DE COMPRA</span>` : '';
+
           const div = document.createElement('div');
-          div.innerHTML = `<label class="text-[9px] font-bold text-gray-500 uppercase mb-1 block truncate">${label}</label>
-                           <input type="text" id="link_replace_${index}" class="input-style text-xs py-1.5 px-2" value="${a.getAttribute('href')}" placeholder="URL">`;
+          div.innerHTML = `<label class="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center truncate">${label} ${badgeCompra}</label>
+                           <input type="text" id="link_replace_${index}" class="input-style text-xs py-1.5 px-2" value="${a.getAttribute('href')}" placeholder="Cole seu link de checkout/WhatsApp aqui">`;
           linkContainer.appendChild(div);
         });
       } else { document.getElementById('linkSection')!.style.display = 'none'; }
@@ -274,9 +268,25 @@ export default function Home() {
       let alterou = false;
 
       doc.querySelectorAll('img').forEach((img, i) => {
-        const inp = document.getElementById(`img_replace_${i}`) as HTMLInputElement;
-        if (inp && inp.value && inp.value !== img.src) { img.src = inp.value; alterou = true; }
+        const inpUrl = document.getElementById(`img_replace_${i}`) as HTMLInputElement;
+        const inpScale = document.getElementById(`img_scale_${i}`) as HTMLInputElement;
+        
+        if (inpUrl && inpUrl.value && inpUrl.value !== img.src) { img.src = inpUrl.value; alterou = true; }
+        
+        // NOVO: APLICAÇÃO DO TAMANHO DA IMAGEM
+        if (inpScale) {
+            img.setAttribute('data-scale', inpScale.value);
+            if (inpScale.value !== '100') {
+                img.style.width = `${inpScale.value}%`;
+                img.style.height = 'auto'; // Mantém a proporção perfeita!
+                img.style.objectFit = 'contain';
+            } else {
+                img.style.width = ''; img.style.height = ''; img.style.objectFit = '';
+            }
+            alterou = true;
+        }
       });
+
       Array.from(doc.querySelectorAll('a')).filter(a => a.hasAttribute('href') && !a.getAttribute('href')!.startsWith('javascript:')).forEach((a, i) => {
         const inp = document.getElementById(`link_replace_${i}`) as HTMLInputElement;
         if (inp && inp.value && inp.value !== a.getAttribute('href')) { a.setAttribute('href', inp.value); alterou = true; }
@@ -285,7 +295,6 @@ export default function Home() {
       if (alterou) {
         const novo = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
         codEl.value = novo; prevEl.srcdoc = novo;
-        (window as any).showNotification('Elementos atualizados!', 'success');
       }
     };
 
@@ -293,7 +302,6 @@ export default function Home() {
       const btnP = document.getElementById('tabPreview'), btnC = document.getElementById('tabCode');
       const boxP = document.getElementById('previewFrame'), boxC = document.getElementById('codigoContainer');
       if (!btnP || !btnC || !boxP || !boxC) return;
-
       if (aba === 'preview') {
         btnP.className = "h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center";
         btnC.className = "h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center transition";
@@ -324,7 +332,6 @@ export default function Home() {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) { (window as any).showNotification('Gere um site primeiro.', 'error'); return; }
 
-      // MODO SALVAR ALTERAÇÕES (ATUALIZAR SITE EXISTENTE)
       if (siteEditando) {
         const { error } = await supabase.from('sites_gerados').update({ html_content: htmlContent }).eq('id', siteEditando.id);
         if (error) { (window as any).showNotification('Erro ao salvar as alterações.', 'error'); return; }
@@ -332,16 +339,12 @@ export default function Home() {
         return;
       }
 
-      // MODO CRIAR NOVO SITE
-      const promptTitulo = prompt('Digite um título para identificar este site (Ex: Finanças):');
-      if (promptTitulo === null) return; 
+      const nomeDoSite = prompt('Digite o nome do seu site (ele será usado no título e no link):');
+      if (nomeDoSite === null) return; 
       
-      const titulo = promptTitulo || 'Landing Page';
-      const slugSugerido = titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-      
-      let slug = prompt('Personalize o link final do seu site (não use espaços):', slugSugerido);
-      if (slug === null) return; 
-      if (!slug) slug = slugSugerido + '-' + nanoid(4); 
+      const titulo = nomeDoSite.trim() || 'Landing Page';
+      let slug = titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      if (!slug) slug = nanoid(6); 
 
       const { error } = await supabase.from('sites_gerados').insert([{ user_id: '00000000-0000-0000-0000-000000000000', slug, titulo, html_content: htmlContent }]);
 
@@ -352,7 +355,7 @@ export default function Home() {
       alert(`Site publicado com sucesso!\n\nLink copiado: \n${linkPublico}`);
     };
 
-  }, [siteEditando]); // Adicionado siteEditando nas dependências do useEffect
+  }, [siteEditando]); 
 
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
@@ -394,6 +397,12 @@ export default function Home() {
                     <button id="btnTabVisual" onClick={() => (window as any).mudarModoApp('visual')} className="flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50">Modo Visual</button>
                     <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
                 </div>
+                
+                {/* OPÇÃO DE LIGAR/DESLIGAR O MENU APARECENDO PARA OS DOIS MODOS */}
+                <div className="flex items-center gap-2 mb-3 px-1 py-2 bg-blue-50 border border-blue-100 rounded-lg">
+                    <input type="checkbox" id="checkComMenu" defaultChecked={false} className="w-4 h-4 ml-2 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" />
+                    <label htmlFor="checkComMenu" className="text-[11px] font-bold text-blue-800 cursor-pointer">CRIAR SITE COM MENU SUPERIOR?</label>
+                </div>
             </div>
 
             <div className="overflow-y-auto p-5 space-y-5 flex-grow custom-scrollbar">
@@ -419,7 +428,6 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* ABA TEXTO MELHORADA SEM CAPA E COM LIMITES */}
                 <div id="containerModoCopy" style={{ display: 'none' }}>
                     <div className="card p-4 mb-4">
                         <h3 className="label-style"><i className="fas fa-file-lines"></i>Conteúdo ou Prompt (Máx 5000)</h3>
@@ -439,15 +447,12 @@ export default function Home() {
                     <h3 className="label-style text-blue-800"><i className="fas fa-edit"></i>Editar Conteúdos Rápidos</h3>
                     <div id="imageSection" style={{ display: 'none' }} className="mb-4">
                         <p className="text-[10px] font-bold text-blue-800 border-b border-blue-200 pb-1 mb-2">IMAGENS</p>
-                        <div id="imageInputsContainer" className="space-y-3 max-h-60 overflow-y-auto pr-2"></div>
+                        <div id="imageInputsContainer" className="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
                     </div>
                     <div id="linkSection" style={{ display: 'none' }}>
-                        <p className="text-[10px] font-bold text-blue-800 border-b border-blue-200 pb-1 mb-2">LINKS</p>
+                        <p className="text-[10px] font-bold text-blue-800 border-b border-blue-200 pb-1 mb-2">LINKS (BOTÕES DE COMPRA)</p>
                         <div id="linkInputsContainer" className="space-y-3 max-h-40 overflow-y-auto pr-2"></div>
                     </div>
-                    <button onClick={() => (window as any).aplicarNovosElementos()} className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded mt-4">
-                        Atualizar Elementos no Site
-                    </button>
                 </div>
             </div>
 
@@ -468,7 +473,6 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                     <button onClick={carregarMeusSites} className="bg-blue-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow"><i className="fas fa-folder-open"></i> Meus Sites</button>
                     
-                    {/* BOTÕES DINÂMICOS: SALVAR ALTERAÇÕES OU PUBLICAR NOVO */}
                     {siteEditando ? (
                         <>
                             <button onClick={() => setSiteEditando(null)} className="bg-gray-500 hover:bg-gray-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition">Cancelar Edição</button>
