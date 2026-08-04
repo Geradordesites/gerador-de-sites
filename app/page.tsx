@@ -9,9 +9,11 @@ export default function Home() {
   const [listaSites, setListaSites] = useState<any[]>([]);
   const [carregandoSites, setCarregandoSites] = useState(false);
   
-  // ESTADOS DO SISTEMA DE PAGINAÇÃO
   const [paginaAtual, setPaginaAtual] = useState(1);
-  const SITES_POR_PAGINA = 6; // Quantidade de sites por página
+  const SITES_POR_PAGINA = 6; 
+
+  // ESTADO PARA GERENCIAR A EDIÇÃO DO SITE
+  const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
@@ -20,7 +22,7 @@ export default function Home() {
     if (error) { (window as any).showNotification('Erro ao carregar os sites.', 'error'); } 
     else { 
       setListaSites(data || []); 
-      setPaginaAtual(1); // Sempre volta para a página 1 ao abrir
+      setPaginaAtual(1); 
     }
     setCarregandoSites(false);
     setModalMeusSitesAberto(true);
@@ -33,31 +35,36 @@ export default function Home() {
     else {
       const novaLista = listaSites.filter(site => site.id !== id);
       setListaSites(novaLista);
-      
-      // Ajusta a página se deletar o último item da página atual
       const totalPaginasRestantes = Math.ceil(novaLista.length / SITES_POR_PAGINA);
       if (paginaAtual > totalPaginasRestantes && totalPaginasRestantes > 0) {
         setPaginaAtual(totalPaginasRestantes);
+      }
+      
+      // Se estava editando o site deletado, cancela a edição
+      if (siteEditando && siteEditando.id === id) {
+        setSiteEditando(null);
       }
       
       (window as any).showNotification('Site deletado com sucesso!', 'success');
     }
   };
 
-  const editarSite = (htmlContent: string) => {
+  const editarSite = (site: any) => {
     const codigoGeradoEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const previewFrameEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    if (codigoGeradoEl) codigoGeradoEl.value = htmlContent;
-    if (previewFrameEl) previewFrameEl.srcdoc = htmlContent;
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(htmlContent);
+    if (codigoGeradoEl) codigoGeradoEl.value = site.html_content;
+    if (previewFrameEl) previewFrameEl.srcdoc = site.html_content;
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content);
     if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
+    
+    // ATIVA O MODO DE EDIÇÃO
+    setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
     setModalMeusSitesAberto(false);
-    (window as any).showNotification('Site carregado para edição!', 'success');
+    (window as any).showNotification(`Modo de Edição ativado: ${site.titulo}`, 'success');
   };
 
   useEffect(() => {
     let uploadedImagesData: any[] = [];
-    let uploadedCoverData: any = null;
     const domParser = new DOMParser();
 
     document.addEventListener('dragover', (e) => e.preventDefault());
@@ -99,21 +106,6 @@ export default function Home() {
         btnVisual.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
         contCopy.style.display = 'block'; contVisual.style.display = 'none';
       }
-    };
-
-    (window as any).handleCoverUpload = (event: any) => {
-      const file = event.target.files[0];
-      if (!file) return;
-      if (!file.type.startsWith('image/')) { (window as any).showNotification('A capa deve ser uma imagem.', 'error'); return; }
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        uploadedCoverData = { mimeType: file.type, data: e.target.result.split(',')[1] };
-        document.getElementById('coverPreviewContainer')?.classList.remove('hidden');
-        const img = document.getElementById('coverImgPreview') as HTMLImageElement;
-        if (img) img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-      event.target.value = '';
     };
 
     const renderImagePreviewGrid = () => {
@@ -195,15 +187,12 @@ export default function Home() {
     (window as any).gerarSiteComCopy = () => {
       const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
       const bio = (document.getElementById('authorBio') as HTMLTextAreaElement)?.value.trim();
-      if (!content) { (window as any).showNotification('Insira conteúdo do produto.', 'error'); return; }
+      if (!content) { (window as any).showNotification('Insira conteúdo ou o comando.', 'error'); return; }
       const systemInstruction = `Você é Copywriter Sênior de Elite e Engenheiro Front-end. Retorne JSON com a chave "codigo_html".`;
-      let textoMestre = `CONTEÚDO:\n${content}\n`;
+      let textoMestre = `CONTEÚDO / COMANDO:\n${content}\n`;
       if (bio) textoMestre += `AUTOR:\n${bio}\n`;
-      let promptParts: any[] = [{ text: "Gere a Landing Page a partir da copy:\n" + textoMestre }];
-      if (uploadedCoverData) {
-        promptParts.push({ text: "Use as cores desta capa." });
-        promptParts.push({ inlineData: uploadedCoverData });
-      }
+      let promptParts: any[] = [{ text: "Gere a Landing Page a partir das informações abaixo:\n" + textoMestre }];
+      
       chamarIA(systemInstruction, promptParts, false, "Lendo texto e gerando layout...");
     };
 
@@ -335,6 +324,15 @@ export default function Home() {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) { (window as any).showNotification('Gere um site primeiro.', 'error'); return; }
 
+      // MODO SALVAR ALTERAÇÕES (ATUALIZAR SITE EXISTENTE)
+      if (siteEditando) {
+        const { error } = await supabase.from('sites_gerados').update({ html_content: htmlContent }).eq('id', siteEditando.id);
+        if (error) { (window as any).showNotification('Erro ao salvar as alterações.', 'error'); return; }
+        (window as any).showNotification('Alterações salvas com sucesso no mesmo link!', 'success');
+        return;
+      }
+
+      // MODO CRIAR NOVO SITE
       const promptTitulo = prompt('Digite um título para identificar este site (Ex: Finanças):');
       if (promptTitulo === null) return; 
       
@@ -343,7 +341,6 @@ export default function Home() {
       
       let slug = prompt('Personalize o link final do seu site (não use espaços):', slugSugerido);
       if (slug === null) return; 
-      
       if (!slug) slug = slugSugerido + '-' + nanoid(4); 
 
       const { error } = await supabase.from('sites_gerados').insert([{ user_id: '00000000-0000-0000-0000-000000000000', slug, titulo, html_content: htmlContent }]);
@@ -355,9 +352,8 @@ export default function Home() {
       alert(`Site publicado com sucesso!\n\nLink copiado: \n${linkPublico}`);
     };
 
-  }, []);
+  }, [siteEditando]); // Adicionado siteEditando nas dependências do useEffect
 
-  // LÓGICA DE CÁLCULO DA PAGINAÇÃO
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
@@ -423,18 +419,16 @@ export default function Home() {
                     </div>
                 </div>
 
+                {/* ABA TEXTO MELHORADA SEM CAPA E COM LIMITES */}
                 <div id="containerModoCopy" style={{ display: 'none' }}>
                     <div className="card p-4 mb-4">
-                        <h3 className="label-style"><i className="fas fa-file-lines"></i>Conteúdo</h3>
-                        <textarea id="productContent" rows={5} className="input-style text-xs" placeholder="Conteúdo do produto..."></textarea>
+                        <h3 className="label-style"><i className="fas fa-file-lines"></i>Conteúdo ou Prompt (Máx 5000)</h3>
+                        <p className="text-[10px] text-gray-500 mb-3">Cole o texto base do seu produto OU digite um comando direto para a IA construir o site.</p>
+                        <textarea id="productContent" maxLength={5000} rows={7} className="input-style resize-none text-xs" placeholder="Ex: Crie uma página de vendas para um e-book sobre..."></textarea>
                     </div>
                     <div className="card p-4 mb-4">
-                        <h3 className="label-style"><i className="fas fa-image"></i>Capa</h3>
-                        <div className="drop-zone py-4" onClick={() => document.getElementById('coverUploadInput')?.click()}>
-                            <i className="fas fa-camera text-xl text-green-400 mb-1"></i><p className="text-xs">Anexar Capa</p>
-                        </div>
-                        <input type="file" id="coverUploadInput" accept="image/png, image/jpeg" className="hidden" onChange={(e) => (window as any).handleCoverUpload(e)} />
-                        <div id="coverPreviewContainer" className="mt-2 hidden text-center"><img id="coverImgPreview" className="h-16 mx-auto rounded" /></div>
+                        <h3 className="label-style"><i className="fas fa-user-tie"></i>Descrição do Autor</h3>
+                        <textarea id="authorBio" rows={3} className="input-style resize-none text-xs" placeholder="Ex: Especialista em marketing digital..."></textarea>
                     </div>
                     <button onClick={() => (window as any).gerarSiteComCopy()} className="primary-btn w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700">
                         <i className="fas fa-pen-nib mr-2"></i> Gerar Página de Vendas
@@ -473,7 +467,17 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={carregarMeusSites} className="bg-blue-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow"><i className="fas fa-folder-open"></i> Meus Sites</button>
-                    <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow"><i className="fas fa-globe"></i> Publicar</button>
+                    
+                    {/* BOTÕES DINÂMICOS: SALVAR ALTERAÇÕES OU PUBLICAR NOVO */}
+                    {siteEditando ? (
+                        <>
+                            <button onClick={() => setSiteEditando(null)} className="bg-gray-500 hover:bg-gray-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition">Cancelar Edição</button>
+                            <button onClick={() => (window as any).handlePublicarSite()} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"><i className="fas fa-save"></i> Salvar Alterações</button>
+                        </>
+                    ) : (
+                        <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"><i className="fas fa-globe"></i> Publicar</button>
+                    )}
+
                     <button onClick={() => (window as any).copiarCodigo()} className="bg-gray-100 text-gray-700 text-xs font-semibold py-1.5 px-3 rounded border border-gray-300">Copiar</button>
                 </div>
             </div>
@@ -512,7 +516,7 @@ export default function Home() {
                             <div className="flex justify-between items-center">
                               <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-semibold">Abrir Site</a>
                               <div className="flex gap-2">
-                                <button onClick={() => editarSite(site.html_content)} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200">Editar</button>
+                                <button onClick={() => editarSite(site)} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200">Editar</button>
                                 <button onClick={() => deletarSite(site.id, site.slug)} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200">Deletar</button>
                               </div>
                             </div>
@@ -521,26 +525,11 @@ export default function Home() {
                       })}
                     </div>
                     
-                    {/* CONTROLES DE PAGINAÇÃO */}
                     {totalPaginas > 1 && (
                       <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-slate-100">
-                        <button
-                          onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
-                          disabled={paginaAtual === 1}
-                          className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition"
-                        >
-                          Anterior
-                        </button>
-                        <span className="text-xs font-semibold text-slate-500">
-                          Página {paginaAtual} de {totalPaginas}
-                        </span>
-                        <button
-                          onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
-                          disabled={paginaAtual === totalPaginas}
-                          className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition"
-                        >
-                          Próxima
-                        </button>
+                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition">Anterior</button>
+                        <span className="text-xs font-semibold text-slate-500">Página {paginaAtual} de {totalPaginas}</span>
+                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition">Próxima</button>
                       </div>
                     )}
                   </>
