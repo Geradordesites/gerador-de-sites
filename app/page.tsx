@@ -14,7 +14,6 @@ export default function Home() {
 
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
 
-  // CATRACA DE SEGURANÇA: VERIFICA SE ESTÁ LOGADO
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -33,7 +32,6 @@ export default function Home() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     
-    // AGORA BUSCA APENAS OS SITES DO USUÁRIO LOGADO!
     const { data, error } = await supabase.from('sites_gerados').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
     if (!error) { 
       setListaSites(data || []); 
@@ -182,7 +180,6 @@ export default function Home() {
       return "";
     };
 
-    // NOVA FUNÇÃO: INTELIGÊNCIA DE CORES
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
       if (cor === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite (ex: slate-900 ou blue-950) como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado (amber-500) para botões.";
@@ -244,21 +241,19 @@ export default function Home() {
       reader.readAsDataURL(file);
     };
 
-    // NOVA FUNÇÃO: BUSCA IMAGEM PREMIUM NA API OFICIAL DO UNSPLASH
     (window as any).gerarNovaImagem = async (index: number, palavraChave: string) => {
       const input = document.getElementById(`img_replace_${index}`) as HTMLInputElement;
       if (!input) return;
 
       const iconBtn = input.nextElementSibling?.querySelector('i');
-      if (iconBtn) iconBtn.classList.add('fa-spin'); // Faz o ícone rodar enquanto busca
+      if (iconBtn) iconBtn.classList.add('fa-spin');
 
       try {
          const termo = palavraChave || 'professional';
-         // Chama a nossa nova rota segura do Unsplash
          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termo)}`);
          const data = await res.json();
 
-         input.value = data.url; // Aplica a nova imagem de alta qualidade
+         input.value = data.url; 
          (window as any).aplicarNovosElementos();
          (window as any).showNotification('Imagem Premium carregada!', 'success');
       } catch (e) {
@@ -278,12 +273,24 @@ export default function Home() {
       imgContainer.innerHTML = ''; linkContainer.innerHTML = '';
       
       let temImagens = false, temLinks = false;
+      let htmlModificado = false; // Flag para atualizar o site se precisarmos aplicar o tamanho ideal de 70%
 
       if (images.length > 0) {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
         images.forEach((img, index) => {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
-          let currentScale = img.getAttribute('data-scale') || '100'; 
+          let currentScale = img.getAttribute('data-scale'); 
+          
+          // TRAVA INTELIGENTE: Se a imagem não tiver escala, aplica 70% automaticamente para não ficar gigante
+          if (!currentScale) {
+              currentScale = '70';
+              img.setAttribute('data-scale', '70');
+              img.style.width = '70%';
+              img.style.height = 'auto';
+              img.style.objectFit = 'contain';
+              htmlModificado = true;
+          }
+
           const div = document.createElement('div');
           
           div.innerHTML = `
@@ -291,18 +298,22 @@ export default function Home() {
                 <span class="truncate pr-2">${label}</span>
                 <span class="bg-gray-200 text-gray-600 px-1 py-0.5 rounded text-[8px]">${img.width || '?'}x${img.height || '?'}</span>
             </label>
+            
             <div class="flex gap-2 mb-1">
-                <input type="text" id="img_replace_${index}" class="input-style text-xs py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
+                <input type="text" id="img_replace_${index}" class="input-style text-[11px] py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
                 
-                <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem aleatória no Unsplash">
-                    <i class="fas fa-sync-alt"></i>
+                <!-- BOTÃO COM TEXTO CLARO E ÍCONE -->
+                <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem aleatória no Unsplash">
+                    <i class="fas fa-sync-alt mr-1"></i> Nova Foto
                 </button>
 
-                <label class="bg-blue-100 hover:bg-blue-200 text-blue-700 cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
-                    <i class="fas fa-upload"></i>
+                <!-- BOTÃO COM TEXTO CLARO E ÍCONE -->
+                <label class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
+                    <i class="fas fa-upload mr-1"></i> Upload PC
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
                 </label>
             </div>
+            
             <div class="flex items-center gap-2 mt-2 bg-slate-50 p-1.5 rounded border border-slate-200 mb-4">
                 <span class="text-[9px] font-bold text-slate-500 w-12">Tamanho:</span>
                 <input type="range" id="img_scale_${index}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${index}').innerText = this.value + '%'; window.aplicarNovosElementos()">
@@ -326,6 +337,15 @@ export default function Home() {
           linkContainer.appendChild(div);
         });
       } else { document.getElementById('linkSection')!.style.display = 'none'; }
+
+      // Se a IA entregou imagens a 100%, nós encolhemos para 70% no script e salvamos isso de volta no HTML
+      if (htmlModificado) {
+         const novoHtml = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+         const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+         const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+         if (codEl) codEl.value = novoHtml;
+         if (prevEl) prevEl.srcdoc = novoHtml;
+      }
 
       card.style.display = (temImagens || temLinks) ? 'flex' : 'none';
     };
@@ -441,6 +461,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .card { background: white; border-radius: .75rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0/0.05); padding: 1.5rem; display: flex; flex-direction: column; }
         .label-style { font-weight: 600; color: #1e293b; margin-bottom: .5rem; font-size: .875rem; display: flex; align-items: center;}
