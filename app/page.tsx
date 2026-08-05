@@ -4,7 +4,8 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-const SCRIPT_PREVIEW = `<script>document.addEventListener('click', function(e) { var link = e.target.closest('a'); if (link) { e.preventDefault(); } }); document.addEventListener('submit', function(e) { e.preventDefault(); });</script>`;
+// ESCUDO DE CLIQUE: Injetado apenas no preview para evitar o efeito "Inception"
+const SCRIPT_PREVIEW = `<script>document.addEventListener('click', function(e) { var link = e.target.closest('a'); if (link && !link.getAttribute('href').startsWith('#')) { e.preventDefault(); } }); document.addEventListener('submit', function(e) { e.preventDefault(); });</script>`;
 
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -128,12 +129,12 @@ export default function Home() {
       if (!btnV || !btnC || !contV || !contC) return;
 
       if (modo === 'visual') {
-        btnV.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
-        btnC.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
+        btnV.className = "flex-1 py-1.5 text-xs font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
+        btnC.className = "flex-1 py-1.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
         contV.style.display = 'block'; contC.style.display = 'none';
       } else {
-        btnC.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
-        btnV.className = "flex-1 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
+        btnC.className = "flex-1 py-1.5 text-xs font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50 transition-colors";
+        btnV.className = "flex-1 py-1.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors";
         contC.style.display = 'block'; contV.style.display = 'none';
       }
     };
@@ -147,7 +148,7 @@ export default function Home() {
           badgeApis.classList.add('animate-pulse', 'bg-indigo-100');
           badgeApis.classList.remove('bg-emerald-50', 'border-emerald-200');
       }
-      setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Extraindo visual...' });
+      setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Processando...' });
 
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
@@ -219,23 +220,15 @@ export default function Home() {
       return "ESTRUTURA DO HERO: Respeite a estrutura exata que estiver na imagem de referência.";
     };
 
-    // UPGRADE: REGRA EXTREMA DE CORES PARA AUTO E CLONAGEM
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      
       if (cor === 'auto') return "PALETA DE CORES (EXTRAÇÃO FIEL DA IMAGEM): Analise a imagem anexada como um scanner. Você é OBRIGADO a usar EXATAMENTE as mesmas cores de fundo (background), textos e botões da imagem original. Se a imagem tiver fundo escuro, o site DEVE ter fundo escuro (ex: bg-slate-900 ou style inline). NUNCA invente um tema claro/branco se a referência visual for escura.";
-      
       if (cor === 'personalizada') {
          const cp = (document.getElementById('corPrimaria') as HTMLInputElement)?.value || '#2563eb';
          const cf = (document.getElementById('corFundo') as HTMLInputElement)?.value || '#ffffff';
          const cd = (document.getElementById('corDestaque') as HTMLInputElement)?.value || '#10b981';
-         
-         return `OVERRIDE - PALETA PERSONALIZADA DO CLIENTE: Ignore a imagem original e aplique ESTAS cores HEX exatas (use inline styles se necessário):
-         - Cor de Fundo do Site (body/sections): ${cf}
-         - Cor Principal (Títulos, Headers): ${cp}
-         - Cor de Ação/Destaque (Botões): ${cd}.`;
+         return `OVERRIDE - PALETA PERSONALIZADA: Ignore a imagem original e aplique ESTAS cores HEX: Fundo: ${cf}, Principal: ${cp}, Destaque: ${cd}.`;
       }
-
       if (cor === 'azul') return "PALETA: Azul Meia-Noite como cor principal, fundo correspondente e botões em destaque.";
       if (cor === 'verde') return "PALETA: Verde Esmeralda/Musgo como cor principal.";
       if (cor === 'terracota') return "PALETA: Terracota, Nude e Areia.";
@@ -245,7 +238,6 @@ export default function Home() {
       if (cor === 'vermelho') return "PALETA: Vermelho Rubi e Bordô.";
       if (cor === 'amarelo') return "PALETA: Amarelo Solar e Preto (Dark Mode com amarelo).";
       if (cor === 'rosa') return "PALETA: Rosa Pastel e Magenta.";
-      
       return "";
     };
 
@@ -254,22 +246,12 @@ export default function Home() {
         (window as any).showNotification('Anexe referências visuais.', 'error'); 
         return; 
       }
-      
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
-      
       const modo = (document.getElementById('modoClonagem') as HTMLSelectElement)?.value || 'exato';
+      const diretrizModo = modo === 'exato' ? "MODO DE ENGENHARIA REVERSA (PIXEL PERFECT): Reconstrua o layout da imagem com 100% de fidelidade visual. Copie a estrutura, o alinhamento, a ordem das seções e as CORES exatas do background." : "MODO MODELAGEM: Inspire-se no design da imagem, mas otimize estruturalmente para alta conversão.";
       
-      // UPGRADE: ORDEM DE CLONAGEM PERFEITA
-      const diretrizModo = modo === 'exato' 
-        ? "MODO DE ENGENHARIA REVERSA (PIXEL PERFECT): Reconstrua o layout da imagem com 100% de fidelidade visual. Copie a estrutura, o alinhamento, a ordem das seções e as CORES exatas do background." 
-        : "MODO MODELAGEM: Inspire-se no design da imagem, mas otimize estruturalmente para alta conversão.";
-      
-      const megaPromptEstilo = getMegaPromptEstilo();
-      const megaPromptHero = getMegaPromptHero();
-      const megaCores = getMegaPromptCores();
-      
-      const systemInstruction = `Especialista Sênior Front-end. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPromptEstilo} \n${megaPromptHero} \n${megaCores}`;
+      const systemInstruction = `Especialista Sênior Front-end. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       
       let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos e recrie o layout em HTML/Tailwind de forma idêntica à referência:" }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
@@ -279,19 +261,13 @@ export default function Home() {
     (window as any).gerarSiteComCopy = () => {
       const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
       if (!content) { (window as any).showNotification('Insira conteúdo ou comando.', 'error'); return; }
-      
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
-
-      const megaPromptEstilo = getMegaPromptEstilo();
-      const megaPromptHero = getMegaPromptHero();
-      const megaCores = getMegaPromptCores();
-      
-      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. \n${megaPromptEstilo} \n${megaPromptHero} \n${megaCores}`;
-      
+      const systemInstruction = `Copywriter de Elite. Retorne JSON com chave "codigo_html". ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
 
+    // UPGRADE: REFINADOR CIRÚRGICO (Não quebra mais os scripts nem remove fotos erradas)
     (window as any).refinarSiteEstrito = () => {
       const prompt = (document.getElementById('promptRefinamento') as HTMLTextAreaElement)?.value.trim();
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
@@ -302,22 +278,21 @@ export default function Home() {
       }
 
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
-      const diretrizMenu = isMenuChecked ? "SE NÃO HOUVER MENU, CRIE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "REMOVA O MENU SUPERIOR SE EXISTIR.";
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA. Lembre-se de colocar ID nas seções para o scroll." : "REMOVA O MENU SUPERIOR SE ELE EXISTIR NO CÓDIGO.";
 
-      const megaPromptEstilo = getMegaPromptEstilo();
-      const megaPromptHero = getMegaPromptHero();
-      const megaCores = getMegaPromptCores();
-
-      const systemInstruction = `Especialista Sênior UI/UX e Compilador Estrito. Retorne JSON com chave "codigo_html".
-DIRETRIZ MESTRA: Você é um atualizador de sites. MANTENHA TODO O CONTEÚDO ORIGINAL (textos de copy, imagens, depoimentos e links) do código HTML fornecido, mas REESTRUTURE visualmente o código aplicando as seguintes regras:
+      const systemInstruction = `PROGRAMADOR DE MANUTENÇÃO ESTRITA. Retorne JSON com chave "codigo_html".
+DIRETRIZ CIRÚRGICA: Você vai receber o código atual e as instruções abaixo. VOCÊ É PROIBIDO DE REESCREVER OU EXCLUIR O CONTEÚDO QUE NÃO FOI PEDIDO.
+1. Se o usuário pedir para "remover X", REMOVA APENAS X. NUNCA exclua tags <img> normais se o usuário pediu para excluir apenas o background.
+2. PRESERVE A TODO CUSTO todas as tags <script> no final do arquivo (principalmente as do AOS e do Rodapé Jurídico).
+3. APLIQUE ESTAS REGRAS DE PAINEL ATUAIS AO CÓDIGO:
 ${diretrizMenu}
-${megaPromptEstilo}
-${megaPromptHero}
-${megaCores}`;
+${getMegaPromptEstilo()}
+${getMegaPromptHero()}
+${getMegaPromptCores()}`;
 
-      const textoPedidoExtra = prompt ? `PEDIDO EXTRA DO USUÁRIO:\n${prompt}` : "Integre as novas regras de design/cores ao código atual sem alterar o conteúdo textual da página.";
+      const textoPedidoExtra = prompt ? `COMANDO DIRETO DO USUÁRIO:\n"${prompt}"\n(Cumpra a risca e não mexa no restante da estrutura)` : "Apenas atualize as opções do painel mantendo o conteúdo da copy intacto.";
 
-      chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\nCÓDIGO ATUAL A SER ATUALIZADO:\n${codigo}`}], true);
+      chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\n=== CÓDIGO ATUAL PARA SER MODIFICADO ===\n${codigo}`}], true);
     };
 
     (window as any).handleElementImageUpload = (event: any, index: number) => {
@@ -387,24 +362,24 @@ ${megaCores}`;
 
           const div = document.createElement('div');
           div.innerHTML = `
-            <label class="text-[9px] font-bold text-gray-500 uppercase flex justify-between items-center mb-1">
+            <label class="text-[9px] font-bold text-gray-500 uppercase flex justify-between items-center mb-0.5">
                 <span class="truncate pr-2">${label}</span>
                 <span class="bg-gray-200 text-gray-600 px-1 py-0.5 rounded text-[8px]">${img.width || '?'}x${img.height || '?'}</span>
             </label>
-            <div class="flex gap-2 mb-1">
-                <input type="text" id="img_replace_${indexCount}" class="input-style text-[11px] py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
-                <button onclick="window.gerarNovaImagem(${indexCount}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem">
-                    <i class="fas fa-sync-alt mr-1"></i> Nova Foto
+            <div class="flex gap-1.5 mb-1">
+                <input type="text" id="img_replace_${indexCount}" class="input-style flex-1" value="${img.src}" placeholder="URL">
+                <button onclick="window.gerarNovaImagem(${indexCount}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-2 py-1 rounded flex items-center justify-center border border-indigo-200 transition" title="Nova foto">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
-                <label class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
-                    <i class="fas fa-upload mr-1"></i> Upload PC
+                <label class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold cursor-pointer px-2 py-1 rounded flex items-center justify-center border border-blue-200 transition" title="Upload">
+                    <i class="fas fa-upload"></i>
                     <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${indexCount})">
                 </label>
             </div>
-            <div class="flex items-center gap-2 mt-2 bg-slate-50 p-1.5 rounded border border-slate-200 mb-4">
-                <span class="text-[9px] font-bold text-slate-500 w-12">Tamanho:</span>
+            <div class="flex items-center gap-2 mt-1.5 bg-slate-50 p-1 rounded border border-slate-200 mb-3">
+                <span class="text-[9px] font-bold text-slate-500 w-10">Tamanho:</span>
                 <input type="range" id="img_scale_${indexCount}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${indexCount}').innerText = this.value + '%'; window.aplicarNovosElementos()">
-                <span id="img_scale_val_${indexCount}" class="text-[9px] font-mono text-blue-700 font-bold w-8 text-right">${currentScale}%</span>
+                <span id="img_scale_val_${indexCount}" class="text-[9px] font-mono text-blue-700 font-bold w-6 text-right">${currentScale}%</span>
             </div>
           `;
           imgContainer.appendChild(div);
@@ -419,21 +394,21 @@ ${megaCores}`;
               const match = htmlEl.style.backgroundImage.match(/url\(['"]?(.*?)['"]?\)/);
               if (match && match[1]) {
                   const bgUrl = match[1];
-                  let label = htmlEl.id || `Fundo de Seção (Background) ${indexCount + 1}`;
+                  let label = htmlEl.id || `Background ${indexCount + 1}`;
                   
                   const div = document.createElement('div');
                   div.innerHTML = `
-                    <label class="text-[9px] font-bold text-emerald-600 uppercase flex justify-between items-center mb-1 mt-2">
+                    <label class="text-[9px] font-bold text-emerald-600 uppercase flex justify-between items-center mb-0.5 mt-2">
                         <span class="truncate pr-2"><i class="fas fa-layer-group mr-1"></i> ${label}</span>
-                        <span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[8px]">BACKGROUND</span>
+                        <span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[8px]">BG</span>
                     </label>
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" id="img_replace_${indexCount}" class="input-style border-emerald-200 focus:border-emerald-500 text-[11px] py-1.5 px-2 flex-1" value="${bgUrl}" placeholder="URL da imagem de fundo">
-                        <button onclick="window.gerarNovaImagem(${indexCount}, 'background wallpaper')" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-emerald-200 transition" title="Buscar nova imagem de fundo">
-                            <i class="fas fa-sync-alt mr-1"></i> Nova Foto
+                    <div class="flex gap-1.5 mb-3">
+                        <input type="text" id="img_replace_${indexCount}" class="input-style border-emerald-200 focus:border-emerald-500 flex-1" value="${bgUrl}" placeholder="URL do Background">
+                        <button onclick="window.gerarNovaImagem(${indexCount}, 'background wallpaper')" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded flex items-center justify-center border border-emerald-200 transition" title="Nova foto de fundo">
+                            <i class="fas fa-sync-alt"></i>
                         </button>
-                        <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-emerald-700 transition" title="Upload do PC">
-                            <i class="fas fa-upload mr-1"></i> Upload
+                        <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold cursor-pointer px-2 py-1 rounded flex items-center justify-center border border-emerald-700 transition" title="Upload">
+                            <i class="fas fa-upload"></i>
                             <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${indexCount})">
                         </label>
                     </div>
@@ -452,11 +427,11 @@ ${megaCores}`;
         links.forEach((a, index) => {
           let label = a.innerText.trim() || a.getAttribute('aria-label') || a.title || `Link ${index + 1}`;
           let isBuyButton = /comprar|adquirir|quero|checkout|garantir|acessar/i.test(label);
-          let badgeCompra = isBuyButton ? `<span class="bg-green-100 text-green-700 px-1 py-0.5 rounded text-[8px] ml-2 border border-green-200 shadow-sm"><i class="fas fa-shopping-cart mr-1"></i>BOTÃO DE COMPRA</span>` : '';
+          let badgeCompra = isBuyButton ? `<span class="bg-green-100 text-green-700 px-1 py-0.5 rounded text-[8px] ml-2 border border-green-200 shadow-sm"><i class="fas fa-shopping-cart"></i></span>` : '';
 
           const div = document.createElement('div');
-          div.innerHTML = `<label class="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center truncate">${label} ${badgeCompra}</label>
-                           <input type="text" id="link_replace_${index}" class="input-style text-xs py-1.5 px-2" value="${a.getAttribute('href')}" placeholder="Cole seu link de checkout/WhatsApp aqui">`;
+          div.innerHTML = `<label class="text-[9px] font-bold text-gray-500 uppercase mb-0.5 flex items-center truncate">${label} ${badgeCompra}</label>
+                           <input type="text" id="link_replace_${index}" class="input-style mb-2" value="${a.getAttribute('href')}" placeholder="Cole seu link">`;
           linkContainer.appendChild(div);
         });
       } else { document.getElementById('linkSection')!.style.display = 'none'; }
@@ -530,7 +505,6 @@ ${megaCores}`;
         codEl.value = novo; 
         
         const scrollY = prevEl.contentWindow?.scrollY || 0;
-        
         const scriptManterScroll = `<script>
             requestAnimationFrame(() => { 
                 window.scrollTo({top: ${scrollY}, behavior: 'instant'}); 
@@ -670,17 +644,20 @@ ${megaCores}`;
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
-        .card { background: white; border-radius: .75rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0/0.05); padding: 1.5rem; display: flex; flex-direction: column; }
+        .card { background: white; border-radius: .5rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0/0.05); padding: 1rem; display: flex; flex-direction: column; }
         .label-style { font-weight: 600; color: #1e293b; margin-bottom: .5rem; font-size: .875rem; display: flex; align-items: center;}
         .label-style i { margin-right: .5rem; color: #64748b; }
-        .input-style { width: 100%; padding: .625rem .875rem; border-radius: .5rem; border: 1px solid #cbd5e1; font-size: .875rem; }
+        
+        /* A MÁGICA DO LIPOASPIRADOR DO PAINEL */
+        .input-style { width: 100%; padding: .35rem .5rem; border-radius: .375rem; border: 1px solid #cbd5e1; font-size: .75rem; }
+        
         .input-style:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
         .primary-btn { background: #2563eb; color: white; font-weight: 600; display: flex; justify-content: center; align-items: center;}
         .primary-btn:hover { background: #1d4ed8; }
-        .drop-zone { border: 2px dashed #94a3b8; border-radius: .75rem; background: #f8fafc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; }
-        .image-preview-item { position: relative; border-radius: .5rem; overflow: hidden; border: 1px solid #e5e7eb; height: 80px; }
+        .drop-zone { border: 2px dashed #94a3b8; border-radius: .5rem; background: #f8fafc; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; text-align: center; }
+        .image-preview-item { position: relative; border-radius: .5rem; overflow: hidden; border: 1px solid #e5e7eb; height: 60px; }
         .image-preview-item img { width: 100%; height: 100%; object-fit: cover; }
-        .image-preview-item .remove-img { position: absolute; top: 4px; right: 4px; background: rgba(239,68,68,0.9); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; }
+        .image-preview-item .remove-img { position: absolute; top: 4px; right: 4px; background: rgba(239,68,68,0.9); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 8px; }
         #previewFrame, #codigoContainer { display: none; }
         #previewFrame.active, #codigoContainer.active { display: block; }
         #loadingOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15,23,42,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
@@ -694,19 +671,23 @@ ${megaCores}`;
             <p id="loadingText" className="text-white mt-4 font-medium text-lg">Processando...</p>
         </div>
 
-        <div className="w-full md:w-80 lg:w-96 bg-white shadow-xl flex flex-col h-full border-r border-gray-200 flex-shrink-0 z-10">
-            <div className="p-5 border-b border-gray-100 bg-gray-50 pb-0">
-                <h1 className="text-xl font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Visual Pro</h1>
-                <p className="text-xs text-gray-500 mt-1 mb-4">Engenharia reversa e Copywriting IA em alta performance.</p>
+        {/* ALARGAMENTO DO PAINEL PARA w-[380px] */}
+        <div className="w-full md:w-96 lg:w-[380px] bg-white shadow-xl flex flex-col h-full border-r border-gray-200 flex-shrink-0 z-10">
+            <div className="p-4 border-b border-gray-100 bg-gray-50 pb-0">
+                <h1 className="text-lg font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Visual Pro</h1>
                 
-                <div className="flex border-b border-gray-200 mb-4">
-                    <button id="btnTabVisual" onClick={() => (window as any).mudarModoApp('visual')} className="flex-1 py-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50">Modo Visual</button>
-                    <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
+                <div className="flex border-b border-gray-200 mb-3 mt-3">
+                    <button id="btnTabVisual" onClick={() => (window as any).mudarModoApp('visual')} className="flex-1 py-1.5 text-xs font-semibold border-b-2 border-blue-600 text-blue-700 bg-blue-50/50">Modo Visual</button>
+                    <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-50">Modo Texto (Copy)</button>
                 </div>
+            </div>
+
+            <div className="overflow-y-auto p-3 flex-grow custom-scrollbar flex flex-col">
                 
-                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-indigo-50 border border-indigo-100 rounded-lg shadow-inner">
+                {/* PAINEL COMPACTO */}
+                <div className="flex flex-col gap-1 mb-2 px-2 py-2 bg-indigo-50/50 border border-indigo-100 rounded shadow-sm">
                     <label htmlFor="nichoEstilo" className="text-[10px] font-bold text-indigo-800 uppercase"><i className="fas fa-paint-roller mr-1"></i> Estilo Visual do Site:</label>
-                    <select id="nichoEstilo" className="input-style text-xs font-medium text-slate-700 bg-white border-indigo-200">
+                    <select id="nichoEstilo" className="input-style bg-white border-indigo-200">
                         <option value="nenhum">⚪ Nenhum (Layout Padrão Limpo)</option>
                         <option value="premium">💎 Infoproduto Premium (Elegante)</option>
                         <option value="terapia">🌿 Saúde e Terapia (Calmo)</option>
@@ -717,90 +698,86 @@ ${megaCores}`;
                     </select>
                 </div>
 
-                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-amber-50 border border-amber-100 rounded-lg shadow-inner">
-                    <label htmlFor="heroLayout" className="text-[10px] font-bold text-amber-800 uppercase"><i className="fas fa-heading mr-1"></i> Estrutura do Topo (Primeira Tela):</label>
-                    <select id="heroLayout" className="input-style text-xs font-medium text-slate-700 bg-white border-amber-200">
+                <div className="flex flex-col gap-1 mb-2 px-2 py-2 bg-amber-50/50 border border-amber-100 rounded shadow-sm">
+                    <label htmlFor="heroLayout" className="text-[10px] font-bold text-amber-800 uppercase"><i className="fas fa-heading mr-1"></i> Topo (Primeira Tela):</label>
+                    <select id="heroLayout" className="input-style bg-white border-amber-200">
                         <option value="auto">🤖 Automático (A IA escolhe)</option>
-                        <option value="center">📝 Centralizado (Foco total na Copy)</option>
-                        <option value="split">🖼️ Dividido (Texto lado a lado com a Imagem)</option>
+                        <option value="center">📝 Centralizado (Foco na Copy)</option>
+                        <option value="split">🖼️ Dividido (Texto + Imagem)</option>
                     </select>
                 </div>
 
-                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-teal-50 border border-teal-100 rounded-lg shadow-inner">
+                <div className="flex flex-col gap-1 mb-2 px-2 py-2 bg-teal-50/50 border border-teal-100 rounded shadow-sm">
                     <label htmlFor="paletaCores" className="text-[10px] font-bold text-teal-800 uppercase"><i className="fas fa-palette mr-1"></i> Paleta de Cores:</label>
-                    <select id="paletaCores" value={corSelecionada} onChange={(e) => setCorSelecionada(e.target.value)} className="input-style text-xs font-medium text-slate-700 bg-white border-teal-200">
-                        <option value="auto">🎨 Automático (A IA escolhe)</option>
-                        <option value="azul">🔵 Azul Meia-Noite (Confiança & Corporativo)</option>
-                        <option value="verde">🟢 Verde Esmeralda (Saúde & Prosperidade)</option>
-                        <option value="terracota">🟠 Terracota & Nude (Elegante & Acolhedor)</option>
-                        <option value="roxo">🟣 Roxo Real (Luxo & Exclusividade)</option>
-                        <option value="dark">⚫ Preto & Dourado (Alto Padrão & Mentorias)</option>
-                        <option value="cinza">⚪ Cinza & Grafite (Minimalista & Tech)</option>
-                        <option value="vermelho">🔴 Vermelho Rubi (Ação & Poder)</option>
-                        <option value="amarelo">🟡 Amarelo Solar (Alegria & Otimismo)</option>
-                        <option value="rosa">🌸 Rosa Pastel (Delicadeza & Beleza)</option>
-                        <option value="personalizada">🖌️ Personalizada (Escolha as Cores Exatas)</option>
+                    <select id="paletaCores" value={corSelecionada} onChange={(e) => setCorSelecionada(e.target.value)} className="input-style bg-white border-teal-200">
+                        <option value="auto">🎨 Extrair Cor da Imagem / Automático</option>
+                        <option value="azul">🔵 Azul Meia-Noite</option>
+                        <option value="verde">🟢 Verde Esmeralda</option>
+                        <option value="terracota">🟠 Terracota & Nude</option>
+                        <option value="roxo">🟣 Roxo Real</option>
+                        <option value="dark">⚫ Preto & Dourado (Dark)</option>
+                        <option value="cinza">⚪ Cinza Minimalista</option>
+                        <option value="vermelho">🔴 Vermelho Rubi</option>
+                        <option value="amarelo">🟡 Amarelo Solar</option>
+                        <option value="rosa">🌸 Rosa Pastel</option>
+                        <option value="personalizada">🖌️ Personalizada (Escolher)</option>
                     </select>
                     
                     {corSelecionada === 'personalizada' && (
-                      <div className="flex flex-col gap-2 mt-2 p-3 bg-white rounded border border-teal-200 shadow-sm">
+                      <div className="flex flex-col gap-1 mt-1 p-2 bg-white rounded border border-teal-200">
                           <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Cor Principal (Textos/Títulos):</label>
-                              <input type="color" id="corPrimaria" className="w-8 h-8 rounded cursor-pointer border-none bg-transparent p-0" defaultValue="#1e293b" />
+                              <label className="text-[9px] font-bold text-slate-600">Principal:</label>
+                              <input type="color" id="corPrimaria" className="w-6 h-6 rounded cursor-pointer border-none bg-transparent p-0" defaultValue="#1e293b" />
                           </div>
                           <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Cor de Fundo do Site:</label>
-                              <input type="color" id="corFundo" className="w-8 h-8 rounded cursor-pointer border-none bg-transparent p-0" defaultValue="#f8fafc" />
+                              <label className="text-[9px] font-bold text-slate-600">Fundo:</label>
+                              <input type="color" id="corFundo" className="w-6 h-6 rounded cursor-pointer border-none bg-transparent p-0" defaultValue="#f8fafc" />
                           </div>
                           <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Cor do Botão de Compra:</label>
-                              <input type="color" id="corDestaque" className="w-8 h-8 rounded cursor-pointer border-none bg-transparent p-0" defaultValue="#10b981" />
+                              <label className="text-[9px] font-bold text-slate-600">Botão:</label>
+                              <input type="color" id="corDestaque" className="w-6 h-6 rounded cursor-pointer border-none bg-transparent p-0" defaultValue="#10b981" />
                           </div>
                       </div>
                     )}
                 </div>
 
-                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-purple-50 border border-purple-100 rounded-lg shadow-inner">
-                    <label htmlFor="estiloImagem" className="text-[10px] font-bold text-purple-800 uppercase"><i className="fas fa-image mr-1"></i> Estilo das Imagens:</label>
-                    <select id="estiloImagem" className="input-style text-xs font-medium text-slate-700 bg-white border-purple-200">
+                <div className="flex flex-col gap-1 mb-2 px-2 py-2 bg-purple-50/50 border border-purple-100 rounded shadow-sm">
+                    <label htmlFor="estiloImagem" className="text-[10px] font-bold text-purple-800 uppercase"><i className="fas fa-image mr-1"></i> Imagens:</label>
+                    <select id="estiloImagem" className="input-style bg-white border-purple-200">
                         <option value="real">📸 Fotografias Reais (Padrão)</option>
-                        <option value="ilustracao">🎨 Ilustrações & 3D (Design Moderno)</option>
-                        <option value="tecnologia">🚀 Tecnologia & Sci-Fi (Futurista)</option>
+                        <option value="ilustracao">🎨 Ilustrações & 3D</option>
+                        <option value="tecnologia">🚀 Tecnologia & Sci-Fi</option>
                     </select>
                 </div>
 
-                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-fuchsia-50 border border-fuchsia-100 rounded-lg shadow-inner">
-                    <label htmlFor="dinamicaSite" className="text-[10px] font-bold text-fuchsia-800 uppercase"><i className="fas fa-wand-magic-sparkles mr-1"></i> Efeitos e Dinâmica:</label>
-                    <select id="dinamicaSite" className="input-style text-xs font-medium text-slate-700 bg-white border-fuchsia-200">
+                <div className="flex flex-col gap-1 mb-3 px-2 py-2 bg-fuchsia-50/50 border border-fuchsia-100 rounded shadow-sm">
+                    <label htmlFor="dinamicaSite" className="text-[10px] font-bold text-fuchsia-800 uppercase"><i className="fas fa-wand-magic-sparkles mr-1"></i> Efeitos / Animação:</label>
+                    <select id="dinamicaSite" className="input-style bg-white border-fuchsia-200">
                         <option value="estatico">🧊 Estático (Carregamento Rápido)</option>
-                        <option value="suave">🌬️ Suave (Animações ao Rolar a Tela)</option>
-                        <option value="impacto">🔥 Máximo Impacto (Efeitos, Glass e Pulsos)</option>
+                        <option value="suave">🌬️ Suave (Animações ao Rolar)</option>
+                        <option value="impacto">🔥 Máximo Impacto (Efeitos UAU)</option>
                     </select>
                 </div>
 
-                <div className="flex items-center gap-2 mb-3 px-1 py-2 bg-blue-50 border border-blue-100 rounded-lg">
-                    <input type="checkbox" id="checkComMenu" defaultChecked={false} className="w-4 h-4 ml-2 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" />
-                    <label htmlFor="checkComMenu" className="text-[11px] font-bold text-blue-800 cursor-pointer">CRIAR SITE COM MENU SUPERIOR?</label>
+                <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-blue-50 border border-blue-100 rounded">
+                    <input type="checkbox" id="checkComMenu" defaultChecked={false} className="w-3.5 h-3.5 ml-1 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer" />
+                    <label htmlFor="checkComMenu" className="text-[10px] font-bold text-blue-800 cursor-pointer">CRIAR SITE COM MENU SUPERIOR?</label>
                 </div>
-            </div>
 
-            <div className="overflow-y-auto p-5 space-y-5 flex-grow custom-scrollbar">
-                <div id="containerModoVisual">
-                    <div className="card p-4 mb-4">
-                        <h3 className="label-style"><i className="fas fa-images"></i>Referências Visuais</h3>
-                        
-                        <div className="drop-zone" onClick={() => document.getElementById('imageUploadInput')?.click()}>
-                            <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                            <p className="text-sm font-medium text-gray-600">Clique ou Arraste / Cole (Ctrl+V)</p>
+                <div id="containerModoVisual" className="flex-1 flex flex-col">
+                    <div className="card mb-3 p-3">
+                        <h3 className="label-style text-[11px] mb-1"><i className="fas fa-images"></i>Referências Visuais</h3>
+                        <div className="drop-zone py-3 px-2 min-h-[80px]" onClick={() => document.getElementById('imageUploadInput')?.click()}>
+                            <p className="text-[10px] font-medium text-gray-500"><i className="fas fa-cloud-upload-alt text-lg block mb-1"></i>Clique ou Arraste / Cole (Ctrl+V)</p>
                         </div>
                         <input type="file" id="imageUploadInput" multiple accept="image/png, image/jpeg, image/webp" className="hidden" onChange={handleImageUploadInput} />
                         
                         {uploadedImages.length > 0 && (
-                          <div className="grid grid-cols-3 gap-2 mt-4">
+                          <div className="grid grid-cols-4 gap-1.5 mt-2">
                             {uploadedImages.map((imgObj, index) => (
-                              <div key={index} className="image-preview-item shadow-sm relative">
+                              <div key={index} className="image-preview-item shadow-sm relative h-12">
                                 <img src={`data:${imgObj.mimeType};base64,${imgObj.data}`} alt="Ref" className="w-full h-full object-cover rounded" />
-                                <div className="remove-img absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer text-xs" onClick={() => removerImagem(index)}>
+                                <div className="remove-img" onClick={() => removerImagem(index)}>
                                   <i className="fas fa-times"></i>
                                 </div>
                               </div>
@@ -809,93 +786,85 @@ ${megaCores}`;
                         )}
                     </div>
 
-                    <div className="card p-4">
-                        <h3 className="label-style"><i className="fas fa-cogs"></i>Modo de Construção</h3>
-                        <select id="modoClonagem" className="input-style mb-4 font-medium text-gray-700">
-                            <option value="exato">Recriação Fiel (Pixel Perfect)</option>
-                            <option value="modelagem">Modelar (Conversão)</option>
+                    <div className="card p-3 mb-3">
+                        <select id="modoClonagem" className="input-style mb-2 text-gray-700 font-semibold bg-gray-50">
+                            <option value="exato">Construção: Cópia Exata (Pixel Perfect)</option>
+                            <option value="modelagem">Construção: Modelar Conversão</option>
                         </select>
-                        <button onClick={() => (window as any).executarGeracaoSite(uploadedImages)} className="primary-btn w-full py-3 rounded-lg mt-2">
-                            <i className="fas fa-magic mr-2"></i> Gerar Site Alta Performance
+                        <button onClick={() => (window as any).executarGeracaoSite(uploadedImages)} className="primary-btn w-full py-2 rounded text-xs">
+                            <i className="fas fa-magic mr-1.5"></i> Gerar Site Profissional
                         </button>
                     </div>
                 </div>
 
-                <div id="containerModoCopy" style={{ display: 'none' }}>
-                    <div className="card p-4 mb-4">
-                        <h3 className="label-style"><i className="fas fa-file-lines"></i>Conteúdo ou Prompt (Máx 5000)</h3>
-                        <p className="text-[10px] text-gray-500 mb-3">Cole o texto base do seu produto OU digite um comando direto para a IA construir o site.</p>
-                        <textarea id="productContent" maxLength={5000} rows={7} className="input-style resize-none text-xs" placeholder="Ex: Crie uma página de vendas para um e-book sobre..."></textarea>
+                <div id="containerModoCopy" style={{ display: 'none' }} className="flex-1 flex flex-col">
+                    <div className="card mb-3 p-3 flex-1 flex flex-col">
+                        <h3 className="label-style text-[11px] mb-1"><i className="fas fa-file-lines"></i>Conteúdo Base</h3>
+                        <textarea id="productContent" maxLength={5000} className="input-style resize-none flex-1 min-h-[150px]" placeholder="Cole o texto base do seu produto..."></textarea>
                     </div>
-                    <button onClick={() => (window as any).gerarSiteComCopy()} className="primary-btn w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700">
-                        <i className="fas fa-pen-nib mr-2"></i> Gerar Página de Vendas
+                    <button onClick={() => (window as any).gerarSiteComCopy()} className="primary-btn w-full py-2 rounded text-xs bg-indigo-600 hover:bg-indigo-700 mb-3">
+                        <i className="fas fa-pen-nib mr-1.5"></i> Gerar com Copy
                     </button>
                 </div>
 
-                <div id="elementManagerCard" className="card p-4 border-blue-200 bg-blue-50" style={{ display: 'none' }}>
-                    <h3 className="label-style text-blue-800"><i className="fas fa-edit"></i>Editar Conteúdos Rápidos</h3>
-                    <div id="imageSection" style={{ display: 'none' }} className="mb-4">
-                        <p className="text-[10px] font-bold text-blue-800 border-b border-blue-200 pb-1 mb-2">IMAGENS</p>
-                        <div id="imageInputsContainer" className="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
+                <div id="elementManagerCard" className="card p-3 border-blue-200 bg-blue-50 mb-3" style={{ display: 'none' }}>
+                    <h3 className="label-style text-blue-800 text-[11px] mb-1"><i className="fas fa-edit"></i>Gerenciador</h3>
+                    <div id="imageSection" style={{ display: 'none' }} className="mb-2">
+                        <div id="imageInputsContainer" className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1"></div>
                     </div>
                     <div id="linkSection" style={{ display: 'none' }}>
-                        <p className="text-[10px] font-bold text-blue-800 border-b border-blue-200 pb-1 mb-2">LINKS (BOTÕES DE COMPRA)</p>
-                        <div id="linkInputsContainer" className="space-y-3 max-h-40 overflow-y-auto pr-2"></div>
+                        <div id="linkInputsContainer" className="space-y-1.5 max-h-32 overflow-y-auto pr-1 mt-2 border-t border-blue-100 pt-2"></div>
                     </div>
                     
-                    <button onClick={() => (window as any).dispararAtualizacao()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 rounded mt-4 transition-colors">
-                        <i className="fas fa-sync-alt mr-2"></i> Atualizar Elementos no Site
+                    <button onClick={() => (window as any).dispararAtualizacao()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[10px] py-1.5 rounded mt-2 transition-colors">
+                        <i className="fas fa-sync-alt mr-1"></i> Atualizar View
                     </button>
                 </div>
-            </div>
 
-            <div className="p-4 border-t border-gray-200 bg-blue-50">
-                <label className="text-[10px] font-bold text-blue-800 uppercase mb-1 block"><i className="fas fa-wand-magic-sparkles mr-1"></i> Refinar Site Atual</label>
-                <textarea id="promptRefinamento" rows={2} className="input-style w-full text-xs" placeholder="Ex: Mude a cor do botão..."></textarea>
-                <button onClick={() => (window as any).refinarSiteEstrito()} className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 px-3 mt-2 rounded w-full flex items-center justify-center gap-2 shadow-sm transition-colors">
-                    <i className="fas fa-rotate"></i> Aplicar Opções ao Site Atual
-                </button>
+                {/* CAIXA DE REFINAMENTO MAIS ESPAÇOSA */}
+                <div className="card p-3 border-emerald-200 bg-emerald-50 mb-2">
+                    <label className="text-[11px] font-bold text-emerald-800 uppercase mb-1.5 block"><i className="fas fa-wand-magic-sparkles mr-1"></i> Refinamento Cirúrgico</label>
+                    <textarea id="promptRefinamento" rows={3} className="input-style w-full resize-none text-[11px]" placeholder="Ex: Remova apenas a imagem X... (A IA não mexerá no resto do código)"></textarea>
+                    <button onClick={() => (window as any).refinarSiteEstrito()} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] py-2 mt-2 rounded w-full flex items-center justify-center gap-1.5 shadow-sm transition-colors">
+                        <i className="fas fa-rotate"></i> Aplicar Opções ao Site
+                    </button>
+                </div>
+
             </div>
         </div>
 
         <div className="flex-grow flex flex-col bg-white relative">
-            <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
+            <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-12">
                 <div className="flex h-full items-center gap-2">
-                    <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center">Visualização</button>
-                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center transition">Código HTML</button>
+                    <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-xs flex items-center">Visualização</button>
+                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-xs flex items-center transition">Código HTML</button>
                     
-                    <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-semibold py-1 px-2.5 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
-                      <i className="fas fa-undo text-[10px]"></i> Desfazer Código
+                    <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-semibold py-1 px-2 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
+                      <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
 
-                    <div id="badge-apis" className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-[11px] font-medium text-indigo-800 transition-all duration-300">
-                        <span className="flex items-center gap-1" title="Qual Inteligência Artificial gerou o código HTML"><i className="fas fa-robot text-indigo-600"></i> IA: <strong className="text-indigo-900">{statusApis.texto}</strong></span>
+                    <div id="badge-apis" className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded text-[10px] font-medium text-indigo-800 transition-all duration-300 hidden md:flex">
+                        <span className="flex items-center gap-1"><i className="fas fa-robot text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.texto}</strong></span>
                         <span className="text-indigo-300">|</span>
-                        <span className="flex items-center gap-1" title="De onde vieram as imagens deste site"><i className="fas fa-camera text-indigo-600"></i> Mídia: <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
+                        <span className="flex items-center gap-1"><i className="fas fa-camera text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button onClick={carregarMeusSites} className="bg-blue-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow"><i className="fas fa-folder-open"></i> Meus Sites</button>
+                    <button onClick={carregarMeusSites} className="bg-blue-600 text-white text-[10px] font-semibold py-1.5 px-2.5 rounded shadow"><i className="fas fa-folder-open"></i> Sites</button>
                     
                     {siteEditando ? (
                         <>
-                            <button onClick={() => setSiteEditando(null)} className="bg-gray-500 hover:bg-gray-600 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition">Cancelar Edição</button>
-                            <button onClick={() => (window as any).handlePublicarSite()} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"><i className="fas fa-save"></i> Salvar Alterações</button>
+                            <button onClick={() => setSiteEditando(null)} className="bg-gray-500 hover:bg-gray-600 text-white text-[10px] font-semibold py-1.5 px-2.5 rounded shadow transition">Cancelar</button>
+                            <button onClick={() => (window as any).handlePublicarSite()} className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold py-1.5 px-2.5 rounded shadow transition flex items-center gap-1"><i className="fas fa-save"></i> Salvar</button>
                         </>
                     ) : (
-                        <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition flex items-center gap-1"><i className="fas fa-globe"></i> Publicar</button>
+                        <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold py-1.5 px-2.5 rounded shadow transition flex items-center gap-1"><i className="fas fa-globe"></i> Publicar</button>
                     )}
 
-                    <button onClick={() => (window as any).copiarCodigo()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-1.5 px-3 rounded border border-slate-300 transition">Copiar</button>
-                    
-                    <button onClick={() => (window as any).baixarHtmlGerado()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-1.5 px-3 rounded border border-slate-300 transition" title="Baixar arquivo .html">
-                      <i className="fas fa-download text-blue-600"></i> Baixar HTML
-                    </button>
-
-                    <button onClick={handleLogout} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold py-1.5 px-3 rounded transition ml-2">
-                      <i className="fas fa-sign-out-alt"></i> Sair
-                    </button>
+                    <button onClick={() => (window as any).copiarCodigo()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-semibold py-1.5 px-2.5 rounded border border-slate-300 transition">Copiar</button>
+                    <button onClick={() => (window as any).baixarHtmlGerado()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-semibold py-1.5 px-2.5 rounded border border-slate-300 transition"><i className="fas fa-download text-blue-600"></i></button>
+                    <button onClick={handleLogout} className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-semibold py-1.5 px-2.5 rounded transition"><i className="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
             

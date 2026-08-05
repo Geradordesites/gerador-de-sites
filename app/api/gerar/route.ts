@@ -36,20 +36,20 @@ export async function POST(req: Request) {
 === REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
 1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+- NAVEGAÇÃO POR ÂNCORAS (MENU): Se você criar um menu com links do tipo href="#nome-da-secao", você é OBRIGADO a criar as seções correspondentes com id="nome-da-secao" para que o scroll funcione.
 - ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes.
 - ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
 ${instrucaoDinamica}
 
 2. IMAGENS IDEAIS E PLACEHOLDERS (BLINDAGEM TOTAL):
 - OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}. 
-- NUNCA deixe o src vazio. NUNCA use caminhos locais como "/img.jpg". NUNCA use o site "via.placeholder" ou similares.
 - IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;".
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
 3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE E BLINDADA PARA FACEBOOK ADS):
 - NÃO crie seções separadas de "Informações Legais" soltas no meio da página.
-- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé.
+- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé. Preserve todo o script toggleLegal.
 <footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-4xl mx-auto px-4">
         <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
@@ -176,18 +176,16 @@ ${regraImagens}
 
     if (!htmlCode) throw new Error("Todas as APIs falharam.");
 
-    // INJEÇÃO DA BIBLIOTECA AOS (ANIMATE ON SCROLL) SE SOLICITADA
+    // INJEÇÃO SEGURA DA BIBLIOTECA AOS (Não duplica se já existir no refinamento)
     if (dinamica && dinamica !== 'estatico') {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
-        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script><script>AOS.init({duration: 800, once: true});</script>';
+        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
         
-        if (htmlCode.includes('</head>')) {
+        if (!htmlCode.includes('aos.css') && htmlCode.includes('</head>')) {
             htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
         }
-        if (htmlCode.includes('</body>')) {
+        if (!htmlCode.includes('AOS.init') && htmlCode.includes('</body>')) {
             htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
-        } else {
-            htmlCode += `\n${aosJs}`;
         }
     }
 
