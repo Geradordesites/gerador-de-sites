@@ -30,9 +30,15 @@ export async function POST(req: Request) {
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
 
-3. COMPLIANCE E RODAPÉ PROFISSIONAL:
+3. COMPLIANCE E RODAPÉ PROFISSIONAL (BLINDAGEM FACEBOOK ADS):
 - COPYRIGHT DINÂMICO: Exiba obrigatoriamente "© ${anoAtual} Todos os direitos reservados."
-- LINKS JURÍDICOS: Crie links para Termos de Uso e Privacidade com conteúdo denso oculto (toggle JS).
+- LINKS JURÍDICOS: É ESTRITAMENTE OBRIGATÓRIO INSERIR EXATAMENTE O BLOCO HTML ABAIXO NO RODAPÉ, SEM ALTERAR NENHUMA CLASSE OU LINK. NÃO CRIE MODAIS OU SCRIPTS NOVOS. APENAS COLE ESTE CÓDIGO HTML NO FOOTER:
+<!-- 1. LINKS DO RODAPÉ BLINDADOS PARA FACEBOOK ADS -->
+<div class="flex flex-wrap justify-center gap-4 md:gap-8 text-xs text-gray-500 mb-6">
+    <a href="https://sites.google.com/view/portifolioface/#privacidade" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">Política de Privacidade</a>
+    <a href="https://sites.google.com/view/portifolioface/#termos" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">Termos de Uso</a>
+    <a href="https://sites.google.com/view/portifolioface/#cookies" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">Política de Cookies</a>
+</div>
 
 4. NAVEGAÇÃO E CONVERSÃO:
 - Proibido uso de <form>. Utilize botões diretos de ação/WhatsApp.

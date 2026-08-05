@@ -71,8 +71,8 @@ export default function Home() {
     const codigoGeradoEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const previewFrameEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codigoGeradoEl) codigoGeradoEl.value = site.html_content;
-    if (previewFrameEl) previewFrameEl.srcdoc = site.html_content + SCRIPT_PREVIEW; // Aplica escudo
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content, false);
+    if (previewFrameEl) previewFrameEl.srcdoc = site.html_content + SCRIPT_PREVIEW; 
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content);
     if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
     
     setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
@@ -160,15 +160,15 @@ export default function Home() {
           if (codEl.value) {
             setHistoricoCodigo(prev => [...prev, codEl.value]);
           }
-          codEl.value = data.html; // Salva o código LIMPO
+          codEl.value = data.html; 
         }
-        if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; // Injeta o escudo apenas no visual
+        if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
         
         if (data.provedorTexto && data.provedorImagem) {
           setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
         }
 
-        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true);
+        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html);
         (window as any).showNotification('Sucesso!', 'success');
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
@@ -303,7 +303,7 @@ export default function Home() {
       }
     };
 
-    (window as any).mapearElementosGerados = (html: string, isFromAI = false) => {
+    (window as any).mapearElementosGerados = (html: string) => {
       const doc = domParser.parseFromString(html, 'text/html');
       const images = doc.querySelectorAll('img');
       const links = Array.from(doc.querySelectorAll('a')).filter(a => a.hasAttribute('href') && !a.getAttribute('href')!.startsWith('javascript:'));
@@ -321,18 +321,13 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
+          // ==========================================
+          // CORREÇÃO DEFINITIVA DO TAMANHO DA IMAGEM
+          // ==========================================
           if (!currentScale) {
-              if (isFromAI) {
-                  currentScale = '70';
-                  img.setAttribute('data-scale', '70');
-                  img.style.width = '70%';
-                  img.style.height = 'auto';
-                  img.style.objectFit = 'contain';
-                  htmlModificado = true;
-              } else {
-                  currentScale = '100';
-                  img.setAttribute('data-scale', '100');
-              }
+              currentScale = '100'; // Sempre 100% como padrão para TUDO
+              img.setAttribute('data-scale', '100');
+              htmlModificado = true; // Força a salvar o atributo data-scale=100 no HTML
           }
 
           const div = document.createElement('div');
@@ -380,7 +375,7 @@ export default function Home() {
          const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
          const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
          if (codEl) codEl.value = novoHtml;
-         if (prevEl) prevEl.srcdoc = novoHtml + SCRIPT_PREVIEW; // Aplica escudo
+         if (prevEl) prevEl.srcdoc = novoHtml + SCRIPT_PREVIEW; 
       }
 
       card.style.display = (temImagens || temLinks) ? 'flex' : 'none';
@@ -419,8 +414,8 @@ export default function Home() {
 
       if (alterou) {
         const novo = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
-        codEl.value = novo; // Salva limpo
-        prevEl.srcdoc = novo + SCRIPT_PREVIEW; // Injeta escudo visual
+        codEl.value = novo; 
+        prevEl.srcdoc = novo + SCRIPT_PREVIEW; 
       }
     };
 
@@ -430,7 +425,6 @@ export default function Home() {
     };
 
     (window as any).baixarHtmlGerado = () => {
-      // Pega do textarea que tem o código 100% puro e sem o SCRIPT_PREVIEW
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!codigo) {
         (window as any).showNotification('Gere um site primeiro para baixar!', 'error');
@@ -458,16 +452,15 @@ export default function Home() {
 
       if (aba === 'preview') {
         if (codEl && codEl.value) {
-          // Compara histórico com o texto LIMPO
           let currentPreview = boxP.getAttribute('srcdoc') || '';
           currentPreview = currentPreview.replace(SCRIPT_PREVIEW, '');
           
           if (currentPreview && currentPreview !== codEl.value) {
             setHistoricoCodigo(prev => [...prev, currentPreview]);
           }
-          boxP.setAttribute('srcdoc', codEl.value + SCRIPT_PREVIEW); // Aplica escudo
+          boxP.setAttribute('srcdoc', codEl.value + SCRIPT_PREVIEW); 
           if ((window as any).mapearElementosGerados) {
-            (window as any).mapearElementosGerados(codEl.value, false);
+            (window as any).mapearElementosGerados(codEl.value);
           }
         }
         btnP.className = "h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center";
@@ -488,7 +481,6 @@ export default function Home() {
     };
 
     (window as any).copiarCodigo = () => {
-      // Copia direto da caixa de texto (código sempre limpo)
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!txt) return;
       const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select();
@@ -539,8 +531,8 @@ export default function Home() {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) codEl.value = ultimoEstado;
-    if (prevEl) prevEl.srcdoc = ultimoEstado + SCRIPT_PREVIEW; // Injeta escudo visual
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado, false);
+    if (prevEl) prevEl.srcdoc = ultimoEstado + SCRIPT_PREVIEW; 
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado);
     
     (window as any).showNotification('Retornado ao código anterior com sucesso!', 'success');
   };
