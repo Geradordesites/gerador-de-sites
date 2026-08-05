@@ -151,11 +151,17 @@ export default function Home() {
       setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Consultando bancos...' });
 
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
+      const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
 
       try {
         const response = await fetch('/api/gerar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts: promptParts, imageStyle: imageStyle })
+          body: JSON.stringify({ 
+              systemInstruction: systemInstructionText, 
+              promptParts: promptParts, 
+              imageStyle: imageStyle,
+              dinamica: dinamicaStyle
+          })
         });
         const data = await response.json();
         if (!data.success) throw new Error(data.error);
@@ -303,7 +309,7 @@ ${megaPromptEstilo}
 ${megaPromptHero}
 ${megaCores}`;
 
-      const textoPedidoExtra = prompt ? `PEDIDO EXTRA DO USUÁRIO:\n${prompt}` : "Apenas integre as novas regras de design, menu e cores ao código atual sem alterar o conteúdo textual da página.";
+      const textoPedidoExtra = prompt ? `PEDIDO EXTRA DO USUÁRIO:\n${prompt}` : "Apenas integre as novas regras de design (inclusive efeitos e dinâmica, caso solicitado), menu e cores ao código atual sem alterar o conteúdo textual da página.";
 
       chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\nCÓDIGO ATUAL A SER ATUALIZADO:\n${codigo}`}], true);
     };
@@ -354,7 +360,7 @@ ${megaCores}`;
       let htmlModificado = false; 
       let indexCount = 0;
 
-      // 1. MAPEIA AS IMAGENS NORMAIS (Tags IMG)
+      // 1. MAPEIA AS IMAGENS NORMAIS
       if (images.length > 0) {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
         images.forEach((img) => {
@@ -401,7 +407,7 @@ ${megaCores}`;
         });
       }
 
-      // 2. MAPEIA AS IMAGENS DE FUNDO (Background-Image inline)
+      // 2. MAPEIA AS IMAGENS DE FUNDO
       const todosElementos = doc.querySelectorAll('*');
       todosElementos.forEach((el) => {
           const htmlEl = el as HTMLElement;
@@ -754,12 +760,22 @@ ${megaCores}`;
                     )}
                 </div>
 
-                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-purple-50 border border-purple-100 rounded-lg shadow-inner">
+                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-purple-50 border border-purple-100 rounded-lg shadow-inner">
                     <label htmlFor="estiloImagem" className="text-[10px] font-bold text-purple-800 uppercase"><i className="fas fa-image mr-1"></i> Estilo das Imagens:</label>
                     <select id="estiloImagem" className="input-style text-xs font-medium text-slate-700 bg-white border-purple-200">
                         <option value="real">📸 Fotografias Reais (Padrão)</option>
                         <option value="ilustracao">🎨 Ilustrações & 3D (Design Moderno)</option>
                         <option value="tecnologia">🚀 Tecnologia & Sci-Fi (Futurista)</option>
+                    </select>
+                </div>
+
+                {/* NOVO CAMPO: EFEITOS E DINÂMICA UAU */}
+                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-fuchsia-50 border border-fuchsia-100 rounded-lg shadow-inner">
+                    <label htmlFor="dinamicaSite" className="text-[10px] font-bold text-fuchsia-800 uppercase"><i className="fas fa-wand-magic-sparkles mr-1"></i> Efeitos e Dinâmica:</label>
+                    <select id="dinamicaSite" className="input-style text-xs font-medium text-slate-700 bg-white border-fuchsia-200">
+                        <option value="estatico">🧊 Estático (Carregamento Rápido)</option>
+                        <option value="suave">🌬️ Suave (Animações ao Rolar a Tela)</option>
+                        <option value="impacto">🔥 Máximo Impacto (Efeitos, Glass e Pulsos)</option>
                     </select>
                 </div>
 
@@ -836,7 +852,7 @@ ${megaCores}`;
 
             <div className="p-4 border-t border-gray-200 bg-blue-50">
                 <label className="text-[10px] font-bold text-blue-800 uppercase mb-1 block"><i className="fas fa-wand-magic-sparkles mr-1"></i> Refinar Site Atual</label>
-                <textarea id="promptRefinamento" rows={2} className="input-style w-full text-xs" placeholder="Ex: Adicione uma seção com imagem de fundo..."></textarea>
+                <textarea id="promptRefinamento" rows={2} className="input-style w-full text-xs" placeholder="Ex: Mude a cor do botão..."></textarea>
                 <button onClick={() => (window as any).refinarSiteEstrito()} className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 px-3 mt-2 rounded w-full flex items-center justify-center gap-2 shadow-sm transition-colors">
                     <i className="fas fa-rotate"></i> Aplicar Opções ao Site Atual
                 </button>

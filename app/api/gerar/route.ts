@@ -6,35 +6,50 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle } = body;
+    const { systemInstruction, promptParts, imageStyle, dinamica } = body;
 
     const anoAtual = new Date().getFullYear();
 
     // LÓGICA DINÂMICA DO ESTILO DE IMAGEM
-    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use desenhos, animações, gráficos ou ficção científica. Apenas fotografias humanas e cenários reais.";
+    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use NENHUM tipo de desenho, animação, gráfico ou elemento de ficção científica. Utilize estrita e exclusivamente FOTOGRAFIAS HUMANAS E CENÁRIOS REAIS.";
     if (imageStyle === 'ilustracao') {
       regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3d render, minimal art ou digital painting.";
     } else if (imageStyle === 'tecnologia') {
       regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data, sci-fi, futurismo e abstrato.";
     }
 
+    // LÓGICA DE EFEITOS E DINÂMICA (AOS, GLASSMORPHISM E BENTO GRID)
+    let instrucaoDinamica = "";
+    if (dinamica === 'suave') {
+        instrucaoDinamica = `
+- ANIMAÇÕES DE SCROLL (AOS): Adicione o atributo data-aos="fade-up" ou data-aos="zoom-in" nas tags HTML de seções, textos e imagens.
+- TRANSIÇÕES: Use transições suaves do Tailwind (transition-all duration-500).`;
+    } else if (dinamica === 'impacto') {
+        instrucaoDinamica = `
+- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar atributos data-aos="fade-up", data-aos="fade-right", etc., em todas as seções, textos e imagens para revelação cinematográfica.
+- BENTO GRID E GLASSMORPHISM: Substitua seções de features tradicionais por layouts "Bento Grid" (grids assimétricos complexos). Use efeitos Glassmorphism em cards de depoimentos ou recursos (ex: bg-white/10 backdrop-blur-md border border-white/20 shadow-xl).
+- TRATAMENTO EDITORIAL NAS FOTOS: Em imagens secundárias, use filtros do Tailwind como grayscale, sepia ou mix-blend-overlay para dar um tom de revista de alto padrão.
+- BOTÕES MAGNÉTICOS: OBRIGATÓRIO fazer com que TODOS os botões de ação/compra sejam chamativos. Use classes como animate-pulse, hover:scale-105, hover:shadow-2xl, hover:-translate-y-1 e gradientes impactantes (bg-gradient-to-r).`;
+    }
+
     const regrasObrigatorias = `
 === REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
 1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-- ESPAÇAMENTO ESTRITO: Organize o layout para que os títulos dos tópicos tenham sempre um espaço exato de uma linha em branco entre eles e os parágrafos subsequentes.
+- ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes. Esse respiro é inegociável.
 - ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
+${instrucaoDinamica}
 
 2. IMAGENS IDEAIS E PLACEHOLDERS:
 - Para imagens de tag <img>, utilize placeholders: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}
-- IMAGENS DE FUNDO (BACKGROUND): Se for criar seções com imagem de fundo, OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;". Não use classes bg-[url(...)] do Tailwind, use sempre o atributo style para imagens de fundo.
+- IMAGENS DE FUNDO (BACKGROUND): Se for criar seções com imagem de fundo, OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;". Não use bg-[url(...)] do Tailwind.
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
 3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE E BLINDADA PARA FACEBOOK ADS):
 - NÃO crie seções separadas de "Informações Legais" soltas no meio da página.
 - OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé.
-<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12">
+<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-4xl mx-auto px-4">
         <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
             <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Privacidade</a>
@@ -159,6 +174,21 @@ ${regraImagens}
     }
 
     if (!htmlCode) throw new Error("Todas as APIs falharam.");
+
+    // INJEÇÃO DA BIBLIOTECA AOS (ANIMATE ON SCROLL) SE SOLICITADA
+    if (dinamica && dinamica !== 'estatico') {
+        const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
+        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script><script>AOS.init({duration: 800, once: true});</script>';
+        
+        if (htmlCode.includes('</head>')) {
+            htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
+        }
+        if (htmlCode.includes('</body>')) {
+            htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
+        } else {
+            htmlCode += `\n${aosJs}`;
+        }
+    }
 
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
