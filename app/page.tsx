@@ -19,6 +19,9 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
+  // ESTADO PARA INDICAR AS APIS ATIVAS NO MOMENTO
+  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string } | null>(null);
+
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,7 +67,7 @@ export default function Home() {
     const previewFrameEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codigoGeradoEl) codigoGeradoEl.value = site.html_content;
     if (previewFrameEl) previewFrameEl.srcdoc = site.html_content;
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content);
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content, false);
     if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
     
     setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
@@ -154,7 +157,12 @@ export default function Home() {
         }
         if (prevEl) prevEl.srcdoc = data.html;
         
-        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true); // true indica que é gerado pela IA
+        // CAPTURA AS APIS UTILIZADAS
+        if (data.provedorTexto && data.provedorImagem) {
+          setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
+        }
+
+        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true);
         (window as any).showNotification('Sucesso!', 'success');
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
@@ -289,7 +297,6 @@ export default function Home() {
       }
     };
 
-    // MAPEAMENTO INTELIGENTE QUE RESPEITA O CÓDIGO EXTERNO OU APLICA PADRÃO DA IA
     (window as any).mapearElementosGerados = (html: string, isFromAI = false) => {
       const doc = domParser.parseFromString(html, 'text/html');
       const images = doc.querySelectorAll('img');
@@ -308,7 +315,6 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
-          // Se for gerado pela IA, aplicamos 70% padrão para organização. Se for código colado de fora, RESPEITAMOS 100% o tamanho original dele!
           if (!currentScale) {
               if (isFromAI) {
                   currentScale = '70';
@@ -450,7 +456,7 @@ export default function Home() {
           }
           boxP.setAttribute('srcdoc', codEl.value);
           if ((window as any).mapearElementosGerados) {
-            (window as any).mapearElementosGerados(codEl.value, false); // false = código externo/manual, preserva formatação original
+            (window as any).mapearElementosGerados(codEl.value, false);
           }
         }
         btnP.className = "h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center";
@@ -709,11 +715,20 @@ export default function Home() {
             <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
                 <div className="flex h-full items-center gap-2">
                     <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center">Visualização</button>
-                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center transition">Código HTML</button>
+                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 font-medium text-sm flex items-center transition">Código HTML</button>
                     
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-semibold py-1 px-2.5 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[10px]"></i> Desfazer Código
                     </button>
+
+                    {/* PAINEL DE MONITORAMENTO DAS APIS EM TEMPO REAL */}
+                    {statusApis && (
+                      <div className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-600">
+                        <span className="flex items-center gap-1"><i className="fas fa-cpu text-blue-600"></i> Code: <strong className="text-slate-800">{statusApis.texto}</strong></span>
+                        <span className="text-slate-300">|</span>
+                        <span className="flex items-center gap-1"><i className="fas fa-image text-emerald-600"></i> Mídia: <strong className="text-slate-800">{statusApis.imagem}</strong></span>
+                      </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">

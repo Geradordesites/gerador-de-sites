@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { systemInstruction, promptParts } = body;
 
-    // CAPTURA O ANO EXATO DO SERVIDOR AUTOMATICAMENTE
     const anoAtual = new Date().getFullYear();
 
     const regrasObrigatorias = `
@@ -16,120 +15,183 @@ export async function POST(req: Request) {
 1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 - ESPAÇAMENTO ESTRITO: Organize o layout para que os títulos dos tópicos tenham sempre um espaço exato de uma linha em branco entre eles e os parágrafos subsequentes.
-- ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (adicione <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> no <head>).
+- ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
 
-2. IMAGENS IDEAIS E REAIS (UNSPLASH):
-- Para imagens, utilize: https://images.unsplash.com/random/1200x800/?{palavra-chave}
-- REGRA ABSOLUTA DE IMAGENS: Não quero desenhos e sim imagens reais, REAIS. Não use imagens de tecnologia, animações ou ficção científica. Apenas fotografias humanas e cenários reais.
-- TAMANHO IDEAL: As imagens nunca devem estourar na tela. Aplique classes Tailwind obrigatórias nas imagens: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
+2. IMAGENS IDEAIS E REAIS:
+- Para imagens, utilize placeholders no formato: https://images.unsplash.com/random/1200x800/?{palavra-chave}
+- REGRA ABSOLUTA DE IMAGENS: Não use desenhos, animações, gráficos ou ficção científica. Apenas fotografias humanas e cenários reais.
+- TAMANHO IDEAL: Aplique classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
 
-3. COMPLIANCE E RODAPÉ PROFISSIONAL (SANFONAS INTERLIGADAS):
-- O rodapé DEVE conter links REAIS (ex: <a href="#termos" class="legal-link">Termos</a>, <a href="#privacidade" class="legal-link">Privacidade</a>).
-- COPYRIGHT DINÂMICO: O texto de Copyright deve obrigatoriamente exibir o ano atual (${anoAtual}). Exemplo: "© ${anoAtual} Todos os direitos reservados."
-- Abaixo dos links, crie DIVs compactas para o conteúdo (id="termos", id="privacidade") inicialmente ocultas (hidden).
-- Insira textos jurídicos profissionais, densos e extensos (LGPD, Isenção de Responsabilidade, Cookies).
-- ADICIONE OBRIGATORIAMENTE ESTE SCRIPT JS NO FINAL DO BODY para controlar as sanfonas:
-  <script>
-    document.querySelectorAll('.legal-link').forEach(link => {
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('href').substring(1);
-        document.querySelectorAll('.legal-content').forEach(content => {
-          if(content.id === targetId) {
-            content.classList.toggle('hidden');
-          } else {
-            content.classList.add('hidden');
-          }
-        });
-        setTimeout(() => document.getElementById(targetId)?.scrollIntoView({behavior: 'smooth', block: 'start'}), 100);
-      });
-    });
-  </script>
-- Adicione a classe "legal-content hidden" nas divs de texto legal.
+3. COMPLIANCE E RODAPÉ PROFISSIONAL:
+- COPYRIGHT DINÂMICO: Exiba obrigatoriamente "© ${anoAtual} Todos os direitos reservados."
+- LINKS JURÍDICOS: Crie links para Termos de Uso e Privacidade com conteúdo denso oculto (toggle JS).
 
-4. NAVEGAÇÃO SILENCIOSA E CONVERSÃO:
-- Sem hashtag na URL para menus superiores. Use JS para 'event.preventDefault()' e 'scrollIntoView'.
-- PROIBIDO formulários (<form>). Use apenas botões de WhatsApp elegantes.
-
-5. HARMONIA DE CORES:
-- Leia atentamente a "PALETA DE CORES OBRIGATÓRIA" enviada na instrução.
-- Aplique essas cores usando classes avançadas do Tailwind CSS (ex: bg-slate-900, text-emerald-600, border-amber-500).
-- Garanta contraste perfeito e elegante entre fundo e textos.
+4. NAVEGAÇÃO E CONVERSÃO:
+- Proibido uso de <form>. Utilize botões diretos de ação/WhatsApp.
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
 
-    const modelosParaTentar = [
-      process.env.GEMINI_MODEL,
-      "gemini-2.5-flash",
-      "gemini-1.5-flash",
-      "gemini-2.0-flash"
-    ].filter(Boolean) as string[];
+    let htmlCode = '';
+    let provedorTextoUsado = '';
 
-    let result: any = null;
-    let ultimoErro: any = null;
-
-    for (const nomeModelo of modelosParaTentar) {
+    // =========================================================================
+    // TENTATIVA 1: GOOGLE GEMINI
+    // =========================================================================
+    if (process.env.GEMINI_API_KEY) {
       try {
-        const model = genAI.getGenerativeModel({ 
-          model: nomeModelo,
+        const model = genAI.getGenerativeModel({
+          model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
           systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
         });
 
-        result = await model.generateContent({
+        const result = await model.generateContent({
           contents: [{ role: "user", parts: promptParts }],
           generationConfig: { responseMimeType: "application/json" }
         });
-        break;
-      } catch (err: any) {
-        ultimoErro = err;
+
+        const responseText = result.response.text();
+        htmlCode = extrairHtmlDeJson(responseText);
+        provedorTextoUsado = 'Google Gemini';
+      } catch (err) {
+        console.warn("Gemini falhou ou atingiu limite. Pulo para o próximo provedor...");
       }
     }
 
-    if (!result) throw ultimoErro || new Error("Nenhum modelo do Gemini respondeu.");
-
-    const responseText = result.response.text();
-    let htmlCode = '';
-
-    try {
-      const json = JSON.parse(responseText);
-      htmlCode = json.codigo_html || json.html || Object.values(json)[0];
-    } catch (e) { htmlCode = responseText; }
-
-    const doctypeIndex = htmlCode.toLowerCase().indexOf('<!doctype html>');
-    if (doctypeIndex !== -1) htmlCode = htmlCode.substring(doctypeIndex);
-    htmlCode = htmlCode.replace(/```html/i, '').replace(/```/g, '').trim();
-
     // =========================================================================
-    // 🔴 MÁGICA: INTERCEPTADOR DA API OFICIAL DO UNSPLASH
+    // TENTATIVA 2: GROQ (LLAMA 3.3 70B) - BACKUP RÁPIDO
     // =========================================================================
-    if (process.env.UNSPLASH_API_KEY) {
-      const regex = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
-      let match;
-      const urlsToReplace = [];
+    if (!htmlCode && process.env.GROQ_API_KEY) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito no formato {\"codigo_html\": \"...\"}" },
+              { role: 'user', content: JSON.stringify(promptParts) }
+            ],
+            response_format: { type: "json_object" }
+          })
+        });
 
-      while ((match = regex.exec(htmlCode)) !== null) {
-        urlsToReplace.push({ fullMatch: match[0], keyword: match[1] });
-      }
-
-      for (const item of urlsToReplace) {
-        try {
-           const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${item.keyword}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
-           const uData = await unsplashRes.json();
-           if (uData.results && uData.results.length > 0) {
-             const randomIndex = Math.floor(Math.random() * uData.results.length);
-             const bestImg = uData.results[randomIndex].urls.regular;
-             htmlCode = htmlCode.replace(item.fullMatch, bestImg); 
-           }
-        } catch(e) {
-           console.error("Erro na API Unsplash:", e);
+        const groqData = await groqRes.json();
+        if (groqData.choices && groqData.choices[0]?.message?.content) {
+          htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
+          provedorTextoUsado = 'Groq (Llama 3.3 70B)';
         }
+      } catch (err) {
+        console.warn("Groq falhou. Pulo para o próximo provedor...");
       }
     }
 
-    return NextResponse.json({ success: true, html: htmlCode });
+    // =========================================================================
+    // TENTATIVA 3: OPENROUTER (QWEN 2.5 CODER FREE) - BACKUP FINAL
+    // =========================================================================
+    if (!htmlCode && process.env.OPENROUTER_API_KEY) {
+      try {
+        const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'qwen/qwen-2.5-coder-32b-instruct:free',
+            messages: [
+              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito com chave codigo_html." },
+              { role: 'user', content: JSON.stringify(promptParts) }
+            ]
+          })
+        });
+
+        const openData = await openRouterRes.json();
+        if (openData.choices && openData.choices[0]?.message?.content) {
+          htmlCode = extrairHtmlDeJson(openData.choices[0].message.content);
+          provedorTextoUsado = 'OpenRouter (Qwen Coder)';
+        }
+      } catch (err) {
+        console.warn("OpenRouter falhou.");
+      }
+    }
+
+    if (!htmlCode) {
+      throw new Error("Todas as APIs de IA de texto falharam ou estão sem chaves configuradas.");
+    }
+
+    // =========================================================================
+    // PROCESSAMENTO E ROTATIVIDADE DE IMAGENS (UNSPLASH VS POLLINATIONS)
+    // =========================================================================
+    let provedorImagemUsado = 'Sem substituição';
+    const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
+    let match;
+    const urlsToReplace = [];
+
+    while ((match = regexUnsplash.exec(htmlCode)) !== null) {
+      urlsToReplace.push({ fullMatch: match[0], keyword: match[1] });
+    }
+
+    if (urlsToReplace.length > 0) {
+      if (process.env.UNSPLASH_API_KEY) {
+        try {
+          for (const item of urlsToReplace) {
+            const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${item.keyword}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
+            const uData = await unsplashRes.json();
+            if (uData.results && uData.results.length > 0) {
+              const randomIndex = Math.floor(Math.random() * uData.results.length);
+              htmlCode = htmlCode.replace(item.fullMatch, uData.results[randomIndex].urls.regular);
+            }
+          }
+          provedorImagemUsado = 'Unsplash API (Fotos Reais)';
+        } catch (e) {
+          // Fallback para Pollinations se Unsplash falhar
+          htmlCode = substituirPorPollinations(htmlCode, urlsToReplace);
+          provedorImagemUsado = 'Pollinations.ai (IA Fotográfica)';
+        }
+      } else {
+        // Fallback automático para Pollinations se não houver chave do Unsplash
+        htmlCode = substituirPorPollinations(htmlCode, urlsToReplace);
+        provedorImagemUsado = 'Pollinations.ai (IA Fotográfica)';
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      html: htmlCode,
+      provedorTexto: provedorTextoUsado,
+      provedorImagem: provedorImagemUsado
+    });
 
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message || "Erro interno." }, { status: 500 });
   }
+}
+
+// FUNÇÕES AUXILIARES DE TRATAMENTO
+function extrairHtmlDeJson(responseText: string): string {
+  let htmlCode = '';
+  try {
+    const json = JSON.parse(responseText);
+    htmlCode = json.codigo_html || json.html || Object.values(json)[0];
+  } catch (e) {
+    htmlCode = responseText;
+  }
+  const doctypeIndex = htmlCode.toLowerCase().indexOf('<!doctype html>');
+  if (doctypeIndex !== -1) htmlCode = htmlCode.substring(doctypeIndex);
+  return htmlCode.replace(/```html/i, '').replace(/```/g, '').trim();
+}
+
+function substituirPorPollinations(html: string, urlsToReplace: any[]): string {
+  let updatedHtml = html;
+  for (const item of urlsToReplace) {
+    const promptLimpo = encodeURIComponent(`high resolution realistic photograph of ${item.keyword}, realistic human, natural lighting, shot on 35mm lens`);
+    const seed = Math.floor(Math.random() * 99999);
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${promptLimpo}?width=1200&height=800&nologo=true&model=flux&seed=${seed}`;
+    updatedHtml = updatedHtml.replace(item.fullMatch, pollinationsUrl);
+  }
+  return updatedHtml;
 }
