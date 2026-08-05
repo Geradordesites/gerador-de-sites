@@ -19,7 +19,6 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
-  // ESTADO PARA INDICAR AS APIS ATIVAS NO MOMENTO
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string } | null>(null);
 
   useEffect(() => {
@@ -138,10 +137,13 @@ export default function Home() {
       const loadOverlay = document.getElementById('loadingOverlay');
       if (loadOverlay) loadOverlay.style.display = 'flex';
 
+      // CAPTURA A OPÇÃO DE ESTILO DE IMAGEM DA UI
+      const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
+
       try {
         const response = await fetch('/api/gerar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts: promptParts })
+          body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts: promptParts, imageStyle: imageStyle })
         });
         const data = await response.json();
         if (!data.success) throw new Error(data.error);
@@ -157,7 +159,6 @@ export default function Home() {
         }
         if (prevEl) prevEl.srcdoc = data.html;
         
-        // CAPTURA AS APIS UTILIZADAS
         if (data.provedorTexto && data.provedorImagem) {
           setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
         }
@@ -598,7 +599,7 @@ export default function Home() {
                     </select>
                 </div>
 
-                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-teal-50 border border-teal-100 rounded-lg shadow-inner">
+                <div className="flex flex-col gap-2 mb-2 px-3 py-3 bg-teal-50 border border-teal-100 rounded-lg shadow-inner">
                     <label htmlFor="paletaCores" className="text-[10px] font-bold text-teal-800 uppercase"><i className="fas fa-palette mr-1"></i> Paleta de Cores:</label>
                     <select id="paletaCores" value={corSelecionada} onChange={(e) => setCorSelecionada(e.target.value)} className="input-style text-xs font-medium text-slate-700 bg-white border-teal-200">
                         <option value="auto">🎨 Automático (A IA escolhe)</option>
@@ -630,6 +631,15 @@ export default function Home() {
                           </div>
                       </div>
                     )}
+                </div>
+
+                <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-purple-50 border border-purple-100 rounded-lg shadow-inner">
+                    <label htmlFor="estiloImagem" className="text-[10px] font-bold text-purple-800 uppercase"><i className="fas fa-image mr-1"></i> Estilo das Imagens:</label>
+                    <select id="estiloImagem" className="input-style text-xs font-medium text-slate-700 bg-white border-purple-200">
+                        <option value="real">📸 Fotografias Reais (Padrão)</option>
+                        <option value="ilustracao">🎨 Ilustrações & 3D (Design Moderno)</option>
+                        <option value="tecnologia">🚀 Tecnologia & Sci-Fi (Futurista)</option>
+                    </select>
                 </div>
 
                 <div className="flex items-center gap-2 mb-3 px-1 py-2 bg-blue-50 border border-blue-100 rounded-lg">
@@ -715,13 +725,12 @@ export default function Home() {
             <div className="bg-white border-b border-gray-200 flex justify-between items-center px-4 h-14">
                 <div className="flex h-full items-center gap-2">
                     <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center">Visualização</button>
-                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 font-medium text-sm flex items-center transition">Código HTML</button>
+                    <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="h-full px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center transition">Código HTML</button>
                     
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[11px] font-semibold py-1 px-2.5 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[10px]"></i> Desfazer Código
                     </button>
 
-                    {/* PAINEL DE MONITORAMENTO DAS APIS EM TEMPO REAL */}
                     {statusApis && (
                       <div className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-600">
                         <span className="flex items-center gap-1"><i className="fas fa-cpu text-blue-600"></i> Code: <strong className="text-slate-800">{statusApis.texto}</strong></span>
