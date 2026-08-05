@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data, sci-fi, futurismo e abstrato.";
     }
 
-    // LÓGICA DE EFEITOS E DINÂMICA (AOS, GLASSMORPHISM E BENTO GRID)
+    // LÓGICA DE EFEITOS E DINÂMICA
     let instrucaoDinamica = "";
     if (dinamica === 'suave') {
         instrucaoDinamica = `
@@ -26,23 +26,24 @@ export async function POST(req: Request) {
 - TRANSIÇÕES: Use transições suaves do Tailwind (transition-all duration-500).`;
     } else if (dinamica === 'impacto') {
         instrucaoDinamica = `
-- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar atributos data-aos="fade-up", data-aos="fade-right", etc., em todas as seções, textos e imagens para revelação cinematográfica.
-- BENTO GRID E GLASSMORPHISM: Substitua seções de features tradicionais por layouts "Bento Grid" (grids assimétricos complexos). Use efeitos Glassmorphism em cards de depoimentos ou recursos (ex: bg-white/10 backdrop-blur-md border border-white/20 shadow-xl).
-- TRATAMENTO EDITORIAL NAS FOTOS: Em imagens secundárias, use filtros do Tailwind como grayscale, sepia ou mix-blend-overlay para dar um tom de revista de alto padrão.
-- BOTÕES MAGNÉTICOS: OBRIGATÓRIO fazer com que TODOS os botões de ação/compra sejam chamativos. Use classes como animate-pulse, hover:scale-105, hover:shadow-2xl, hover:-translate-y-1 e gradientes impactantes (bg-gradient-to-r).`;
+- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar atributos data-aos="fade-up", data-aos="fade-right", etc., em todas as seções, textos e imagens.
+- BENTO GRID E GLASSMORPHISM: Substitua seções de features por layouts "Bento Grid". Use Glassmorphism (bg-white/10 backdrop-blur-md border border-white/20 shadow-xl).
+- TRATAMENTO EDITORIAL NAS FOTOS: Em imagens secundárias, use filtros como grayscale ou mix-blend-overlay.
+- BOTÕES MAGNÉTICOS: Todos os botões de ação/compra devem ter animate-pulse, hover:scale-105, hover:shadow-2xl.`;
     }
 
     const regrasObrigatorias = `
 === REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
 1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-- ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes. Esse respiro é inegociável.
-- ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
+- ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes.
+- ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
 ${instrucaoDinamica}
 
-2. IMAGENS IDEAIS E PLACEHOLDERS:
-- Para imagens de tag <img>, utilize placeholders: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}
-- IMAGENS DE FUNDO (BACKGROUND): Se for criar seções com imagem de fundo, OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;". Não use bg-[url(...)] do Tailwind.
+2. IMAGENS IDEAIS E PLACEHOLDERS (BLINDAGEM TOTAL):
+- OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}. 
+- NUNCA deixe o src vazio. NUNCA use caminhos locais como "/img.jpg". NUNCA use o site "via.placeholder" ou similares.
+- IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;".
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
