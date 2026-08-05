@@ -30,16 +30,63 @@ export async function POST(req: Request) {
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
-3. COMPLIANCE E RODAPÉ (SANFONA INTERNA):
-- COPYRIGHT DINÂMICO: Exiba obrigatoriamente "© ${anoAtual} Todos os direitos reservados."
-- LINKS JURÍDICOS: O rodapé deve usar o modelo visual abaixo, mas APONTANDO PARA ÂNCORAS INTERNAS na própria página. NUNCA aponte para sites externos.
-<!-- Modelo do Rodapé -->
-<div class="flex flex-wrap justify-center gap-4 md:gap-8 text-xs text-gray-500 mb-6">
-    <a href="#privacidade" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">Política de Privacidade</a>
-    <a href="#termos" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">Termos de Uso</a>
-    <a href="#cookies" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">Política de Cookies</a>
-</div>
-- SANFONA (ACCORDION) OBRIGATÓRIA: Imediatamente ANTES do rodapé, você DEVE gerar uma seção com os conteúdos jurídicos em formato de sanfona expansível. Use as tags <details> e <summary> nativas do HTML5. Cada tag <details> deve conter o id correspondente (id="privacidade", id="termos", id="cookies") para que os links do rodapé funcionem na mesma página sem abrir páginas extras.
+3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE NOS LINKS):
+- NÃO crie seções separadas de "Informações Legais" soltas no meio da página.
+- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé. Ele já possui os links com href reais internos exigidos pelo Facebook Ads e a lógica em JavaScript para abrir/fechar as sanfonas de texto abaixo dos links.
+<!-- COLE EXATAMENTE ESTE CÓDIGO NO FINAL DA PÁGINA: -->
+<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12">
+    <div class="max-w-4xl mx-auto px-4">
+        
+        <!-- Links Reais do Rodapé -->
+        <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
+            <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Privacidade</a>
+            <a href="#termos" onclick="toggleLegal('panel-termos', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Termos de Uso</a>
+            <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Cookies</a>
+        </div>
+
+        <!-- Paineis de Sanfona Ocultos (Abrem abaixo dos links) -->
+        <div id="legal-panels" class="text-left mb-8 text-slate-300 text-sm hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-inner max-w-3xl mx-auto transition-all duration-300">
+            <div id="panel-privacidade" class="legal-panel hidden">
+                <h4 class="font-bold text-white mb-4 text-lg">Política de Privacidade</h4>
+                <p class="mb-2">Sua privacidade é importante para nós. Coletamos e utilizamos seus dados apenas para fornecer e melhorar nossos serviços, sempre em conformidade com as leis de proteção de dados vigentes (LGPD).</p>
+                <p>Não compartilhamos suas informações com terceiros sem o seu consentimento expresso. Seus dados são protegidos por criptografia de ponta a ponta.</p>
+            </div>
+            <div id="panel-termos" class="legal-panel hidden">
+                <h4 class="font-bold text-white mb-4 text-lg">Termos de Uso</h4>
+                <p class="mb-2">Ao acessar este site, você concorda em cumprir estes termos de serviço e todas as leis e regulamentos aplicáveis. O uso contínuo do site constitui a aceitação destes termos.</p>
+                <p>O conteúdo aqui disponibilizado é de propriedade exclusiva e não pode ser reproduzido, copiado ou modificado sem nossa autorização prévia por escrito.</p>
+            </div>
+            <div id="panel-cookies" class="legal-panel hidden">
+                <h4 class="font-bold text-white mb-4 text-lg">Política de Cookies</h4>
+                <p class="mb-2">Utilizamos cookies para personalizar conteúdo e anúncios, fornecer recursos de mídia social e analisar nosso tráfego. Isso nos ajuda a oferecer uma experiência otimizada.</p>
+                <p>Você pode desativá-los nas configurações do seu navegador a qualquer momento, embora isso possa afetar algumas funcionalidades do site.</p>
+            </div>
+        </div>
+        
+        <p>&copy; ${anoAtual} Todos os direitos reservados.</p>
+    </div>
+
+    <script>
+        function toggleLegal(panelId, event) {
+            var container = document.getElementById('legal-panels');
+            var panels = document.querySelectorAll('.legal-panel');
+            var target = document.getElementById(panelId);
+            var isCurrentlyVisible = !target.classList.contains('hidden');
+            
+            // Fecha todos os painéis abertos
+            panels.forEach(function(p) { p.classList.add('hidden'); });
+            
+            // Se o mesmo link foi clicado, fecha a caixa inteira
+            if (isCurrentlyVisible) {
+                container.classList.add('hidden');
+            } else {
+                // Caso contrário, abre a caixa e exibe o texto selecionado
+                container.classList.remove('hidden');
+                target.classList.remove('hidden');
+            }
+        }
+    </script>
+</footer>
 
 4. NAVEGAÇÃO E CONVERSÃO:
 - Proibido uso de <form>. Utilize botões diretos de ação/WhatsApp.
@@ -162,10 +209,8 @@ ${regraImagens}
           try {
             const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${item.keyword}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
             
-            // Verifica se a API respondeu 200 OK (não estourou limite)
             if (unsplashRes.ok) {
               const uData = await unsplashRes.json();
-              // Verifica se encontrou alguma imagem com essa palavra
               if (uData.results && uData.results.length > 0) {
                 const randomIndex = Math.floor(Math.random() * uData.results.length);
                 htmlCode = htmlCode.replace(item.fullMatch, uData.results[randomIndex].urls.regular);
@@ -173,9 +218,7 @@ ${regraImagens}
                 unsplashUsado = true;
               }
             }
-          } catch (e) {
-            // Falhou a requisição (cai pro fallback abaixo)
-          }
+          } catch (e) {}
         }
 
         // 2. FALLBACK IMEDIATO: SE UNSPLASH FALHOU NESSA IMAGEM, ACIONA O FLICKR
