@@ -8,7 +8,6 @@ export async function POST(req: Request) {
 
     const anoAtual = new Date().getFullYear();
 
-    // LÓGICA DINÂMICA DO ESTILO DE IMAGEM
     let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use desenhos, animações, gráficos ou ficção científica. Apenas fotografias humanas e cenários reais.";
     if (imageStyle === 'ilustracao') {
       regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3d render ou minimal art.";
@@ -16,7 +15,6 @@ export async function POST(req: Request) {
       regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data e sci-fi.";
     }
 
-    // LÓGICA DE EFEITOS E DINÂMICA
     let instrucaoDinamica = "";
     if (dinamica === 'suave') {
         instrucaoDinamica = "- ANIMAÇÕES DE SCROLL (AOS): Adicione o atributo data-aos=\"fade-up\" ou data-aos=\"zoom-in\" nas tags HTML de seções, textos e imagens.";
@@ -87,24 +85,23 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
     let logErros: string[] = [];
 
     // =========================================================================
-    // CASCATA TRIPLA FORÇADA NO MODELO gemini-2.5-flash
+    // CASCATA INTELIGENTE POR COMPATIBILIDADE DE CHAVES
     // =========================================================================
-    const chavesGemini = [
-        process.env.GEMINI_API_KEY,
-        process.env.GEMINI_API_KEY_2,
-        process.env.GEMINI_API_KEY_3
-    ].filter(Boolean) as string[];
+    const rotasGemini = [
+        { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1 (2.5)" },
+        { key: process.env.GEMINI_API_KEY_2, model: "gemini-1.5-flash", nome: "Chave 2 (1.5)" },
+        { key: process.env.GEMINI_API_KEY_3, model: "gemini-1.5-flash", nome: "Chave 3 (1.5)" }
+    ].filter(r => r.key);
 
-    if (chavesGemini.length === 0) {
+    if (rotasGemini.length === 0) {
         throw new Error("Nenhuma chave API do Google Gemini configurada no ambiente.");
     }
 
-    for (let i = 0; i < chavesGemini.length; i++) {
+    for (const rota of rotasGemini) {
         try {
-            const genAI = new GoogleGenerativeAI(chavesGemini[i]);
-            // Forçado explicitamente para gemini-2.5-flash, ignorando variáveis de ambiente quebradas
+            const genAI = new GoogleGenerativeAI(rota.key!);
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.5-flash",
+                model: rota.model,
                 systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
             });
 
@@ -116,20 +113,20 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
             htmlCode = extrairHtmlDeJson(result.response.text());
 
             if (htmlCode && htmlCode.length > 500 && htmlCode.includes('<html')) {
-                provedorTextoUsado = `Google Gemini (Chave ${i + 1})`;
+                provedorTextoUsado = `Google Gemini (${rota.nome})`;
                 break; // SUCESSO! 
             } else {
-                throw new Error("A IA gerou um texto genérico em vez do código da página.");
+                throw new Error("A IA gerou um formato inválido.");
             }
 
         } catch (err: any) {
-            logErros.push(`Chave ${i + 1} Falhou: ${err.message}`);
+            logErros.push(`${rota.nome}: ${err.message}`);
             htmlCode = ''; 
         }
     }
 
     if (!htmlCode) {
-        throw new Error(`As tentativas com o Google Gemini falharam. Motivos: ${logErros.join(' | ')}`);
+        throw new Error(`Todas as chaves falharam. Motivos: ${logErros.join(' | ')}`);
     }
 
     // INJEÇÃO DA BIBLIOTECA AOS (ANIMAÇÕES)
@@ -145,7 +142,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
         }
     }
 
-    // FILTRO E ROTATIVIDADE DE IMAGENS (UNSPLASH / FLICKR)
+    // FILTRO E ROTATIVIDADE DE IMAGENS
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
     let match;
@@ -161,7 +158,6 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
 
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
-        
         const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
 
         if (process.env.UNSPLASH_API_KEY) {
