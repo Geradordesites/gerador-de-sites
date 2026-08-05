@@ -85,12 +85,12 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
     let logErros: string[] = [];
 
     // =========================================================================
-    // CASCATA INTELIGENTE POR COMPATIBILIDADE DE CHAVES
+    // CASCATA UNIFICADA NO MODELO QUE FUNCIONA: gemini-2.5-flash
     // =========================================================================
     const rotasGemini = [
-        { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1 (2.5)" },
-        { key: process.env.GEMINI_API_KEY_2, model: "gemini-1.5-flash", nome: "Chave 2 (1.5)" },
-        { key: process.env.GEMINI_API_KEY_3, model: "gemini-1.5-flash", nome: "Chave 3 (1.5)" }
+        { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1" },
+        { key: process.env.GEMINI_API_KEY_2, model: "gemini-2.5-flash", nome: "Chave 2" },
+        { key: process.env.GEMINI_API_KEY_3, model: "gemini-2.5-flash", nome: "Chave 3" }
     ].filter(r => r.key);
 
     if (rotasGemini.length === 0) {
@@ -120,7 +120,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
             }
 
         } catch (err: any) {
-            logErros.push(`${rota.nome}: ${err.message}`);
+            logErros.push(`${rota.nome} (${rota.model}): ${err.message}`);
             htmlCode = ''; 
         }
     }
