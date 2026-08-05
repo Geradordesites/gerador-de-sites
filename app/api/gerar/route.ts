@@ -8,7 +8,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { systemInstruction, promptParts, imageStyle, dinamica } = body;
 
-    // TRADUTOR UNIVERSAL PARA GROQ E OPENROUTER (Garante que eles leiam o HTML no Refinamento)
     let promptTextoPuro = "";
     if (Array.isArray(promptParts)) {
         promptParts.forEach((part: any) => {
@@ -18,47 +17,37 @@ export async function POST(req: Request) {
 
     const anoAtual = new Date().getFullYear();
 
-    // LÓGICA DINÂMICA DO ESTILO DE IMAGEM
-    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use NENHUM tipo de desenho, animação, gráfico ou elemento de ficção científica. Utilize estrita e exclusivamente FOTOGRAFIAS HUMANAS E CENÁRIOS REAIS.";
+    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use NENHUM tipo de desenho, animação ou gráfico. Utilize estrita e exclusivamente FOTOGRAFIAS HUMANAS E CENÁRIOS REAIS.";
     if (imageStyle === 'ilustracao') {
-      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3d render, minimal art ou digital painting.";
+      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3D render ou digital painting.";
     } else if (imageStyle === 'tecnologia') {
-      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data, sci-fi, futurismo e abstrato.";
+      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data e futurismo.";
     }
 
-    // LÓGICA DE EFEITOS E DINÂMICA
     let instrucaoDinamica = "";
     if (dinamica === 'suave') {
-        instrucaoDinamica = `
-- ANIMAÇÕES DE SCROLL (AOS): Adicione o atributo data-aos="fade-up" ou data-aos="zoom-in" nas tags HTML de seções, textos e imagens.
-- TRANSIÇÕES: Use transições suaves do Tailwind (transition-all duration-500).`;
+        instrucaoDinamica = "- ANIMAÇÕES DE SCROLL (AOS): Adicione o atributo data-aos=\"fade-up\" nas tags HTML de seções, textos e imagens.";
     } else if (dinamica === 'impacto') {
-        instrucaoDinamica = `
-- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar atributos data-aos="fade-up", data-aos="fade-right", etc., em todas as seções, textos e imagens.
-- BENTO GRID E GLASSMORPHISM: Substitua seções de features por layouts "Bento Grid". Use Glassmorphism (bg-white/10 backdrop-blur-md border border-white/20 shadow-xl).
-- TRATAMENTO EDITORIAL NAS FOTOS: Em imagens secundárias, use filtros como grayscale ou mix-blend-overlay.
-- BOTÕES MAGNÉTICOS: Todos os botões de ação/compra devem ter animate-pulse, hover:scale-105, hover:shadow-2xl.`;
+        instrucaoDinamica = "- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar data-aos=\"fade-up\" em seções e cards. Use botões com animate-pulse e hover:scale-105.";
     }
 
     const regrasObrigatorias = `
-=== REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
-1. ESTRUTURA E ESPAÇAMENTO PREMIUM:
-- CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-- NAVEGAÇÃO POR ÂNCORAS (MENU): Se você criar um menu com links do tipo href="#nome-da-secao", você é OBRIGADO a criar as seções correspondentes com id="nome-da-secao" para que o scroll funcione.
-- ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes.
-- ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
+=== REGRAS ABSOLUTAS DE GERAÇÃO DE CÓDIGO HTML ===
+1. FORMATO DE SAÍDA: VOCÊ É PROIBIDO DE RESPONDER COM TEXTOS EXPLICATIVOS OU FRASES DE RESUMO COMO "ESTE LAYOUT FOI RECRIADO". Retorne EXCLUSIVAMENTE um documento HTML completo e funcional em Tailwind CSS dentro do JSON.
+2. ESTRUTURA E ESPAÇAMENTO:
+- CSS Global obrigatório: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }
+- Espaçamento rigoroso: Mantenha um espaço limpo entre os títulos dos tópicos e os parágrafos.
+- Ícones: Use exclusivamente FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">). Nunca use emojis.
 ${instrucaoDinamica}
 
-2. IMAGENS IDEAIS E PLACEHOLDERS (BLINDAGEM TOTAL):
-- OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: https://images.unsplash.com/random/1200x800/?keyword (substitua a palavra keyword por UMA palavra em inglês, SEM CHAVES e SEM ESPAÇOS). Ex: https://images.unsplash.com/random/1200x800/?business
-- IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?keyword'); background-size: cover; background-position: center;". NUNCA use colchetes, chaves ou variáveis na URL.
+3. IMAGENS E PLACEHOLDERS:
+- Para tags <img>, use estritamente: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por uma palavra em inglês relevante, sem chaves).
+- Para backgrounds: style="background-image: url('https://images.unsplash.com/random/1200x800/?keyword'); background-size: cover; background-position: center;"
 ${regraImagens}
-- TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
-3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE E BLINDADA PARA FACEBOOK ADS):
-- NÃO crie seções separadas de "Informações Legais" soltas no meio da página.
-- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé. Preserve todo o script toggleLegal.
-<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
+4. RODAPÉ JURÍDICO E SANFONA OBRIGATÓRIA:
+O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do código:
+<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12">
     <div class="max-w-4xl mx-auto px-4">
         <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
             <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Privacidade</a>
@@ -67,32 +56,16 @@ ${regraImagens}
         </div>
         <div id="legal-panels" class="text-left mb-8 text-slate-300 text-sm hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-inner max-w-3xl mx-auto transition-all duration-300">
             <div id="panel-privacidade" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade e Proteção de Dados</h4>
-                <p>A sua privacidade é nossa prioridade. Esta política descreve como coletamos, usamos, armazenamos e protegemos os seus dados pessoais, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
-                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você (como nome, e-mail e telefone) ao preencher formulários em nosso site, além de dados de navegação coletados automaticamente por ferramentas de analytics e pixels de rastreamento para fins de otimização de campanhas.</p>
-                <p><strong>2. Uso das Informações:</strong> Seus dados são utilizados exclusivamente para o processamento de pagamentos, fornecimento do serviço ou produto solicitado, envio de comunicações transacionais, suporte ao cliente e ofertas de marketing previamente autorizadas. Não vendemos, alugamos ou compartilhamos seus dados com terceiros não essenciais para a operação.</p>
-                <p><strong>3. Segurança e Retenção:</strong> Adotamos as melhores práticas de segurança da informação e criptografia de ponta a ponta para proteger seus dados contra acessos não autorizados. Os dados serão mantidos apenas pelo tempo necessário para cumprir as finalidades para as quais foram coletados.</p>
-                <p><strong>4. Direitos do Titular:</strong> Você tem o direito de solicitar o acesso, a correção, a anonimização ou a exclusão total dos seus dados pessoais de nossa base a qualquer momento, bastando entrar em contato através dos nossos canais oficiais de atendimento presentes nesta página.</p>
+                <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade</h4>
+                <p>Em conformidade com a LGPD (Lei nº 13.709/2018), garantimos a segurança e confidencialidade dos seus dados coletados em nosso site.</p>
             </div>
             <div id="panel-termos" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Termos e Condições de Uso</h4>
-                <p>Ao acessar e utilizar este site e nossos produtos/serviços, você concorda expressamente em cumprir estes Termos de Serviço, todas as leis e regulamentos aplicáveis. O uso contínuo constitui a aceitação incondicional destes termos.</p>
-                <p><strong>1. Licença e Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado neste site, incluindo textos, gráficos, logotipos, vídeos, metodologias e áudios, é de propriedade exclusiva dos criadores e é protegido por leis de direitos autorais. É terminantemente proibida a reprodução, distribuição, modificação ou revenda não autorizada de qualquer material.</p>
-                <p><strong>2. Isenção de Responsabilidade:</strong> Os materiais neste site são fornecidos "como estão". Não oferecemos garantias de resultados específicos ou ganhos financeiros, de saúde ou relacionais. Os resultados variam de pessoa para pessoa e dependem do esforço individual e da correta aplicação das metodologias ensinadas.</p>
-                <p><strong>3. Política de Arrependimento e Reembolso:</strong> Em conformidade com o Código de Defesa do Consumidor (Art. 49), garantimos o prazo de 7 (sete) dias corridos, a contar da data da compra, para o cancelamento e estorno integral do valor pago caso você não esteja satisfeito com o produto digital, sem necessidade de justificativa.</p>
-                <p><strong>4. Conduta do Usuário:</strong> O usuário concorda em utilizar o site apenas para fins lícitos, sendo vedado o uso para transmissão de material difamatório, ameaçador, obsceno ou que viole direitos de terceiros.</p>
+                <h4 class="font-bold text-white mb-2 text-lg">Termos de Uso</h4>
+                <p>Ao utilizar nossos serviços, você concorda com nossos termos de propriedade intelectual e condições de uso comercial.</p>
             </div>
             <div id="panel-cookies" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies e Rastreamento</h4>
-                <p>Para proporcionar a melhor experiência possível, analisar o tráfego do site e veicular anúncios personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes.</p>
-                <p><strong>1. O que são Cookies?</strong> Cookies são pequenos arquivos de texto que são baixados e armazenados no seu computador, smartphone ou dispositivo móvel quando você visita o nosso site. Eles permitem que o site reconheça o seu dispositivo e lembre das suas preferências nas próximas visitas.</p>
-                <p><strong>2. Tipos de Cookies que Utilizamos:</strong></p>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li><em>Cookies Estritamente Necessários:</em> Essenciais para o funcionamento básico do site, como navegação de páginas e acesso a áreas seguras (ex: checkouts).</li>
-                    <li><em>Cookies de Desempenho e Analytics:</em> Permitem rastrear e analisar o volume de visitas e fontes de tráfego, ajudando a medir e melhorar a performance da página.</li>
-                    <li><em>Cookies de Publicidade e Pixels:</em> Utilizados por nós e nossos parceiros (como Facebook/Meta e Google) para construir um perfil dos seus interesses e mostrar anúncios relevantes em outros sites.</li>
-                </ul>
-                <p><strong>3. Gerenciamento de Cookies:</strong> Você pode optar por aceitar ou recusar o uso de cookies não essenciais. A maioria dos navegadores da web aceita cookies automaticamente, mas você pode modificar a configuração do seu navegador para recusá-los, se preferir. Note que isso pode impedir que você tire o máximo proveito da experiência no site.</p>
+                <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies</h4>
+                <p>Utilizamos cookies para otimizar sua experiência de navegação e desempenho de campanhas de tráfego pago.</p>
             </div>
         </div>
         <p>&copy; ${anoAtual} Todos os direitos reservados.</p>
@@ -103,20 +76,12 @@ ${regraImagens}
             var container = document.getElementById('legal-panels');
             var panels = document.querySelectorAll('.legal-panel');
             var target = document.getElementById(panelId);
-            var isCurrentlyVisible = !target.classList.contains('hidden');
+            var isVisible = !target.classList.contains('hidden');
             panels.forEach(function(p) { p.classList.add('hidden'); });
-            if (isCurrentlyVisible) {
-                container.classList.add('hidden');
-            } else {
-                container.classList.remove('hidden');
-                target.classList.remove('hidden');
-            }
+            if (isVisible) { container.classList.add('hidden'); } else { container.classList.remove('hidden'); target.classList.remove('hidden'); }
         }
     </script>
 </footer>
-
-4. NAVEGAÇÃO E CONVERSÃO:
-- Proibido uso de <form>. Utilize botões diretos de ação/WhatsApp.
 `;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
@@ -141,7 +106,7 @@ ${regraImagens}
       } catch (err: any) { logErros.push(`Gemini falhou: ${err.message}`); }
     }
 
-    // TENTATIVA 2: GROQ (Agora usa o tradutor de texto puro)
+    // TENTATIVA 2: GROQ
     if (!htmlCode && process.env.GROQ_API_KEY) {
       try {
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -150,8 +115,8 @@ ${regraImagens}
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: [
-              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito no formato {\"codigo_html\": \"...\"}" },
-              { role: 'user', content: promptTextoPuro } // Tradutor aplicado aqui
+              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito contendo a chave \"codigo_html\" com o código HTML completo da página." },
+              { role: 'user', content: promptTextoPuro }
             ],
             response_format: { type: "json_object" }
           })
@@ -160,13 +125,11 @@ ${regraImagens}
         if (groqData.choices && groqData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
           provedorTextoUsado = 'Groq (Llama 3.3 70B)';
-        } else {
-           logErros.push(`Groq falhou: Resposta vazia ou mal formatada.`);
         }
       } catch (err: any) { logErros.push(`Groq falhou: ${err.message}`); }
     }
 
-    // TENTATIVA 3: OPENROUTER (Agora usa o tradutor de texto puro)
+    // TENTATIVA 3: OPENROUTER
     if (!htmlCode && process.env.OPENROUTER_API_KEY) {
       try {
         const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -175,8 +138,8 @@ ${regraImagens}
           body: JSON.stringify({
             model: 'qwen/qwen-2.5-coder-32b-instruct:free',
             messages: [
-              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito com chave codigo_html." },
-              { role: 'user', content: promptTextoPuro } // Tradutor aplicado aqui
+              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito com a chave \"codigo_html\"." },
+              { role: 'user', content: promptTextoPuro }
             ]
           })
         });
@@ -184,18 +147,16 @@ ${regraImagens}
         if (openData.choices && openData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(openData.choices[0].message.content);
           provedorTextoUsado = 'OpenRouter (Qwen Coder)';
-        } else {
-          logErros.push(`OpenRouter falhou: Sem resposta.`);
         }
       } catch (err: any) { logErros.push(`OpenRouter falhou: ${err.message}`); }
     }
 
-    // SE TODAS FALHAREM, DEVOLVE O RELATÓRIO DO MOTIVO
-    if (!htmlCode) {
-        throw new Error(`As 3 APIs falharam. Motivos: ${logErros.join(' | ')}`);
+    // TRAVA DE SEGURANÇA: Se a IA tentou mandar um texto simples em vez de HTML
+    if (!htmlCode || htmlCode.length < 300 || !htmlCode.includes('<html')) {
+        throw new Error(`A IA retornou uma resposta inválida ou incompleta. Tente gerar novamente.`);
     }
 
-    // INJEÇÃO SEGURA DA BIBLIOTECA AOS (Não duplica se já existir no refinamento)
+    // INJEÇÃO DA BIBLIOTECA AOS
     if (dinamica && dinamica !== 'estatico') {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
@@ -223,8 +184,6 @@ ${regraImagens}
 
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
-        
-        // LIMPADOR DE CHAVES (Garante que a IA não quebrou o link)
         const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
 
         if (process.env.UNSPLASH_API_KEY) {
