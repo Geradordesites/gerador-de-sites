@@ -83,11 +83,11 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
 
     let htmlCode = '';
-    let provedorTextoUsado = '';
+    let provedorTextoUsado = 'Google Gemini';
     let logErros: string[] = [];
 
     // =========================================================================
-    // CASCATA TRIPLA DE CHAVES GOOGLE GEMINI
+    // CASCATA TRIPLA DE CHAVES GOOGLE GEMINI (CORRIGIDA PARA gemini-1.5-flash)
     // =========================================================================
     const chavesGemini = [
         process.env.GEMINI_API_KEY,
@@ -103,7 +103,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
         try {
             const genAI = new GoogleGenerativeAI(chavesGemini[i]);
             const model = genAI.getGenerativeModel({
-                model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+                model: process.env.GEMINI_MODEL || "gemini-1.5-flash", // AQUI ESTÁ A CORREÇÃO!
                 systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
             });
 
@@ -116,9 +116,8 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
 
             // Trava de segurança: Se a IA não mandou HTML (deu resposta preguiçosa), joga um erro para testar a próxima chave
             if (htmlCode && htmlCode.length > 500 && htmlCode.includes('<html')) {
-                // SUCESSO! Grava qual chave foi utilizada
                 provedorTextoUsado = `Google Gemini (Chave ${i + 1})`;
-                break; 
+                break; // SUCESSO! Interrompe o loop
             } else {
                 throw new Error("A IA gerou um texto genérico em vez do código da página.");
             }
