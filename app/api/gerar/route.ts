@@ -38,12 +38,12 @@ export async function POST(req: Request) {
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 - NAVEGAÇÃO POR ÂNCORAS (MENU): Se você criar um menu com links do tipo href="#nome-da-secao", você é OBRIGADO a criar as seções correspondentes com id="nome-da-secao" para que o scroll funcione.
 - ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes.
-- ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
+- ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">).
 ${instrucaoDinamica}
 
 2. IMAGENS IDEAIS E PLACEHOLDERS (BLINDAGEM TOTAL):
-- OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}. 
-- IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;".
+- OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: [https://images.unsplash.com/random/1200x800/?keyword](https://images.unsplash.com/random/1200x800/?keyword) (substitua a palavra keyword por UMA palavra em inglês, SEM CHAVES e SEM ESPAÇOS). Ex: [https://images.unsplash.com/random/1200x800/?business](https://images.unsplash.com/random/1200x800/?business)
+- IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('[https://images.unsplash.com/random/1200x800/?keyword](https://images.unsplash.com/random/1200x800/?keyword)'); background-size: cover; background-position: center;". NUNCA use colchetes, chaves ou variáveis na URL.
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
@@ -133,7 +133,7 @@ ${regraImagens}
 
     if (!htmlCode && process.env.GROQ_API_KEY) {
       try {
-        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const groqRes = await fetch('[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -155,7 +155,7 @@ ${regraImagens}
 
     if (!htmlCode && process.env.OPENROUTER_API_KEY) {
       try {
-        const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const openRouterRes = await fetch('[https://openrouter.ai/api/v1/chat/completions](https://openrouter.ai/api/v1/chat/completions)', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -178,8 +178,8 @@ ${regraImagens}
 
     // INJEÇÃO SEGURA DA BIBLIOTECA AOS (Não duplica se já existir no refinamento)
     if (dinamica && dinamica !== 'estatico') {
-        const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
-        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
+        const aosCss = '<link href="[https://unpkg.com/aos@2.3.1/dist/aos.css](https://unpkg.com/aos@2.3.1/dist/aos.css)" rel="stylesheet">';
+        const aosJs = '<script src="[https://unpkg.com/aos@2.3.1/dist/aos.js](https://unpkg.com/aos@2.3.1/dist/aos.js)"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
         
         if (!htmlCode.includes('aos.css') && htmlCode.includes('</head>')) {
             htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
@@ -204,10 +204,13 @@ ${regraImagens}
 
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
+        
+        // LIMPADOR DE CHAVES (Garante que a IA não quebrou o link)
+        const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
 
         if (process.env.UNSPLASH_API_KEY) {
           try {
-            const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${item.keyword}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
+            const unsplashRes = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){keywordLimpaFormatada}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
             if (unsplashRes.ok) {
               const uData = await unsplashRes.json();
               if (uData.results && uData.results.length > 0) {
@@ -221,9 +224,8 @@ ${regraImagens}
         }
 
         if (!imagemEncontrada) {
-          const keywordLimpa = encodeURIComponent(item.keyword.split(',')[0]);
           const lockId = Math.floor(Math.random() * 9999);
-          const flickrUrl = `https://loremflickr.com/1200/800/${keywordLimpa}?lock=${lockId}`;
+          const flickrUrl = `[https://loremflickr.com/1200/800/$](https://loremflickr.com/1200/800/$){keywordLimpaFormatada}?lock=${lockId}`;
           htmlCode = htmlCode.replace(item.fullMatch, flickrUrl);
           flickrUsado = true;
         }

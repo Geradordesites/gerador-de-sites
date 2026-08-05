@@ -4,8 +4,19 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE: Injetado apenas no preview para evitar o efeito "Inception"
-const SCRIPT_PREVIEW = `<script>document.addEventListener('click', function(e) { var link = e.target.closest('a'); if (link && !link.getAttribute('href').startsWith('#')) { e.preventDefault(); } }); document.addEventListener('submit', function(e) { e.preventDefault(); });</script>`;
+// ESCUDO DE CLIQUE BLINDADO: Impede navegação sem atrapalhar a âncora do menu
+const SCRIPT_PREVIEW = `<script>
+    document.addEventListener('click', function(e) { 
+        var link = e.target.closest('a'); 
+        if (link) { 
+            var href = link.getAttribute('href') || '';
+            if (!href.startsWith('#') || href === '#') {
+                e.preventDefault(); 
+            }
+        } 
+    }); 
+    document.addEventListener('submit', function(e) { e.preventDefault(); });
+</script>`;
 
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -21,11 +32,6 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
-
-  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
-    texto: 'Aguardando geração...', 
-    imagem: 'Aguardando geração...' 
-  });
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -141,14 +147,29 @@ export default function Home() {
 
     async function chamarIA(systemInstructionText: string, promptParts: any[], isRefinement = false) {
       const loadOverlay = document.getElementById('loadingOverlay');
-      if (loadOverlay) loadOverlay.style.display = 'flex';
+      const textElement = document.getElementById('loadingText');
+      let loadingInterval: any;
 
-      const badgeApis = document.getElementById('badge-apis');
-      if (badgeApis) {
-          badgeApis.classList.add('animate-pulse', 'bg-indigo-100');
-          badgeApis.classList.remove('bg-emerald-50', 'border-emerald-200');
+      if (loadOverlay) {
+          loadOverlay.style.display = 'flex';
+          
+          // RADAR DE CARREGAMENTO ROTATIVO
+          const mensagens = [
+              "Gerando site com Google Gemini e Mídia via Unsplash...",
+              "Lendo referência visual (Pixel Perfect)...",
+              "Validando fallback de Imagem via LoremFlickr...",
+              "Testando otimização com Groq (Llama 3.3)...",
+              "Aplicando blocos Tailwind CSS...",
+              "Injetando Scripts de Animação e Rodapé..."
+          ];
+          let msgIndex = 0;
+          if (textElement) textElement.innerText = mensagens[0];
+          
+          loadingInterval = setInterval(() => {
+              msgIndex = (msgIndex + 1) % mensagens.length;
+              if (textElement) textElement.innerText = mensagens[msgIndex];
+          }, 2500); // Roda a cada 2.5 segundos
       }
-      setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Processando...' });
 
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
@@ -177,27 +198,21 @@ export default function Home() {
         }
         if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
         
-        if (data.provedorTexto && data.provedorImagem) {
-          setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
-        }
-
         if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true);
-        (window as any).showNotification('Sucesso!', 'success');
+        
+        // MENSAGEM FINAL EXIBINDO O QUE VENCEU
+        if (data.provedorTexto && data.provedorImagem) {
+            (window as any).showNotification(`Concluído via ${data.provedorTexto} + ${data.provedorImagem}`, 'success');
+        } else {
+            (window as any).showNotification('Sucesso!', 'success');
+        }
+        
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
         (window as any).showNotification('Erro: ' + err.message, 'error');
-        setStatusApis({ texto: 'Falha na geração', imagem: 'Erro' });
       } finally {
+        if (loadingInterval) clearInterval(loadingInterval);
         if (loadOverlay) loadOverlay.style.display = 'none';
-        
-        if (badgeApis) {
-            badgeApis.classList.remove('animate-pulse', 'bg-indigo-100', 'bg-indigo-50');
-            badgeApis.classList.add('bg-emerald-50', 'border-emerald-300', 'shadow-md');
-            setTimeout(() => {
-                badgeApis.classList.remove('bg-emerald-50', 'border-emerald-300', 'shadow-md');
-                badgeApis.classList.add('bg-indigo-50'); 
-            }, 3000);
-        }
       }
     }
 
@@ -267,7 +282,6 @@ export default function Home() {
       chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
 
-    // UPGRADE: REFINADOR CIRÚRGICO (Não quebra mais os scripts nem remove fotos erradas)
     (window as any).refinarSiteEstrito = () => {
       const prompt = (document.getElementById('promptRefinamento') as HTMLTextAreaElement)?.value.trim();
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
@@ -648,7 +662,6 @@ ${getMegaPromptCores()}`;
         .label-style { font-weight: 600; color: #1e293b; margin-bottom: .5rem; font-size: .875rem; display: flex; align-items: center;}
         .label-style i { margin-right: .5rem; color: #64748b; }
         
-        /* A MÁGICA DO LIPOASPIRADOR DO PAINEL */
         .input-style { width: 100%; padding: .35rem .5rem; border-radius: .375rem; border: 1px solid #cbd5e1; font-size: .75rem; }
         
         .input-style:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
@@ -668,10 +681,9 @@ ${getMegaPromptCores()}`;
       <div id="main-app-container" className="w-full h-full flex overflow-hidden">
         <div id="loadingOverlay" style={{ display: 'none' }}>
             <div id="loadingSpinner"></div>
-            <p id="loadingText" className="text-white mt-4 font-medium text-lg">Processando...</p>
+            <p id="loadingText" className="text-white mt-4 font-medium text-lg text-center px-4">Processando...</p>
         </div>
 
-        {/* ALARGAMENTO DO PAINEL PARA w-[380px] */}
         <div className="w-full md:w-96 lg:w-[380px] bg-white shadow-xl flex flex-col h-full border-r border-gray-200 flex-shrink-0 z-10">
             <div className="p-4 border-b border-gray-100 bg-gray-50 pb-0">
                 <h1 className="text-lg font-bold text-gray-800"><i className="fas fa-layer-group text-blue-600 mr-2"></i>Modelador Visual Pro</h1>
@@ -684,7 +696,6 @@ ${getMegaPromptCores()}`;
 
             <div className="overflow-y-auto p-3 flex-grow custom-scrollbar flex flex-col">
                 
-                {/* PAINEL COMPACTO */}
                 <div className="flex flex-col gap-1 mb-2 px-2 py-2 bg-indigo-50/50 border border-indigo-100 rounded shadow-sm">
                     <label htmlFor="nichoEstilo" className="text-[10px] font-bold text-indigo-800 uppercase"><i className="fas fa-paint-roller mr-1"></i> Estilo Visual do Site:</label>
                     <select id="nichoEstilo" className="input-style bg-white border-indigo-200">
@@ -821,7 +832,6 @@ ${getMegaPromptCores()}`;
                     </button>
                 </div>
 
-                {/* CAIXA DE REFINAMENTO MAIS ESPAÇOSA */}
                 <div className="card p-3 border-emerald-200 bg-emerald-50 mb-2">
                     <label className="text-[11px] font-bold text-emerald-800 uppercase mb-1.5 block"><i className="fas fa-wand-magic-sparkles mr-1"></i> Refinamento Cirúrgico</label>
                     <textarea id="promptRefinamento" rows={3} className="input-style w-full resize-none text-[11px]" placeholder="Ex: Remova apenas a imagem X... (A IA não mexerá no resto do código)"></textarea>
@@ -842,12 +852,6 @@ ${getMegaPromptCores()}`;
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-semibold py-1 px-2 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
-
-                    <div id="badge-apis" className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded text-[10px] font-medium text-indigo-800 transition-all duration-300 hidden md:flex">
-                        <span className="flex items-center gap-1"><i className="fas fa-robot text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.texto}</strong></span>
-                        <span className="text-indigo-300">|</span>
-                        <span className="flex items-center gap-1"><i className="fas fa-camera text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
-                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">
