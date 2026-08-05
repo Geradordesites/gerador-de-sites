@@ -87,7 +87,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
     let logErros: string[] = [];
 
     // =========================================================================
-    // CASCATA TRIPLA DE CHAVES GOOGLE GEMINI (CORRIGIDA PARA gemini-2.5-flash)
+    // CASCATA TRIPLA DE CHAVES GOOGLE GEMINI (COM gemini-2.5-flash)
     // =========================================================================
     const chavesGemini = [
         process.env.GEMINI_API_KEY,
@@ -103,7 +103,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
         try {
             const genAI = new GoogleGenerativeAI(chavesGemini[i]);
             const model = genAI.getGenerativeModel({
-                model: process.env.GEMINI_MODEL || "gemini-2.5-flash", // <-- CORREÇÃO EXATA AQUI
+                model: process.env.GEMINI_MODEL || "gemini-2.5-flash", // CORRIGIDO PARA O MODELO SOLICITADO
                 systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
             });
 
@@ -114,17 +114,16 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
 
             htmlCode = extrairHtmlDeJson(result.response.text());
 
-            // Trava de segurança: Se a IA não mandou HTML
             if (htmlCode && htmlCode.length > 500 && htmlCode.includes('<html')) {
                 provedorTextoUsado = `Google Gemini (Chave ${i + 1})`;
-                break; // SUCESSO! Interrompe o loop
+                break; 
             } else {
                 throw new Error("A IA gerou um texto genérico em vez do código da página.");
             }
 
         } catch (err: any) {
             logErros.push(`Chave ${i + 1} Falhou: ${err.message}`);
-            htmlCode = ''; // Limpa para testar a próxima
+            htmlCode = ''; 
         }
     }
 
@@ -162,7 +161,6 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
         
-        // Limpador de chaves para evitar URLs inválidas
         const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
 
         if (process.env.UNSPLASH_API_KEY) {
