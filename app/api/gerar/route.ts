@@ -8,6 +8,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { systemInstruction, promptParts, imageStyle, dinamica } = body;
 
+    // TRADUTOR UNIVERSAL PARA GROQ E OPENROUTER (Garante que eles leiam o HTML no Refinamento)
+    let promptTextoPuro = "";
+    if (Array.isArray(promptParts)) {
+        promptParts.forEach((part: any) => {
+            if (part.text) promptTextoPuro += part.text + "\n\n";
+        });
+    }
+
     const anoAtual = new Date().getFullYear();
 
     // LÓGICA DINÂMICA DO ESTILO DE IMAGEM
@@ -38,12 +46,12 @@ export async function POST(req: Request) {
 - CSS Global: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 - NAVEGAÇÃO POR ÂNCORAS (MENU): Se você criar um menu com links do tipo href="#nome-da-secao", você é OBRIGADO a criar as seções correspondentes com id="nome-da-secao" para que o scroll funcione.
 - ESPAÇAMENTO RIGOROSO: OBRIGATÓRIO estruturar o código para que haja EXATAMENTE UM ESPAÇO DE UMA LINHA EM BRANCO entre os títulos dos tópicos e os parágrafos subsequentes.
-- ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">).
+- ÍCONES: NUNCA USE EMOJIS (🚫). Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
 ${instrucaoDinamica}
 
 2. IMAGENS IDEAIS E PLACEHOLDERS (BLINDAGEM TOTAL):
-- OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: [https://images.unsplash.com/random/1200x800/?keyword](https://images.unsplash.com/random/1200x800/?keyword) (substitua a palavra keyword por UMA palavra em inglês, SEM CHAVES e SEM ESPAÇOS). Ex: [https://images.unsplash.com/random/1200x800/?business](https://images.unsplash.com/random/1200x800/?business)
-- IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('[https://images.unsplash.com/random/1200x800/?keyword](https://images.unsplash.com/random/1200x800/?keyword)'); background-size: cover; background-position: center;". NUNCA use colchetes, chaves ou variáveis na URL.
+- OBRIGATÓRIO: PARA TODA TAG <img>, utilize EXATAMENTE este formato de src: https://images.unsplash.com/random/1200x800/?keyword (substitua a palavra keyword por UMA palavra em inglês, SEM CHAVES e SEM ESPAÇOS). Ex: https://images.unsplash.com/random/1200x800/?business
+- IMAGENS DE FUNDO (BACKGROUND): OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?keyword'); background-size: cover; background-position: center;". NUNCA use colchetes, chaves ou variáveis na URL.
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
@@ -115,7 +123,9 @@ ${regraImagens}
 
     let htmlCode = '';
     let provedorTextoUsado = '';
+    let logErros: string[] = [];
 
+    // TENTATIVA 1: GEMINI
     if (process.env.GEMINI_API_KEY) {
       try {
         const model = genAI.getGenerativeModel({
@@ -128,19 +138,20 @@ ${regraImagens}
         });
         htmlCode = extrairHtmlDeJson(result.response.text());
         provedorTextoUsado = 'Google Gemini';
-      } catch (err) { console.warn("Gemini falhou ou atingiu limite."); }
+      } catch (err: any) { logErros.push(`Gemini falhou: ${err.message}`); }
     }
 
+    // TENTATIVA 2: GROQ (Agora usa o tradutor de texto puro)
     if (!htmlCode && process.env.GROQ_API_KEY) {
       try {
-        const groqRes = await fetch('[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)', {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: [
               { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito no formato {\"codigo_html\": \"...\"}" },
-              { role: 'user', content: JSON.stringify(promptParts) }
+              { role: 'user', content: promptTextoPuro } // Tradutor aplicado aqui
             ],
             response_format: { type: "json_object" }
           })
@@ -149,20 +160,23 @@ ${regraImagens}
         if (groqData.choices && groqData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
           provedorTextoUsado = 'Groq (Llama 3.3 70B)';
+        } else {
+           logErros.push(`Groq falhou: Resposta vazia ou mal formatada.`);
         }
-      } catch (err) { console.warn("Groq falhou."); }
+      } catch (err: any) { logErros.push(`Groq falhou: ${err.message}`); }
     }
 
+    // TENTATIVA 3: OPENROUTER (Agora usa o tradutor de texto puro)
     if (!htmlCode && process.env.OPENROUTER_API_KEY) {
       try {
-        const openRouterRes = await fetch('[https://openrouter.ai/api/v1/chat/completions](https://openrouter.ai/api/v1/chat/completions)', {
+        const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'qwen/qwen-2.5-coder-32b-instruct:free',
             messages: [
               { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito com chave codigo_html." },
-              { role: 'user', content: JSON.stringify(promptParts) }
+              { role: 'user', content: promptTextoPuro } // Tradutor aplicado aqui
             ]
           })
         });
@@ -170,16 +184,21 @@ ${regraImagens}
         if (openData.choices && openData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(openData.choices[0].message.content);
           provedorTextoUsado = 'OpenRouter (Qwen Coder)';
+        } else {
+          logErros.push(`OpenRouter falhou: Sem resposta.`);
         }
-      } catch (err) { console.warn("OpenRouter falhou."); }
+      } catch (err: any) { logErros.push(`OpenRouter falhou: ${err.message}`); }
     }
 
-    if (!htmlCode) throw new Error("Todas as APIs falharam.");
+    // SE TODAS FALHAREM, DEVOLVE O RELATÓRIO DO MOTIVO
+    if (!htmlCode) {
+        throw new Error(`As 3 APIs falharam. Motivos: ${logErros.join(' | ')}`);
+    }
 
     // INJEÇÃO SEGURA DA BIBLIOTECA AOS (Não duplica se já existir no refinamento)
     if (dinamica && dinamica !== 'estatico') {
-        const aosCss = '<link href="[https://unpkg.com/aos@2.3.1/dist/aos.css](https://unpkg.com/aos@2.3.1/dist/aos.css)" rel="stylesheet">';
-        const aosJs = '<script src="[https://unpkg.com/aos@2.3.1/dist/aos.js](https://unpkg.com/aos@2.3.1/dist/aos.js)"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
+        const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
+        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
         
         if (!htmlCode.includes('aos.css') && htmlCode.includes('</head>')) {
             htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
@@ -210,7 +229,7 @@ ${regraImagens}
 
         if (process.env.UNSPLASH_API_KEY) {
           try {
-            const unsplashRes = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){keywordLimpaFormatada}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
+            const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${keywordLimpaFormatada}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
             if (unsplashRes.ok) {
               const uData = await unsplashRes.json();
               if (uData.results && uData.results.length > 0) {
@@ -225,7 +244,7 @@ ${regraImagens}
 
         if (!imagemEncontrada) {
           const lockId = Math.floor(Math.random() * 9999);
-          const flickrUrl = `[https://loremflickr.com/1200/800/$](https://loremflickr.com/1200/800/$){keywordLimpaFormatada}?lock=${lockId}`;
+          const flickrUrl = `https://loremflickr.com/1200/800/${keywordLimpaFormatada}?lock=${lockId}`;
           htmlCode = htmlCode.replace(item.fullMatch, flickrUrl);
           flickrUsado = true;
         }
