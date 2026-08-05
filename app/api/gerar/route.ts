@@ -17,37 +17,43 @@ export async function POST(req: Request) {
 
     const anoAtual = new Date().getFullYear();
 
-    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use NENHUM tipo de desenho, animação ou gráfico. Utilize estrita e exclusivamente FOTOGRAFIAS HUMANAS E CENÁRIOS REAIS.";
+    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use NENHUM tipo de desenho, animação, gráfico ou elemento de ficção científica. Utilize estrita e exclusivamente FOTOGRAFIAS HUMANAS E CENÁRIOS REAIS.";
     if (imageStyle === 'ilustracao') {
-      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3D render ou digital painting.";
+      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3d render, minimal art ou digital painting.";
     } else if (imageStyle === 'tecnologia') {
-      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data e futurismo.";
+      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data, sci-fi, futurismo e abstrato.";
     }
 
     let instrucaoDinamica = "";
     if (dinamica === 'suave') {
-        instrucaoDinamica = "- ANIMAÇÕES DE SCROLL (AOS): Adicione o atributo data-aos=\"fade-up\" nas tags HTML de seções, textos e imagens.";
+        instrucaoDinamica = `
+- ANIMAÇÕES DE SCROLL (AOS): Adicione o atributo data-aos="fade-up" ou data-aos="zoom-in" nas tags HTML de seções, textos e imagens.
+- TRANSIÇÕES: Use transições suaves do Tailwind (transition-all duration-500).`;
     } else if (dinamica === 'impacto') {
-        instrucaoDinamica = "- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar data-aos=\"fade-up\" em seções e cards. Use botões com animate-pulse e hover:scale-105.";
+        instrucaoDinamica = `
+- ANIMAÇÕES DE SCROLL (AOS): OBRIGATÓRIO usar atributos data-aos="fade-up", data-aos="fade-right", etc., em todas as seções, textos e imagens.
+- BENTO GRID E GLASSMORPHISM: Substitua seções de features por layouts "Bento Grid". Use Glassmorphism (bg-white/10 backdrop-blur-md border border-white/20 shadow-xl).
+- TRATAMENTO EDITORIAL NAS FOTOS: Em imagens secundárias, use filtros como grayscale ou mix-blend-overlay.
+- BOTÕES MAGNÉTICOS: Todos os botões de ação/compra devem ter animate-pulse, hover:scale-105, hover:shadow-2xl.`;
     }
 
     const regrasObrigatorias = `
-=== REGRAS ABSOLUTAS DE GERAÇÃO DE CÓDIGO HTML ===
-1. FORMATO DE SAÍDA: VOCÊ É PROIBIDO DE RESPONDER COM TEXTOS EXPLICATIVOS OU FRASES DE RESUMO COMO "ESTE LAYOUT FOI RECRIADO". Retorne EXCLUSIVAMENTE um documento HTML completo e funcional em Tailwind CSS dentro do JSON.
-2. ESTRUTURA E ESPAÇAMENTO:
-- CSS Global obrigatório: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }
-- Espaçamento rigoroso: Mantenha um espaço limpo entre os títulos dos tópicos e os parágrafos.
-- Ícones: Use exclusivamente FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">). Nunca use emojis.
+=== REGRA DE OURO: FIDELIDADE VISUAL E CLONAGEM (LEIA ATENTAMENTE) ===
+1. ENGENHARIA REVERSA: Sua função principal é olhar a imagem anexada (se houver) e RECRIAR O DESIGN DELA. Extraia todos os textos reais legíveis. NUNCA gere seções com "Lorem ipsum" se houver texto na imagem. Copie a exata disposição de elementos.
+2. CORES ORIGINAIS OBRIGATÓRIAS: Aplique EXATAMENTE as mesmas cores de fundo (background), textos e botões da imagem enviada. Se a imagem de referência for escura/preta, o código HTML DEVE obrigatoriamente ter um fundo escuro (ex: bg-slate-900 ou style="background-color: #000"). É ESTRITAMENTE PROIBIDO retornar um site genérico branco se a referência for escura.
+
+=== REGRAS DE ESTRUTURA E UI/UX ===
+3. ESTRUTURA PREMIUM: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }. NAVEGAÇÃO POR ÂNCORAS: Crie os IDs das seções para os menus funcionarem. ESPAÇAMENTO: OBRIGATÓRIO um espaço de uma linha em branco entre títulos e parágrafos. Não use emojis. Use FontAwesome.
 ${instrucaoDinamica}
 
-3. IMAGENS E PLACEHOLDERS:
-- Para tags <img>, use estritamente: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por uma palavra em inglês relevante, sem chaves).
-- Para backgrounds: style="background-image: url('https://images.unsplash.com/random/1200x800/?keyword'); background-size: cover; background-position: center;"
+4. PLACEHOLDERS E IMAGENS (BLINDAGEM TOTAL):
+- Para TAG <img>: Utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword (substitua a palavra keyword por UMA palavra em inglês, sem chaves). Ex: https://images.unsplash.com/random/1200x800/?business
+- Para BACKGROUNDS: OBRIGATORIAMENTE use estilos inline na tag: style="background-image: url('https://images.unsplash.com/random/1200x800/?keyword'); background-size: cover; background-position: center;". NUNCA use chaves na URL.
 ${regraImagens}
 
-4. RODAPÉ JURÍDICO E SANFONA OBRIGATÓRIA:
+5. COMPLIANCE E RODAPÉ JURÍDICO (NÃO ALTERE ESTE CÓDIGO):
 O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do código:
-<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12">
+<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-4xl mx-auto px-4">
         <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
             <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Privacidade</a>
@@ -56,16 +62,20 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
         </div>
         <div id="legal-panels" class="text-left mb-8 text-slate-300 text-sm hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-inner max-w-3xl mx-auto transition-all duration-300">
             <div id="panel-privacidade" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade</h4>
-                <p>Em conformidade com a LGPD (Lei nº 13.709/2018), garantimos a segurança e confidencialidade dos seus dados coletados em nosso site.</p>
+                <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade e Proteção de Dados</h4>
+                <p>A sua privacidade é nossa prioridade. Esta política descreve como coletamos, usamos, armazenamos e protegemos os seus dados pessoais, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
+                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você (como nome, e-mail e telefone) ao preencher formulários em nosso site, além de dados de navegação coletados automaticamente por ferramentas de analytics e pixels de rastreamento para fins de otimização de campanhas.</p>
+                <p><strong>2. Uso das Informações:</strong> Seus dados são utilizados exclusivamente para o processamento de pagamentos, fornecimento do serviço ou produto solicitado, envio de comunicações transacionais, suporte ao cliente e ofertas de marketing previamente autorizadas.</p>
             </div>
             <div id="panel-termos" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Termos de Uso</h4>
-                <p>Ao utilizar nossos serviços, você concorda com nossos termos de propriedade intelectual e condições de uso comercial.</p>
+                <h4 class="font-bold text-white mb-2 text-lg">Termos e Condições de Uso</h4>
+                <p>Ao acessar e utilizar este site e nossos produtos/serviços, você concorda expressamente em cumprir estes Termos de Serviço, todas as leis e regulamentos aplicáveis. O uso contínuo constitui a aceitação incondicional destes termos.</p>
+                <p><strong>1. Licença e Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado neste site, incluindo textos, gráficos, logotipos, vídeos, metodologias e áudios, é de propriedade exclusiva dos criadores e é protegido por leis de direitos autorais. É terminantemente proibida a reprodução, distribuição, modificação ou revenda não autorizada de qualquer material.</p>
             </div>
             <div id="panel-cookies" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies</h4>
-                <p>Utilizamos cookies para otimizar sua experiência de navegação e desempenho de campanhas de tráfego pago.</p>
+                <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies e Rastreamento</h4>
+                <p>Para proporcionar a melhor experiência possível, analisar o tráfego do site e veicular anúncios personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes.</p>
+                <p><strong>1. O que são Cookies?</strong> Cookies são pequenos arquivos de texto que são baixados e armazenados no seu computador, smartphone ou dispositivo móvel quando você visita o nosso site. Eles permitem que o site reconheça o seu dispositivo e lembre das suas preferências nas próximas visitas.</p>
             </div>
         </div>
         <p>&copy; ${anoAtual} Todos os direitos reservados.</p>
@@ -76,9 +86,14 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
             var container = document.getElementById('legal-panels');
             var panels = document.querySelectorAll('.legal-panel');
             var target = document.getElementById(panelId);
-            var isVisible = !target.classList.contains('hidden');
+            var isCurrentlyVisible = !target.classList.contains('hidden');
             panels.forEach(function(p) { p.classList.add('hidden'); });
-            if (isVisible) { container.classList.add('hidden'); } else { container.classList.remove('hidden'); target.classList.remove('hidden'); }
+            if (isCurrentlyVisible) {
+                container.classList.add('hidden');
+            } else {
+                container.classList.remove('hidden');
+                target.classList.remove('hidden');
+            }
         }
     </script>
 </footer>
@@ -90,7 +105,7 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
     let provedorTextoUsado = '';
     let logErros: string[] = [];
 
-    // TENTATIVA 1: GEMINI
+    // TENTATIVA 1: GEMINI (Agora focado em HTML puro, sem travas JSON)
     if (process.env.GEMINI_API_KEY) {
       try {
         const model = genAI.getGenerativeModel({
@@ -98,8 +113,7 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
           systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
         });
         const result = await model.generateContent({
-          contents: [{ role: "user", parts: promptParts }],
-          generationConfig: { responseMimeType: "application/json" }
+          contents: [{ role: "user", parts: promptParts }]
         });
         htmlCode = extrairHtmlDeJson(result.response.text());
         provedorTextoUsado = 'Google Gemini';
@@ -115,16 +129,17 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: [
-              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito contendo a chave \"codigo_html\" com o código HTML completo da página." },
+              { role: 'system', content: systemInstructionFinal + "\nRetorne OBRIGATORIAMENTE apenas o código HTML completo. Sem JSON, sem textos extras." },
               { role: 'user', content: promptTextoPuro }
-            ],
-            response_format: { type: "json_object" }
+            ]
           })
         });
         const groqData = await groqRes.json();
         if (groqData.choices && groqData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
           provedorTextoUsado = 'Groq (Llama 3.3 70B)';
+        } else {
+           logErros.push(`Groq falhou: Resposta vazia.`);
         }
       } catch (err: any) { logErros.push(`Groq falhou: ${err.message}`); }
     }
@@ -138,7 +153,7 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
           body: JSON.stringify({
             model: 'qwen/qwen-2.5-coder-32b-instruct:free',
             messages: [
-              { role: 'system', content: systemInstructionFinal + "\nRetorne um JSON estrito com a chave \"codigo_html\"." },
+              { role: 'system', content: systemInstructionFinal + "\nRetorne APENAS código HTML." },
               { role: 'user', content: promptTextoPuro }
             ]
           })
@@ -147,16 +162,17 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
         if (openData.choices && openData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(openData.choices[0].message.content);
           provedorTextoUsado = 'OpenRouter (Qwen Coder)';
+        } else {
+          logErros.push(`OpenRouter falhou: Sem resposta.`);
         }
       } catch (err: any) { logErros.push(`OpenRouter falhou: ${err.message}`); }
     }
 
-    // TRAVA DE SEGURANÇA: Se a IA tentou mandar um texto simples em vez de HTML
-    if (!htmlCode || htmlCode.length < 300 || !htmlCode.includes('<html')) {
-        throw new Error(`A IA retornou uma resposta inválida ou incompleta. Tente gerar novamente.`);
+    if (!htmlCode) {
+        throw new Error(`As 3 APIs falharam. Motivos: ${logErros.join(' | ')}`);
     }
 
-    // INJEÇÃO DA BIBLIOTECA AOS
+    // INJEÇÃO SEGURA DA BIBLIOTECA AOS
     if (dinamica && dinamica !== 'estatico') {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
@@ -184,6 +200,7 @@ O site gerado DEVE conter obrigatoriamente este bloco de rodapé no final do có
 
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
+        
         const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
 
         if (process.env.UNSPLASH_API_KEY) {
