@@ -22,10 +22,9 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
-  // ESTADO DO PAINEL DE MONITORAMENTO
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
-    texto: 'Em repouso', 
-    imagem: 'Aguardando comando...' 
+    texto: 'Aguardando geração...', 
+    imagem: 'Aguardando geração...' 
   });
 
   useEffect(() => {
@@ -144,7 +143,6 @@ export default function Home() {
       const loadOverlay = document.getElementById('loadingOverlay');
       if (loadOverlay) loadOverlay.style.display = 'flex';
 
-      // ATIVA O MODO "RADAR" DO PAINEL DE API
       const badgeApis = document.getElementById('badge-apis');
       if (badgeApis) {
           badgeApis.classList.add('animate-pulse', 'bg-indigo-100');
@@ -173,7 +171,6 @@ export default function Home() {
         }
         if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
         
-        // ATUALIZA O PAINEL COM AS APIS REAIS QUE VENCERAM A CORRIDA
         if (data.provedorTexto && data.provedorImagem) {
           setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
         }
@@ -187,13 +184,12 @@ export default function Home() {
       } finally {
         if (loadOverlay) loadOverlay.style.display = 'none';
         
-        // EFEITO DE FLASH VERDE PARA MOSTRAR QUE ATUALIZOU
         if (badgeApis) {
             badgeApis.classList.remove('animate-pulse', 'bg-indigo-100', 'bg-indigo-50');
             badgeApis.classList.add('bg-emerald-50', 'border-emerald-300', 'shadow-md');
             setTimeout(() => {
                 badgeApis.classList.remove('bg-emerald-50', 'border-emerald-300', 'shadow-md');
-                badgeApis.classList.add('bg-indigo-50'); // Volta a cor base
+                badgeApis.classList.add('bg-indigo-50'); 
             }, 3000);
         }
       }
@@ -287,8 +283,29 @@ export default function Home() {
     (window as any).refinarSiteEstrito = () => {
       const prompt = (document.getElementById('promptRefinamento') as HTMLTextAreaElement)?.value.trim();
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!prompt || !codigo) return;
-      chamarIA(`Compilador estrito. Retorne JSON com chave "codigo_html".`, [{text: `CÓDIGO:\n${codigo}\nPEDIDO:\n${prompt}`}], true);
+      
+      if (!codigo) {
+        (window as any).showNotification('Não há código ativo. Gere ou edite um site primeiro.', 'error');
+        return;
+      }
+
+      const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "REMOVA O MENU SUPERIOR SE EXISTIR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
+
+      const megaPromptEstilo = getMegaPromptEstilo();
+      const megaPromptHero = getMegaPromptHero();
+      const megaCores = getMegaPromptCores();
+
+      const systemInstruction = `Especialista Sênior UI/UX e Compilador Estrito. Retorne JSON com chave "codigo_html".
+DIRETRIZ MESTRA: Você é um atualizador de sites. MANTENHA TODO O CONTEÚDO ORIGINAL (textos de copy, imagens, depoimentos e links) do código HTML fornecido, mas REESTRUTURE E ATUALIZE visualmente o código aplicando PERFEITAMENTE as seguintes regras:
+${diretrizMenu}
+${megaPromptEstilo}
+${megaPromptHero}
+${megaCores}`;
+
+      const textoPedidoExtra = prompt ? `PEDIDO EXTRA DO USUÁRIO:\n${prompt}` : "Apenas integre as novas regras de design, menu e cores ao código atual sem alterar o conteúdo textual da página.";
+
+      chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\nCÓDIGO ATUAL A SER ATUALIZADO:\n${codigo}`}], true);
     };
 
     (window as any).handleElementImageUpload = (event: any, index: number) => {
@@ -316,7 +333,7 @@ export default function Home() {
 
          input.value = data.url; 
          (window as any).aplicarNovosElementos();
-         (window as any).showNotification('Imagem Premium carregada!', 'success');
+         (window as any).showNotification('Imagem carregada!', 'success');
       } catch (e) {
          (window as any).showNotification('Erro ao buscar imagem.', 'error');
       } finally {
@@ -335,11 +352,13 @@ export default function Home() {
       
       let temImagens = false, temLinks = false;
       let htmlModificado = false; 
+      let indexCount = 0;
 
+      // 1. MAPEIA AS IMAGENS NORMAIS (Tags IMG)
       if (images.length > 0) {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
-        images.forEach((img, index) => {
-          let label = img.id || img.alt || `Imagem ${index + 1}`;
+        images.forEach((img) => {
+          let label = img.id || img.alt || `Imagem ${indexCount + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
           if (isFromAI) {
@@ -362,25 +381,63 @@ export default function Home() {
                 <span class="bg-gray-200 text-gray-600 px-1 py-0.5 rounded text-[8px]">${img.width || '?'}x${img.height || '?'}</span>
             </label>
             <div class="flex gap-2 mb-1">
-                <input type="text" id="img_replace_${index}" class="input-style text-[11px] py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
-                <button onclick="window.gerarNovaImagem(${index}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem no Unsplash">
+                <input type="text" id="img_replace_${indexCount}" class="input-style text-[11px] py-1.5 px-2 flex-1" value="${img.src}" placeholder="URL da imagem">
+                <button onclick="window.gerarNovaImagem(${indexCount}, '${label.replace(/'/g, "\\'")}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-indigo-200 transition" title="Buscar nova imagem">
                     <i class="fas fa-sync-alt mr-1"></i> Nova Foto
                 </button>
                 <label class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-blue-200 transition" title="Upload do PC">
                     <i class="fas fa-upload mr-1"></i> Upload PC
-                    <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${index})">
+                    <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${indexCount})">
                 </label>
             </div>
             <div class="flex items-center gap-2 mt-2 bg-slate-50 p-1.5 rounded border border-slate-200 mb-4">
                 <span class="text-[9px] font-bold text-slate-500 w-12">Tamanho:</span>
-                <input type="range" id="img_scale_${index}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${index}').innerText = this.value + '%'; window.aplicarNovosElementos()">
-                <span id="img_scale_val_${index}" class="text-[9px] font-mono text-blue-700 font-bold w-8 text-right">${currentScale}%</span>
+                <input type="range" id="img_scale_${indexCount}" min="10" max="200" value="${currentScale}" class="w-full h-1 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('img_scale_val_${indexCount}').innerText = this.value + '%'; window.aplicarNovosElementos()">
+                <span id="img_scale_val_${indexCount}" class="text-[9px] font-mono text-blue-700 font-bold w-8 text-right">${currentScale}%</span>
             </div>
           `;
           imgContainer.appendChild(div);
+          indexCount++;
         });
-      } else { document.getElementById('imageSection')!.style.display = 'none'; }
+      }
 
+      // 2. MAPEIA AS IMAGENS DE FUNDO (Background-Image inline)
+      const todosElementos = doc.querySelectorAll('*');
+      todosElementos.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.style && htmlEl.style.backgroundImage && htmlEl.style.backgroundImage.includes('url(')) {
+              const match = htmlEl.style.backgroundImage.match(/url\(['"]?(.*?)['"]?\)/);
+              if (match && match[1]) {
+                  const bgUrl = match[1];
+                  let label = htmlEl.id || `Fundo de Seção (Background) ${indexCount + 1}`;
+                  
+                  const div = document.createElement('div');
+                  div.innerHTML = `
+                    <label class="text-[9px] font-bold text-emerald-600 uppercase flex justify-between items-center mb-1 mt-2">
+                        <span class="truncate pr-2"><i class="fas fa-layer-group mr-1"></i> ${label}</span>
+                        <span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded text-[8px]">BACKGROUND</span>
+                    </label>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="img_replace_${indexCount}" class="input-style border-emerald-200 focus:border-emerald-500 text-[11px] py-1.5 px-2 flex-1" value="${bgUrl}" placeholder="URL da imagem de fundo">
+                        <button onclick="window.gerarNovaImagem(${indexCount}, 'background wallpaper')" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center justify-center border border-emerald-200 transition" title="Buscar nova imagem de fundo">
+                            <i class="fas fa-sync-alt mr-1"></i> Nova Foto
+                        </button>
+                        <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold cursor-pointer px-3 py-1.5 rounded flex items-center justify-center border border-emerald-700 transition" title="Upload do PC">
+                            <i class="fas fa-upload mr-1"></i> Upload
+                            <input type="file" accept="image/*" class="hidden" onchange="window.handleElementImageUpload(event, ${indexCount})">
+                        </label>
+                    </div>
+                  `;
+                  imgContainer.appendChild(div);
+                  temImagens = true;
+                  indexCount++;
+              }
+          }
+      });
+
+      if (!temImagens) { document.getElementById('imageSection')!.style.display = 'none'; }
+
+      // 3. MAPEIA OS LINKS
       if (links.length > 0) {
         temLinks = true; document.getElementById('linkSection')!.style.display = 'block';
         links.forEach((a, index) => {
@@ -417,10 +474,12 @@ export default function Home() {
       if (!codEl || !codEl.value) return;
       const doc = domParser.parseFromString(codEl.value, 'text/html');
       let alterou = false;
+      let indexCount = 0;
 
-      doc.querySelectorAll('img').forEach((img, i) => {
-        const inpUrl = document.getElementById(`img_replace_${i}`) as HTMLInputElement;
-        const inpScale = document.getElementById(`img_scale_${i}`) as HTMLInputElement;
+      // 1. APLICA NAS IMAGENS NORMAIS
+      doc.querySelectorAll('img').forEach((img) => {
+        const inpUrl = document.getElementById(`img_replace_${indexCount}`) as HTMLInputElement;
+        const inpScale = document.getElementById(`img_scale_${indexCount}`) as HTMLInputElement;
         
         if (inpUrl && inpUrl.value && inpUrl.value !== img.src) { img.src = inpUrl.value; alterou = true; }
         
@@ -435,8 +494,26 @@ export default function Home() {
             }
             alterou = true;
         }
+        indexCount++;
       });
 
+      // 2. APLICA NAS IMAGENS DE FUNDO
+      doc.querySelectorAll('*').forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.style && htmlEl.style.backgroundImage && htmlEl.style.backgroundImage.includes('url(')) {
+              const inpUrl = document.getElementById(`img_replace_${indexCount}`) as HTMLInputElement;
+              if (inpUrl && inpUrl.value) {
+                  const currentMatch = htmlEl.style.backgroundImage.match(/url\(['"]?(.*?)['"]?\)/);
+                  if (currentMatch && currentMatch[1] !== inpUrl.value) {
+                      htmlEl.style.backgroundImage = `url('${inpUrl.value}')`;
+                      alterou = true;
+                  }
+              }
+              indexCount++;
+          }
+      });
+
+      // 3. APLICA NOS LINKS
       Array.from(doc.querySelectorAll('a')).filter(a => a.hasAttribute('href') && !a.getAttribute('href')!.startsWith('javascript:')).forEach((a, i) => {
         const inp = document.getElementById(`link_replace_${i}`) as HTMLInputElement;
         if (inp && inp.value && inp.value !== a.getAttribute('href')) { a.setAttribute('href', inp.value); alterou = true; }
@@ -758,9 +835,10 @@ export default function Home() {
             </div>
 
             <div className="p-4 border-t border-gray-200 bg-blue-50">
-                <textarea id="promptRefinamento" rows={2} className="input-style w-full text-xs" placeholder="Ex: Mude o botão..."></textarea>
-                <button onClick={() => (window as any).refinarSiteEstrito()} className="bg-blue-600 text-white font-medium text-sm py-2 px-3 mt-2 rounded w-full">
-                    Aplicar Alteração
+                <label className="text-[10px] font-bold text-blue-800 uppercase mb-1 block"><i className="fas fa-wand-magic-sparkles mr-1"></i> Refinar Site Atual</label>
+                <textarea id="promptRefinamento" rows={2} className="input-style w-full text-xs" placeholder="Ex: Adicione uma seção com imagem de fundo..."></textarea>
+                <button onClick={() => (window as any).refinarSiteEstrito()} className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm py-2 px-3 mt-2 rounded w-full flex items-center justify-center gap-2 shadow-sm transition-colors">
+                    <i className="fas fa-rotate"></i> Aplicar Opções ao Site Atual
                 </button>
             </div>
         </div>

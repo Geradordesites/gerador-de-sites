@@ -26,27 +26,22 @@ export async function POST(req: Request) {
 - ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
 
 2. IMAGENS IDEAIS E PLACEHOLDERS:
-- Para imagens, utilize placeholders no formato: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}
+- Para imagens de tag <img>, utilize placeholders: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}
+- IMAGENS DE FUNDO (BACKGROUND): Se for criar seções com imagem de fundo, OBRIGATORIAMENTE use estilos inline na tag no formato: style="background-image: url('https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}'); background-size: cover; background-position: center;". Não use classes bg-[url(...)] do Tailwind, use sempre o atributo style para imagens de fundo.
 ${regraImagens}
-- TAMANHO IDEAL: Aplique classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
+- TAMANHO IDEAL: Aplique classes Tailwind para imagens normais: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
 3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE E BLINDADA PARA FACEBOOK ADS):
 - NÃO crie seções separadas de "Informações Legais" soltas no meio da página.
-- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé. Ele já possui os links com href reais internos exigidos pelo Facebook Ads, textos jurídicos densos e a lógica em JavaScript.
-<!-- COLE EXATAMENTE ESTE CÓDIGO NO FINAL DA PÁGINA: -->
+- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé.
 <footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12">
     <div class="max-w-4xl mx-auto px-4">
-        
-        <!-- Links Reais do Rodapé -->
         <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
             <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Privacidade</a>
             <a href="#termos" onclick="toggleLegal('panel-termos', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Termos de Uso</a>
             <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Cookies</a>
         </div>
-
-        <!-- Paineis de Sanfona Ocultos (Abrem abaixo dos links com textos longos de compliance) -->
         <div id="legal-panels" class="text-left mb-8 text-slate-300 text-sm hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-inner max-w-3xl mx-auto transition-all duration-300">
-            
             <div id="panel-privacidade" class="legal-panel hidden space-y-3">
                 <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade e Proteção de Dados</h4>
                 <p>A sua privacidade é nossa prioridade. Esta política descreve como coletamos, usamos, armazenamos e protegemos os seus dados pessoais, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
@@ -55,7 +50,6 @@ ${regraImagens}
                 <p><strong>3. Segurança e Retenção:</strong> Adotamos as melhores práticas de segurança da informação e criptografia de ponta a ponta para proteger seus dados contra acessos não autorizados. Os dados serão mantidos apenas pelo tempo necessário para cumprir as finalidades para as quais foram coletados.</p>
                 <p><strong>4. Direitos do Titular:</strong> Você tem o direito de solicitar o acesso, a correção, a anonimização ou a exclusão total dos seus dados pessoais de nossa base a qualquer momento, bastando entrar em contato através dos nossos canais oficiais de atendimento presentes nesta página.</p>
             </div>
-
             <div id="panel-termos" class="legal-panel hidden space-y-3">
                 <h4 class="font-bold text-white mb-2 text-lg">Termos e Condições de Uso</h4>
                 <p>Ao acessar e utilizar este site e nossos produtos/serviços, você concorda expressamente em cumprir estes Termos de Serviço, todas as leis e regulamentos aplicáveis. O uso contínuo constitui a aceitação incondicional destes termos.</p>
@@ -64,7 +58,6 @@ ${regraImagens}
                 <p><strong>3. Política de Arrependimento e Reembolso:</strong> Em conformidade com o Código de Defesa do Consumidor (Art. 49), garantimos o prazo de 7 (sete) dias corridos, a contar da data da compra, para o cancelamento e estorno integral do valor pago caso você não esteja satisfeito com o produto digital, sem necessidade de justificativa.</p>
                 <p><strong>4. Conduta do Usuário:</strong> O usuário concorda em utilizar o site apenas para fins lícitos, sendo vedado o uso para transmissão de material difamatório, ameaçador, obsceno ou que viole direitos de terceiros.</p>
             </div>
-
             <div id="panel-cookies" class="legal-panel hidden space-y-3">
                 <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies e Rastreamento</h4>
                 <p>Para proporcionar a melhor experiência possível, analisar o tráfego do site e veicular anúncios personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes.</p>
@@ -77,12 +70,9 @@ ${regraImagens}
                 </ul>
                 <p><strong>3. Gerenciamento de Cookies:</strong> Você pode optar por aceitar ou recusar o uso de cookies não essenciais. A maioria dos navegadores da web aceita cookies automaticamente, mas você pode modificar a configuração do seu navegador para recusá-los, se preferir. Note que isso pode impedir que você tire o máximo proveito da experiência no site.</p>
             </div>
-
         </div>
-        
         <p>&copy; ${anoAtual} Todos os direitos reservados.</p>
     </div>
-
     <script>
         function toggleLegal(panelId, event) {
             if(event) event.preventDefault();
@@ -90,15 +80,10 @@ ${regraImagens}
             var panels = document.querySelectorAll('.legal-panel');
             var target = document.getElementById(panelId);
             var isCurrentlyVisible = !target.classList.contains('hidden');
-            
-            // Fecha todos os painéis abertos
             panels.forEach(function(p) { p.classList.add('hidden'); });
-            
-            // Se o mesmo link foi clicado, fecha a caixa inteira
             if (isCurrentlyVisible) {
                 container.classList.add('hidden');
             } else {
-                // Caso contrário, abre a caixa e exibe o texto selecionado
                 container.classList.remove('hidden');
                 target.classList.remove('hidden');
             }
@@ -115,40 +100,26 @@ ${regraImagens}
     let htmlCode = '';
     let provedorTextoUsado = '';
 
-    // =========================================================================
-    // TENTATIVA 1: GOOGLE GEMINI
-    // =========================================================================
     if (process.env.GEMINI_API_KEY) {
       try {
         const model = genAI.getGenerativeModel({
           model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
           systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
         });
-
         const result = await model.generateContent({
           contents: [{ role: "user", parts: promptParts }],
           generationConfig: { responseMimeType: "application/json" }
         });
-
-        const responseText = result.response.text();
-        htmlCode = extrairHtmlDeJson(responseText);
+        htmlCode = extrairHtmlDeJson(result.response.text());
         provedorTextoUsado = 'Google Gemini';
-      } catch (err) {
-        console.warn("Gemini falhou ou atingiu limite. Pulo para o próximo provedor...");
-      }
+      } catch (err) { console.warn("Gemini falhou ou atingiu limite."); }
     }
 
-    // =========================================================================
-    // TENTATIVA 2: GROQ (LLAMA 3.3 70B) - BACKUP RÁPIDO
-    // =========================================================================
     if (!htmlCode && process.env.GROQ_API_KEY) {
       try {
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages: [
@@ -158,28 +129,19 @@ ${regraImagens}
             response_format: { type: "json_object" }
           })
         });
-
         const groqData = await groqRes.json();
         if (groqData.choices && groqData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
           provedorTextoUsado = 'Groq (Llama 3.3 70B)';
         }
-      } catch (err) {
-        console.warn("Groq falhou. Pulo para o próximo provedor...");
-      }
+      } catch (err) { console.warn("Groq falhou."); }
     }
 
-    // =========================================================================
-    // TENTATIVA 3: OPENROUTER (QWEN 2.5 CODER FREE) - BACKUP FINAL
-    // =========================================================================
     if (!htmlCode && process.env.OPENROUTER_API_KEY) {
       try {
         const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'qwen/qwen-2.5-coder-32b-instruct:free',
             messages: [
@@ -188,24 +150,16 @@ ${regraImagens}
             ]
           })
         });
-
         const openData = await openRouterRes.json();
         if (openData.choices && openData.choices[0]?.message?.content) {
           htmlCode = extrairHtmlDeJson(openData.choices[0].message.content);
           provedorTextoUsado = 'OpenRouter (Qwen Coder)';
         }
-      } catch (err) {
-        console.warn("OpenRouter falhou.");
-      }
+      } catch (err) { console.warn("OpenRouter falhou."); }
     }
 
-    if (!htmlCode) {
-      throw new Error("Todas as APIs de IA de texto falharam ou estão sem chaves configuradas.");
-    }
+    if (!htmlCode) throw new Error("Todas as APIs falharam.");
 
-    // =========================================================================
-    // SISTEMA ROTATIVO DE IMAGENS (FALLBACK IMAGEM POR IMAGEM)
-    // =========================================================================
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
     let match;
@@ -222,11 +176,9 @@ ${regraImagens}
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
 
-        // 1. TENTA UNSPLASH PRIMEIRO
         if (process.env.UNSPLASH_API_KEY) {
           try {
             const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${item.keyword}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
-            
             if (unsplashRes.ok) {
               const uData = await unsplashRes.json();
               if (uData.results && uData.results.length > 0) {
@@ -239,7 +191,6 @@ ${regraImagens}
           } catch (e) {}
         }
 
-        // 2. FALLBACK IMEDIATO: SE UNSPLASH FALHOU NESSA IMAGEM, ACIONA O FLICKR
         if (!imagemEncontrada) {
           const keywordLimpa = encodeURIComponent(item.keyword.split(',')[0]);
           const lockId = Math.floor(Math.random() * 9999);
@@ -249,14 +200,9 @@ ${regraImagens}
         }
       }
 
-      // DEFINE O STATUS PRO PAINEL
-      if (unsplashUsado && flickrUsado) {
-        provedorImagemUsado = 'Unsplash + Flickr (Misto)';
-      } else if (unsplashUsado) {
-        provedorImagemUsado = 'Unsplash API (Premium)';
-      } else if (flickrUsado) {
-        provedorImagemUsado = 'LoremFlickr (Backup Seguro)';
-      }
+      if (unsplashUsado && flickrUsado) provedorImagemUsado = 'Unsplash + Flickr (Misto)';
+      else if (unsplashUsado) provedorImagemUsado = 'Unsplash API (Premium)';
+      else if (flickrUsado) provedorImagemUsado = 'LoremFlickr (Backup Seguro)';
     }
 
     return NextResponse.json({
@@ -271,15 +217,12 @@ ${regraImagens}
   }
 }
 
-// FUNÇÕES AUXILIARES DE TRATAMENTO
 function extrairHtmlDeJson(responseText: string): string {
   let htmlCode = '';
   try {
     const json = JSON.parse(responseText);
     htmlCode = json.codigo_html || json.html || Object.values(json)[0];
-  } catch (e) {
-    htmlCode = responseText;
-  }
+  } catch (e) { htmlCode = responseText; }
   const doctypeIndex = htmlCode.toLowerCase().indexOf('<!doctype html>');
   if (doctypeIndex !== -1) htmlCode = htmlCode.substring(doctypeIndex);
   return htmlCode.replace(/```html/i, '').replace(/```/g, '').trim();
