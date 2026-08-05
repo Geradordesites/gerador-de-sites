@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE: Injetado apenas no preview para evitar o efeito "Inception"
 const SCRIPT_PREVIEW = `<script>document.addEventListener('click', function(e) { var link = e.target.closest('a'); if (link) { e.preventDefault(); } }); document.addEventListener('submit', function(e) { e.preventDefault(); });</script>`;
 
 export default function Home() {
@@ -148,7 +147,7 @@ export default function Home() {
           badgeApis.classList.add('animate-pulse', 'bg-indigo-100');
           badgeApis.classList.remove('bg-emerald-50', 'border-emerald-200');
       }
-      setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Consultando bancos...' });
+      setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Extraindo visual...' });
 
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
@@ -203,48 +202,51 @@ export default function Home() {
 
     const getMegaPromptEstilo = () => {
       const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
-      if (estilo === 'nenhum') return "Crie um design profissional e equilibrado, focado em alta conversão e legibilidade impecável.";
-      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado e de alto valor (Premium). Tipografia serifada elegante (ex: Playfair Display). Textos com muito respiro.";
-      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, transmitindo calma e autoridade. Muito espaço em branco, bordas arredondadas e suavidade.";
-      if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão focado em contraste e urgência. Fundo escuro (Dark Mode) com textos claros e estrutura em blocos de impacto.";
-      if (estilo === 'corporativo') return "DIRETRIZ VISUAL: Corporativo, limpo e direto ao ponto. Tipografia moderna e elementos alinhados rigidamente para transmitir segurança e escala.";
-      if (estilo === 'consultor') return "DIRETRIZ VISUAL: Elegante e focado em autoridade pessoal. Elementos imponentes, fotos de alta qualidade ocupando boas seções e tipografia marcante.";
-      if (estilo === 'feminino') return "DIRETRIZ VISUAL: Sofisticado, suave e luxuoso. Fontes delicadas (script para destaques e sans-serif fina para texto) e imagens super iluminadas.";
+      if (estilo === 'nenhum') return "Crie um design profissional e equilibrado, respeitando estritamente o layout enviado.";
+      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado (Premium). Tipografia serifada elegante (ex: Playfair Display).";
+      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, calmo e autoritário. Espaço em branco e bordas arredondadas.";
+      if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão, Dark Mode agressivo com textos claros e blocos de impacto.";
+      if (estilo === 'corporativo') return "DIRETRIZ VISUAL: Corporativo e limpo. Tipografia moderna e elementos rígidos.";
+      if (estilo === 'consultor') return "DIRETRIZ VISUAL: Elegante e focado em autoridade pessoal. Tipografia marcante.";
+      if (estilo === 'feminino') return "DIRETRIZ VISUAL: Sofisticado, suave e luxuoso. Fontes delicadas e imagens iluminadas.";
       return "";
     };
 
     const getMegaPromptHero = () => {
       const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
-      if (hero === 'center') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Centralizado. A Headline principal, a Subheadline e o Botão de Compra devem ficar perfeitamente centralizados (text-center) e sozinhos na primeira tela, criando foco total na Copy.";
-      if (hero === 'split') return "ESTRUTURA DO HERO (CABEÇALHO INICIAL): OBRIGATORIAMENTE Dividido (Side-by-side no Desktop). Coloque a Headline, Textos e Botão de um lado, e uma imagem de alta qualidade do outro lado.";
-      return "ESTRUTURA DO HERO: Crie a primeira dobra do site de acordo com o que julgar mais profissional e otimizado para o nicho.";
+      if (hero === 'center') return "ESTRUTURA DO HERO: OBRIGATORIAMENTE Centralizado. Headline e Botão perfeitamente centralizados (text-center).";
+      if (hero === 'split') return "ESTRUTURA DO HERO: OBRIGATORIAMENTE Dividido (Side-by-side). Texto de um lado, imagem do outro.";
+      return "ESTRUTURA DO HERO: Respeite a estrutura exata que estiver na imagem de referência.";
     };
 
+    // UPGRADE: REGRA EXTREMA DE CORES PARA AUTO E CLONAGEM
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
+      
+      if (cor === 'auto') return "PALETA DE CORES (EXTRAÇÃO FIEL DA IMAGEM): Analise a imagem anexada como um scanner. Você é OBRIGADO a usar EXATAMENTE as mesmas cores de fundo (background), textos e botões da imagem original. Se a imagem tiver fundo escuro, o site DEVE ter fundo escuro (ex: bg-slate-900 ou style inline). NUNCA invente um tema claro/branco se a referência visual for escura.";
       
       if (cor === 'personalizada') {
          const cp = (document.getElementById('corPrimaria') as HTMLInputElement)?.value || '#2563eb';
          const cf = (document.getElementById('corFundo') as HTMLInputElement)?.value || '#ffffff';
          const cd = (document.getElementById('corDestaque') as HTMLInputElement)?.value || '#10b981';
          
-         return `OVERRIDE - PALETA PERSONALIZADA DO CLIENTE: Ignore as classes de cor do Tailwind para o fundo e textos principais. USE INLINE STYLES (style="...") OBRIGATORIAMENTE para aplicar exatamente estas cores HEX:
+         return `OVERRIDE - PALETA PERSONALIZADA DO CLIENTE: Ignore a imagem original e aplique ESTAS cores HEX exatas (use inline styles se necessário):
          - Cor de Fundo do Site (body/sections): ${cf}
-         - Cor Principal (Títulos, Headers e destaques de texto): ${cp}
-         - Cor de Ação/Destaque (Fundo de Botões de Compra): ${cd}.`;
+         - Cor Principal (Títulos, Headers): ${cp}
+         - Cor de Ação/Destaque (Botões): ${cd}.`;
       }
 
-      if (cor === 'azul') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Azul Meia-Noite como cor principal, combinados com branco, cinza claro e detalhes em azul vibrante ou dourado para botões.";
-      if (cor === 'verde') return "PALETA DE CORES OBRIGATÓRIA: Use Verde Esmeralda ou Musgo como cor principal, fundo claro e botões de conversão em verde contrastante.";
-      if (cor === 'terracota') return "PALETA DE CORES OBRIGATÓRIA: Use tons de Terracota, Nude e Areia. Design quente, elegante e acolhedor.";
-      if (cor === 'roxo') return "PALETA DE CORES OBRIGATÓRIA: Use Roxo Real ou Violeta Escuro, com fundos brancos ou cinza super claro.";
-      if (cor === 'dark') return "PALETA DE CORES OBRIGATÓRIA: Fundo Preto ou Cinza muito escuro (Dark Mode). Textos off-white, com detalhes e botões de compra em Dourado vibrante.";
-      if (cor === 'cinza') return "PALETA DE CORES OBRIGATÓRIA: Monocromático elegante. Escala de cinza, fundos brancos e textos escuros.";
-      if (cor === 'vermelho') return "PALETA DE CORES OBRIGATÓRIA: Vermelho Rubi e Bordô, fundos claríssimos ou brancos, e botões de ação em vermelho vivo.";
-      if (cor === 'amarelo') return "PALETA DE CORES OBRIGATÓRIA: Amarelo Solar e Preto. Alto contraste, fundo escuro ou branco limpo, detalhes e botões em amarelo vibrante.";
-      if (cor === 'rosa') return "PALETA DE CORES OBRIGATÓRIA: Rosa Pastel e Magenta. Tons suaves no fundo com botões vibrantes e femininos.";
+      if (cor === 'azul') return "PALETA: Azul Meia-Noite como cor principal, fundo correspondente e botões em destaque.";
+      if (cor === 'verde') return "PALETA: Verde Esmeralda/Musgo como cor principal.";
+      if (cor === 'terracota') return "PALETA: Terracota, Nude e Areia.";
+      if (cor === 'roxo') return "PALETA: Roxo Real ou Violeta Escuro.";
+      if (cor === 'dark') return "PALETA: Fundo Preto ou Cinza muito escuro (Dark Mode obrigatório). Botões em Dourado ou cor vibrante.";
+      if (cor === 'cinza') return "PALETA: Escala de cinza e grafite.";
+      if (cor === 'vermelho') return "PALETA: Vermelho Rubi e Bordô.";
+      if (cor === 'amarelo') return "PALETA: Amarelo Solar e Preto (Dark Mode com amarelo).";
+      if (cor === 'rosa') return "PALETA: Rosa Pastel e Magenta.";
       
-      return "PALETA DE CORES: Escolha uma paleta de cores altamente profissional e harmônica que combine perfeitamente com o contexto do site.";
+      return "";
     };
 
     (window as any).executarGeracaoSite = (imagesList: any[]) => {
@@ -257,15 +259,19 @@ export default function Home() {
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
       
       const modo = (document.getElementById('modoClonagem') as HTMLSelectElement)?.value || 'exato';
-      const diretrizModo = modo === 'exato' ? "Cópia exata." : "Focado em conversão.";
+      
+      // UPGRADE: ORDEM DE CLONAGEM PERFEITA
+      const diretrizModo = modo === 'exato' 
+        ? "MODO DE ENGENHARIA REVERSA (PIXEL PERFECT): Reconstrua o layout da imagem com 100% de fidelidade visual. Copie a estrutura, o alinhamento, a ordem das seções e as CORES exatas do background." 
+        : "MODO MODELAGEM: Inspire-se no design da imagem, mas otimize estruturalmente para alta conversão.";
       
       const megaPromptEstilo = getMegaPromptEstilo();
       const megaPromptHero = getMegaPromptHero();
       const megaCores = getMegaPromptCores();
       
-      const systemInstruction = `Especialista Sênior UI/UX. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPromptEstilo} \n${megaPromptHero} \n${megaCores}`;
+      const systemInstruction = `Especialista Sênior Front-end. Retorne JSON com chave "codigo_html". MODO: ${diretrizModo}. ${diretrizMenu}. \n${megaPromptEstilo} \n${megaPromptHero} \n${megaCores}`;
       
-      let promptParts: any[] = [{ text: "Crie a página baseada nestas imagens:" }];
+      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos e recrie o layout em HTML/Tailwind de forma idêntica à referência:" }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
@@ -296,20 +302,20 @@ export default function Home() {
       }
 
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
-      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "REMOVA O MENU SUPERIOR SE EXISTIR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
+      const diretrizMenu = isMenuChecked ? "SE NÃO HOUVER MENU, CRIE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "REMOVA O MENU SUPERIOR SE EXISTIR.";
 
       const megaPromptEstilo = getMegaPromptEstilo();
       const megaPromptHero = getMegaPromptHero();
       const megaCores = getMegaPromptCores();
 
       const systemInstruction = `Especialista Sênior UI/UX e Compilador Estrito. Retorne JSON com chave "codigo_html".
-DIRETRIZ MESTRA: Você é um atualizador de sites. MANTENHA TODO O CONTEÚDO ORIGINAL (textos de copy, imagens, depoimentos e links) do código HTML fornecido, mas REESTRUTURE E ATUALIZE visualmente o código aplicando PERFEITAMENTE as seguintes regras:
+DIRETRIZ MESTRA: Você é um atualizador de sites. MANTENHA TODO O CONTEÚDO ORIGINAL (textos de copy, imagens, depoimentos e links) do código HTML fornecido, mas REESTRUTURE visualmente o código aplicando as seguintes regras:
 ${diretrizMenu}
 ${megaPromptEstilo}
 ${megaPromptHero}
 ${megaCores}`;
 
-      const textoPedidoExtra = prompt ? `PEDIDO EXTRA DO USUÁRIO:\n${prompt}` : "Apenas integre as novas regras de design (inclusive efeitos e dinâmica, caso solicitado), menu e cores ao código atual sem alterar o conteúdo textual da página.";
+      const textoPedidoExtra = prompt ? `PEDIDO EXTRA DO USUÁRIO:\n${prompt}` : "Integre as novas regras de design/cores ao código atual sem alterar o conteúdo textual da página.";
 
       chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\nCÓDIGO ATUAL A SER ATUALIZADO:\n${codigo}`}], true);
     };
@@ -360,7 +366,6 @@ ${megaCores}`;
       let htmlModificado = false; 
       let indexCount = 0;
 
-      // 1. MAPEIA AS IMAGENS NORMAIS
       if (images.length > 0) {
         temImagens = true; document.getElementById('imageSection')!.style.display = 'block';
         images.forEach((img) => {
@@ -407,7 +412,6 @@ ${megaCores}`;
         });
       }
 
-      // 2. MAPEIA AS IMAGENS DE FUNDO
       const todosElementos = doc.querySelectorAll('*');
       todosElementos.forEach((el) => {
           const htmlEl = el as HTMLElement;
@@ -443,7 +447,6 @@ ${megaCores}`;
 
       if (!temImagens) { document.getElementById('imageSection')!.style.display = 'none'; }
 
-      // 3. MAPEIA OS LINKS
       if (links.length > 0) {
         temLinks = true; document.getElementById('linkSection')!.style.display = 'block';
         links.forEach((a, index) => {
@@ -482,7 +485,6 @@ ${megaCores}`;
       let alterou = false;
       let indexCount = 0;
 
-      // 1. APLICA NAS IMAGENS NORMAIS
       doc.querySelectorAll('img').forEach((img) => {
         const inpUrl = document.getElementById(`img_replace_${indexCount}`) as HTMLInputElement;
         const inpScale = document.getElementById(`img_scale_${indexCount}`) as HTMLInputElement;
@@ -503,7 +505,6 @@ ${megaCores}`;
         indexCount++;
       });
 
-      // 2. APLICA NAS IMAGENS DE FUNDO
       doc.querySelectorAll('*').forEach((el) => {
           const htmlEl = el as HTMLElement;
           if (htmlEl.style && htmlEl.style.backgroundImage && htmlEl.style.backgroundImage.includes('url(')) {
@@ -519,7 +520,6 @@ ${megaCores}`;
           }
       });
 
-      // 3. APLICA NOS LINKS
       Array.from(doc.querySelectorAll('a')).filter(a => a.hasAttribute('href') && !a.getAttribute('href')!.startsWith('javascript:')).forEach((a, i) => {
         const inp = document.getElementById(`link_replace_${i}`) as HTMLInputElement;
         if (inp && inp.value && inp.value !== a.getAttribute('href')) { a.setAttribute('href', inp.value); alterou = true; }
@@ -769,7 +769,6 @@ ${megaCores}`;
                     </select>
                 </div>
 
-                {/* NOVO CAMPO: EFEITOS E DINÂMICA UAU */}
                 <div className="flex flex-col gap-2 mb-4 px-3 py-3 bg-fuchsia-50 border border-fuchsia-100 rounded-lg shadow-inner">
                     <label htmlFor="dinamicaSite" className="text-[10px] font-bold text-fuchsia-800 uppercase"><i className="fas fa-wand-magic-sparkles mr-1"></i> Efeitos e Dinâmica:</label>
                     <select id="dinamicaSite" className="input-style text-xs font-medium text-slate-700 bg-white border-fuchsia-200">
