@@ -19,7 +19,11 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
-  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string } | null>(null);
+  // ESTADO DO PAINEL DE MONITORAMENTO (AGORA SEMPRE VISÍVEL)
+  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
+    texto: 'Aguardando geração...', 
+    imagem: 'Aguardando geração...' 
+  });
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -137,7 +141,6 @@ export default function Home() {
       const loadOverlay = document.getElementById('loadingOverlay');
       if (loadOverlay) loadOverlay.style.display = 'flex';
 
-      // CAPTURA A OPÇÃO DE ESTILO DE IMAGEM DA UI
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
 
       try {
@@ -316,18 +319,11 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
+          // CORREÇÃO AQUI: Tamanho sempre 100% natural, sem encolher fotos para 70%
           if (!currentScale) {
-              if (isFromAI) {
-                  currentScale = '70';
-                  img.setAttribute('data-scale', '70');
-                  img.style.width = '70%';
-                  img.style.height = 'auto';
-                  img.style.objectFit = 'contain';
-                  htmlModificado = true;
-              } else {
-                  currentScale = '100';
-                  img.setAttribute('data-scale', '100');
-              }
+              currentScale = '100';
+              img.setAttribute('data-scale', '100');
+              // Não injeta style.width forçado aqui. Deixa o Tailwind agir normalmente.
           }
 
           const div = document.createElement('div');
@@ -731,13 +727,12 @@ export default function Home() {
                       <i className="fas fa-undo text-[10px]"></i> Desfazer Código
                     </button>
 
-                    {statusApis && (
-                      <div className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-600">
-                        <span className="flex items-center gap-1"><i className="fas fa-cpu text-blue-600"></i> Code: <strong className="text-slate-800">{statusApis.texto}</strong></span>
-                        <span className="text-slate-300">|</span>
-                        <span className="flex items-center gap-1"><i className="fas fa-image text-emerald-600"></i> Mídia: <strong className="text-slate-800">{statusApis.imagem}</strong></span>
-                      </div>
-                    )}
+                    {/* PAINEL DE MONITORAMENTO DAS APIS EM TEMPO REAL - AGORA SEMPRE VISÍVEL E DESTACADO */}
+                    <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-[11px] font-medium text-indigo-800 shadow-sm">
+                        <span className="flex items-center gap-1" title="Qual Inteligência Artificial gerou o código HTML"><i className="fas fa-robot text-indigo-600"></i> IA: <strong className="text-indigo-900">{statusApis.texto}</strong></span>
+                        <span className="text-indigo-300">|</span>
+                        <span className="flex items-center gap-1" title="De onde vieram as imagens deste site"><i className="fas fa-camera text-indigo-600"></i> Mídia: <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">
