@@ -22,9 +22,10 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
+  // ESTADO DO PAINEL DE MONITORAMENTO
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
-    texto: 'Aguardando geração...', 
-    imagem: 'Aguardando geração...' 
+    texto: 'Em repouso', 
+    imagem: 'Aguardando comando...' 
   });
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function Home() {
     const previewFrameEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codigoGeradoEl) codigoGeradoEl.value = site.html_content;
     if (previewFrameEl) previewFrameEl.srcdoc = site.html_content + SCRIPT_PREVIEW; 
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content);
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content, false);
     if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
     
     setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
@@ -143,6 +144,14 @@ export default function Home() {
       const loadOverlay = document.getElementById('loadingOverlay');
       if (loadOverlay) loadOverlay.style.display = 'flex';
 
+      // ATIVA O MODO "RADAR" DO PAINEL DE API
+      const badgeApis = document.getElementById('badge-apis');
+      if (badgeApis) {
+          badgeApis.classList.add('animate-pulse', 'bg-indigo-100');
+          badgeApis.classList.remove('bg-emerald-50', 'border-emerald-200');
+      }
+      setStatusApis({ texto: 'Testando Roleta de IAs...', imagem: 'Consultando bancos...' });
+
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
 
       try {
@@ -164,17 +173,29 @@ export default function Home() {
         }
         if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
         
+        // ATUALIZA O PAINEL COM AS APIS REAIS QUE VENCERAM A CORRIDA
         if (data.provedorTexto && data.provedorImagem) {
           setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
         }
 
-        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html);
+        if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true);
         (window as any).showNotification('Sucesso!', 'success');
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
         (window as any).showNotification('Erro: ' + err.message, 'error');
+        setStatusApis({ texto: 'Falha na geração', imagem: 'Erro' });
       } finally {
         if (loadOverlay) loadOverlay.style.display = 'none';
+        
+        // EFEITO DE FLASH VERDE PARA MOSTRAR QUE ATUALIZOU
+        if (badgeApis) {
+            badgeApis.classList.remove('animate-pulse', 'bg-indigo-100', 'bg-indigo-50');
+            badgeApis.classList.add('bg-emerald-50', 'border-emerald-300', 'shadow-md');
+            setTimeout(() => {
+                badgeApis.classList.remove('bg-emerald-50', 'border-emerald-300', 'shadow-md');
+                badgeApis.classList.add('bg-indigo-50'); // Volta a cor base
+            }, 3000);
+        }
       }
     }
 
@@ -303,7 +324,7 @@ export default function Home() {
       }
     };
 
-    (window as any).mapearElementosGerados = (html: string) => {
+    (window as any).mapearElementosGerados = (html: string, isFromAI = false) => {
       const doc = domParser.parseFromString(html, 'text/html');
       const images = doc.querySelectorAll('img');
       const links = Array.from(doc.querySelectorAll('a')).filter(a => a.hasAttribute('href') && !a.getAttribute('href')!.startsWith('javascript:'));
@@ -321,13 +342,17 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
-          // ==========================================
-          // CORREÇÃO DEFINITIVA DO TAMANHO DA IMAGEM
-          // ==========================================
-          if (!currentScale) {
-              currentScale = '100'; // Sempre 100% como padrão para TUDO
+          if (isFromAI) {
+              currentScale = '100';
               img.setAttribute('data-scale', '100');
-              htmlModificado = true; // Força a salvar o atributo data-scale=100 no HTML
+              img.style.width = ''; 
+              img.style.height = ''; 
+              img.style.objectFit = '';
+              htmlModificado = true; 
+          } else if (!currentScale) {
+              currentScale = '100'; 
+              img.setAttribute('data-scale', '100');
+              htmlModificado = true;
           }
 
           const div = document.createElement('div');
@@ -375,7 +400,12 @@ export default function Home() {
          const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
          const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
          if (codEl) codEl.value = novoHtml;
-         if (prevEl) prevEl.srcdoc = novoHtml + SCRIPT_PREVIEW; 
+         
+         if (prevEl) {
+             const scrollY = prevEl.contentWindow?.scrollY || 0;
+             const scriptManterScroll = `<script>requestAnimationFrame(() => { window.scrollTo({top: ${scrollY}, behavior: 'instant'}); setTimeout(() => window.scrollTo({top: ${scrollY}, behavior: 'instant'}), 50); });</script>`;
+             prevEl.srcdoc = novoHtml + SCRIPT_PREVIEW + scriptManterScroll; 
+         }
       }
 
       card.style.display = (temImagens || temLinks) ? 'flex' : 'none';
@@ -415,7 +445,17 @@ export default function Home() {
       if (alterou) {
         const novo = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
         codEl.value = novo; 
-        prevEl.srcdoc = novo + SCRIPT_PREVIEW; 
+        
+        const scrollY = prevEl.contentWindow?.scrollY || 0;
+        
+        const scriptManterScroll = `<script>
+            requestAnimationFrame(() => { 
+                window.scrollTo({top: ${scrollY}, behavior: 'instant'}); 
+                setTimeout(() => window.scrollTo({top: ${scrollY}, behavior: 'instant'}), 50); 
+            });
+        </script>`;
+        
+        prevEl.srcdoc = novo + SCRIPT_PREVIEW + scriptManterScroll; 
       }
     };
 
@@ -454,13 +494,14 @@ export default function Home() {
         if (codEl && codEl.value) {
           let currentPreview = boxP.getAttribute('srcdoc') || '';
           currentPreview = currentPreview.replace(SCRIPT_PREVIEW, '');
+          currentPreview = currentPreview.replace(/<script>requestAnimationFrame[\s\S]*?<\/script>/, '');
           
           if (currentPreview && currentPreview !== codEl.value) {
             setHistoricoCodigo(prev => [...prev, currentPreview]);
           }
           boxP.setAttribute('srcdoc', codEl.value + SCRIPT_PREVIEW); 
           if ((window as any).mapearElementosGerados) {
-            (window as any).mapearElementosGerados(codEl.value);
+            (window as any).mapearElementosGerados(codEl.value, false);
           }
         }
         btnP.className = "h-full px-4 border-b-2 border-blue-600 text-blue-700 font-medium text-sm flex items-center";
@@ -532,7 +573,7 @@ export default function Home() {
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) codEl.value = ultimoEstado;
     if (prevEl) prevEl.srcdoc = ultimoEstado + SCRIPT_PREVIEW; 
-    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado);
+    if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado, false);
     
     (window as any).showNotification('Retornado ao código anterior com sucesso!', 'success');
   };
@@ -734,7 +775,7 @@ export default function Home() {
                       <i className="fas fa-undo text-[10px]"></i> Desfazer Código
                     </button>
 
-                    <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-[11px] font-medium text-indigo-800 shadow-sm">
+                    <div id="badge-apis" className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-[11px] font-medium text-indigo-800 transition-all duration-300">
                         <span className="flex items-center gap-1" title="Qual Inteligência Artificial gerou o código HTML"><i className="fas fa-robot text-indigo-600"></i> IA: <strong className="text-indigo-900">{statusApis.texto}</strong></span>
                         <span className="text-indigo-300">|</span>
                         <span className="flex items-center gap-1" title="De onde vieram as imagens deste site"><i className="fas fa-camera text-indigo-600"></i> Mídia: <strong className="text-indigo-900">{statusApis.imagem}</strong></span>

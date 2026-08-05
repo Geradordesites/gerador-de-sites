@@ -30,9 +30,9 @@ export async function POST(req: Request) {
 ${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg". NUNCA coloque style="width: 70%" inline.
 
-3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE NOS LINKS):
+3. COMPLIANCE E RODAPÉ (SANFONA INTELIGENTE E BLINDADA PARA FACEBOOK ADS):
 - NÃO crie seções separadas de "Informações Legais" soltas no meio da página.
-- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé. Ele já possui os links com href reais internos exigidos pelo Facebook Ads e a lógica em JavaScript para abrir/fechar as sanfonas de texto abaixo dos links.
+- OBRIGATÓRIO: Você DEVE usar EXATAMENTE o código HTML e SCRIPT abaixo no lugar do rodapé. Ele já possui os links com href reais internos exigidos pelo Facebook Ads, textos jurídicos densos e a lógica em JavaScript.
 <!-- COLE EXATAMENTE ESTE CÓDIGO NO FINAL DA PÁGINA: -->
 <footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12">
     <div class="max-w-4xl mx-auto px-4">
@@ -44,23 +44,40 @@ ${regraImagens}
             <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Cookies</a>
         </div>
 
-        <!-- Paineis de Sanfona Ocultos (Abrem abaixo dos links) -->
+        <!-- Paineis de Sanfona Ocultos (Abrem abaixo dos links com textos longos de compliance) -->
         <div id="legal-panels" class="text-left mb-8 text-slate-300 text-sm hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-inner max-w-3xl mx-auto transition-all duration-300">
-            <div id="panel-privacidade" class="legal-panel hidden">
-                <h4 class="font-bold text-white mb-4 text-lg">Política de Privacidade</h4>
-                <p class="mb-2">Sua privacidade é importante para nós. Coletamos e utilizamos seus dados apenas para fornecer e melhorar nossos serviços, sempre em conformidade com as leis de proteção de dados vigentes (LGPD).</p>
-                <p>Não compartilhamos suas informações com terceiros sem o seu consentimento expresso. Seus dados são protegidos por criptografia de ponta a ponta.</p>
+            
+            <div id="panel-privacidade" class="legal-panel hidden space-y-3">
+                <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade e Proteção de Dados</h4>
+                <p>A sua privacidade é nossa prioridade. Esta política descreve como coletamos, usamos, armazenamos e protegemos os seus dados pessoais, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
+                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você (como nome, e-mail e telefone) ao preencher formulários em nosso site, além de dados de navegação coletados automaticamente por ferramentas de analytics e pixels de rastreamento para fins de otimização de campanhas.</p>
+                <p><strong>2. Uso das Informações:</strong> Seus dados são utilizados exclusivamente para o processamento de pagamentos, fornecimento do serviço ou produto solicitado, envio de comunicações transacionais, suporte ao cliente e ofertas de marketing previamente autorizadas. Não vendemos, alugamos ou compartilhamos seus dados com terceiros não essenciais para a operação.</p>
+                <p><strong>3. Segurança e Retenção:</strong> Adotamos as melhores práticas de segurança da informação e criptografia de ponta a ponta para proteger seus dados contra acessos não autorizados. Os dados serão mantidos apenas pelo tempo necessário para cumprir as finalidades para as quais foram coletados.</p>
+                <p><strong>4. Direitos do Titular:</strong> Você tem o direito de solicitar o acesso, a correção, a anonimização ou a exclusão total dos seus dados pessoais de nossa base a qualquer momento, bastando entrar em contato através dos nossos canais oficiais de atendimento presentes nesta página.</p>
             </div>
-            <div id="panel-termos" class="legal-panel hidden">
-                <h4 class="font-bold text-white mb-4 text-lg">Termos de Uso</h4>
-                <p class="mb-2">Ao acessar este site, você concorda em cumprir estes termos de serviço e todas as leis e regulamentos aplicáveis. O uso contínuo do site constitui a aceitação destes termos.</p>
-                <p>O conteúdo aqui disponibilizado é de propriedade exclusiva e não pode ser reproduzido, copiado ou modificado sem nossa autorização prévia por escrito.</p>
+
+            <div id="panel-termos" class="legal-panel hidden space-y-3">
+                <h4 class="font-bold text-white mb-2 text-lg">Termos e Condições de Uso</h4>
+                <p>Ao acessar e utilizar este site e nossos produtos/serviços, você concorda expressamente em cumprir estes Termos de Serviço, todas as leis e regulamentos aplicáveis. O uso contínuo constitui a aceitação incondicional destes termos.</p>
+                <p><strong>1. Licença e Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado neste site, incluindo textos, gráficos, logotipos, vídeos, metodologias e áudios, é de propriedade exclusiva dos criadores e é protegido por leis de direitos autorais. É terminantemente proibida a reprodução, distribuição, modificação ou revenda não autorizada de qualquer material.</p>
+                <p><strong>2. Isenção de Responsabilidade:</strong> Os materiais neste site são fornecidos "como estão". Não oferecemos garantias de resultados específicos ou ganhos financeiros, de saúde ou relacionais. Os resultados variam de pessoa para pessoa e dependem do esforço individual e da correta aplicação das metodologias ensinadas.</p>
+                <p><strong>3. Política de Arrependimento e Reembolso:</strong> Em conformidade com o Código de Defesa do Consumidor (Art. 49), garantimos o prazo de 7 (sete) dias corridos, a contar da data da compra, para o cancelamento e estorno integral do valor pago caso você não esteja satisfeito com o produto digital, sem necessidade de justificativa.</p>
+                <p><strong>4. Conduta do Usuário:</strong> O usuário concorda em utilizar o site apenas para fins lícitos, sendo vedado o uso para transmissão de material difamatório, ameaçador, obsceno ou que viole direitos de terceiros.</p>
             </div>
-            <div id="panel-cookies" class="legal-panel hidden">
-                <h4 class="font-bold text-white mb-4 text-lg">Política de Cookies</h4>
-                <p class="mb-2">Utilizamos cookies para personalizar conteúdo e anúncios, fornecer recursos de mídia social e analisar nosso tráfego. Isso nos ajuda a oferecer uma experiência otimizada.</p>
-                <p>Você pode desativá-los nas configurações do seu navegador a qualquer momento, embora isso possa afetar algumas funcionalidades do site.</p>
+
+            <div id="panel-cookies" class="legal-panel hidden space-y-3">
+                <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies e Rastreamento</h4>
+                <p>Para proporcionar a melhor experiência possível, analisar o tráfego do site e veicular anúncios personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes.</p>
+                <p><strong>1. O que são Cookies?</strong> Cookies são pequenos arquivos de texto que são baixados e armazenados no seu computador, smartphone ou dispositivo móvel quando você visita o nosso site. Eles permitem que o site reconheça o seu dispositivo e lembre das suas preferências nas próximas visitas.</p>
+                <p><strong>2. Tipos de Cookies que Utilizamos:</strong></p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><em>Cookies Estritamente Necessários:</em> Essenciais para o funcionamento básico do site, como navegação de páginas e acesso a áreas seguras (ex: checkouts).</li>
+                    <li><em>Cookies de Desempenho e Analytics:</em> Permitem rastrear e analisar o volume de visitas e fontes de tráfego, ajudando a medir e melhorar a performance da página.</li>
+                    <li><em>Cookies de Publicidade e Pixels:</em> Utilizados por nós e nossos parceiros (como Facebook/Meta e Google) para construir um perfil dos seus interesses e mostrar anúncios relevantes em outros sites.</li>
+                </ul>
+                <p><strong>3. Gerenciamento de Cookies:</strong> Você pode optar por aceitar ou recusar o uso de cookies não essenciais. A maioria dos navegadores da web aceita cookies automaticamente, mas você pode modificar a configuração do seu navegador para recusá-los, se preferir. Note que isso pode impedir que você tire o máximo proveito da experiência no site.</p>
             </div>
+
         </div>
         
         <p>&copy; ${anoAtual} Todos os direitos reservados.</p>
@@ -68,6 +85,7 @@ ${regraImagens}
 
     <script>
         function toggleLegal(panelId, event) {
+            if(event) event.preventDefault();
             var container = document.getElementById('legal-panels');
             var panels = document.querySelectorAll('.legal-panel');
             var target = document.getElementById(panelId);
