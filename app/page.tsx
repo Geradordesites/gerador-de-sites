@@ -4,6 +4,9 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
+// ESCUDO DE CLIQUE: Injetado apenas no preview para evitar o efeito "Inception"
+const SCRIPT_PREVIEW = `<script>document.addEventListener('click', function(e) { var link = e.target.closest('a'); if (link) { e.preventDefault(); } }); document.addEventListener('submit', function(e) { e.preventDefault(); });</script>`;
+
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
   const [listaSites, setListaSites] = useState<any[]>([]);
@@ -19,7 +22,6 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
-  // ESTADO DO PAINEL DE MONITORAMENTO (AGORA SEMPRE VISÍVEL)
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
     texto: 'Aguardando geração...', 
     imagem: 'Aguardando geração...' 
@@ -69,7 +71,7 @@ export default function Home() {
     const codigoGeradoEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const previewFrameEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codigoGeradoEl) codigoGeradoEl.value = site.html_content;
-    if (previewFrameEl) previewFrameEl.srcdoc = site.html_content;
+    if (previewFrameEl) previewFrameEl.srcdoc = site.html_content + SCRIPT_PREVIEW; // Aplica escudo
     if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(site.html_content, false);
     if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
     
@@ -158,9 +160,9 @@ export default function Home() {
           if (codEl.value) {
             setHistoricoCodigo(prev => [...prev, codEl.value]);
           }
-          codEl.value = data.html;
+          codEl.value = data.html; // Salva o código LIMPO
         }
-        if (prevEl) prevEl.srcdoc = data.html;
+        if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; // Injeta o escudo apenas no visual
         
         if (data.provedorTexto && data.provedorImagem) {
           setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
@@ -319,11 +321,18 @@ export default function Home() {
           let label = img.id || img.alt || `Imagem ${index + 1}`;
           let currentScale = img.getAttribute('data-scale'); 
           
-          // CORREÇÃO AQUI: Tamanho sempre 100% natural, sem encolher fotos para 70%
           if (!currentScale) {
-              currentScale = '100';
-              img.setAttribute('data-scale', '100');
-              // Não injeta style.width forçado aqui. Deixa o Tailwind agir normalmente.
+              if (isFromAI) {
+                  currentScale = '70';
+                  img.setAttribute('data-scale', '70');
+                  img.style.width = '70%';
+                  img.style.height = 'auto';
+                  img.style.objectFit = 'contain';
+                  htmlModificado = true;
+              } else {
+                  currentScale = '100';
+                  img.setAttribute('data-scale', '100');
+              }
           }
 
           const div = document.createElement('div');
@@ -371,7 +380,7 @@ export default function Home() {
          const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
          const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
          if (codEl) codEl.value = novoHtml;
-         if (prevEl) prevEl.srcdoc = novoHtml;
+         if (prevEl) prevEl.srcdoc = novoHtml + SCRIPT_PREVIEW; // Aplica escudo
       }
 
       card.style.display = (temImagens || temLinks) ? 'flex' : 'none';
@@ -410,7 +419,8 @@ export default function Home() {
 
       if (alterou) {
         const novo = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
-        codEl.value = novo; prevEl.srcdoc = novo;
+        codEl.value = novo; // Salva limpo
+        prevEl.srcdoc = novo + SCRIPT_PREVIEW; // Injeta escudo visual
       }
     };
 
@@ -420,6 +430,7 @@ export default function Home() {
     };
 
     (window as any).baixarHtmlGerado = () => {
+      // Pega do textarea que tem o código 100% puro e sem o SCRIPT_PREVIEW
       const codigo = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!codigo) {
         (window as any).showNotification('Gere um site primeiro para baixar!', 'error');
@@ -447,11 +458,14 @@ export default function Home() {
 
       if (aba === 'preview') {
         if (codEl && codEl.value) {
-          const currentPreview = boxP.getAttribute('srcdoc') || '';
+          // Compara histórico com o texto LIMPO
+          let currentPreview = boxP.getAttribute('srcdoc') || '';
+          currentPreview = currentPreview.replace(SCRIPT_PREVIEW, '');
+          
           if (currentPreview && currentPreview !== codEl.value) {
             setHistoricoCodigo(prev => [...prev, currentPreview]);
           }
-          boxP.setAttribute('srcdoc', codEl.value);
+          boxP.setAttribute('srcdoc', codEl.value + SCRIPT_PREVIEW); // Aplica escudo
           if ((window as any).mapearElementosGerados) {
             (window as any).mapearElementosGerados(codEl.value, false);
           }
@@ -474,6 +488,7 @@ export default function Home() {
     };
 
     (window as any).copiarCodigo = () => {
+      // Copia direto da caixa de texto (código sempre limpo)
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!txt) return;
       const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select();
@@ -524,7 +539,7 @@ export default function Home() {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) codEl.value = ultimoEstado;
-    if (prevEl) prevEl.srcdoc = ultimoEstado;
+    if (prevEl) prevEl.srcdoc = ultimoEstado + SCRIPT_PREVIEW; // Injeta escudo visual
     if ((window as any).mapearElementosGerados) (window as any).mapearElementosGerados(ultimoEstado, false);
     
     (window as any).showNotification('Retornado ao código anterior com sucesso!', 'success');
@@ -727,7 +742,6 @@ export default function Home() {
                       <i className="fas fa-undo text-[10px]"></i> Desfazer Código
                     </button>
 
-                    {/* PAINEL DE MONITORAMENTO DAS APIS EM TEMPO REAL - AGORA SEMPRE VISÍVEL E DESTACADO */}
                     <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-[11px] font-medium text-indigo-800 shadow-sm">
                         <span className="flex items-center gap-1" title="Qual Inteligência Artificial gerou o código HTML"><i className="fas fa-robot text-indigo-600"></i> IA: <strong className="text-indigo-900">{statusApis.texto}</strong></span>
                         <span className="text-indigo-300">|</span>
