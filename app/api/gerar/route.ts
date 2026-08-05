@@ -87,7 +87,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
     let logErros: string[] = [];
 
     // =========================================================================
-    // CASCATA TRIPLA DE CHAVES GOOGLE GEMINI (CORRIGIDA PARA gemini-1.5-flash)
+    // CASCATA TRIPLA DE CHAVES GOOGLE GEMINI (CORRIGIDA PARA gemini-1.5-flash-latest)
     // =========================================================================
     const chavesGemini = [
         process.env.GEMINI_API_KEY,
@@ -103,7 +103,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
         try {
             const genAI = new GoogleGenerativeAI(chavesGemini[i]);
             const model = genAI.getGenerativeModel({
-                model: process.env.GEMINI_MODEL || "gemini-1.5-flash", // AQUI ESTÁ A CORREÇÃO!
+                model: process.env.GEMINI_MODEL || "gemini-1.5-flash-latest", // <-- CORREÇÃO EXATA AQUI
                 systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] }
             });
 
@@ -114,7 +114,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
 
             htmlCode = extrairHtmlDeJson(result.response.text());
 
-            // Trava de segurança: Se a IA não mandou HTML (deu resposta preguiçosa), joga um erro para testar a próxima chave
+            // Trava de segurança: Se a IA não mandou HTML
             if (htmlCode && htmlCode.length > 500 && htmlCode.includes('<html')) {
                 provedorTextoUsado = `Google Gemini (Chave ${i + 1})`;
                 break; // SUCESSO! Interrompe o loop
@@ -129,7 +129,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final do código HTML:
     }
 
     if (!htmlCode) {
-        throw new Error(`As 3 tentativas com o Google Gemini falharam. Motivos: ${logErros.join(' | ')}`);
+        throw new Error(`As tentativas com o Google Gemini falharam. Motivos: ${logErros.join(' | ')}`);
     }
 
     // INJEÇÃO DA BIBLIOTECA AOS (ANIMAÇÕES)
