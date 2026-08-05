@@ -32,9 +32,10 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
+  // Controle da Etiqueta de API no Topo
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
     texto: 'Aguardando geração...', 
-    imagem: 'Aguardando geração...' 
+    imagem: 'Aguardando...' 
   });
 
   useEffect(() => {
@@ -156,12 +157,21 @@ export default function Home() {
 
       if (loadOverlay) {
           loadOverlay.style.display = 'flex';
+          
+          // EFEITO VISUAL NO BADGE DO TOPO
+          const badgeApis = document.getElementById('badge-apis');
+          if (badgeApis) {
+              badgeApis.classList.remove('bg-indigo-50', 'border-indigo-200');
+              badgeApis.classList.add('bg-amber-100', 'border-amber-300', 'animate-pulse');
+          }
+          setStatusApis({ texto: 'Testando chaves...', imagem: 'Consultando bancos...' });
+
           const mensagens = [
               "Analisando referência visual...",
-              "Gerando layout com Inteligência Artificial...",
-              "Extraindo cores reais da imagem...",
-              "Aplicando bibliotecas de estilo avançado...",
-              "Quase pronto, finalizando estrutura HTML..."
+              "Acessando Motor Google Gemini...",
+              "Extraindo cores e garantindo Pixel Perfect...",
+              "Aplicando blocos Tailwind CSS...",
+              "Injetando Scripts de Animação e Rodapé..."
           ];
           let msgIndex = 0;
           if (textElement) textElement.innerText = mensagens[0];
@@ -200,8 +210,10 @@ export default function Home() {
         
         if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true);
         
+        // ATUALIZA A ETIQUETA NO TOPO COM A CHAVE QUE DEU CERTO
         if (data.provedorTexto && data.provedorImagem) {
-            (window as any).showNotification(`Concluído via ${data.provedorTexto} + ${data.provedorImagem}`, 'success');
+            setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
+            (window as any).showNotification(`Concluído via ${data.provedorTexto}!`, 'success');
         } else {
             (window as any).showNotification('Sucesso!', 'success');
         }
@@ -209,9 +221,21 @@ export default function Home() {
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
         (window as any).showNotification(err.message, 'error');
+        setStatusApis({ texto: 'Falha na geração', imagem: 'Erro' });
       } finally {
         if (loadingInterval) clearInterval(loadingInterval);
         if (loadOverlay) loadOverlay.style.display = 'none';
+        
+        // VOLTA A ETIQUETA AO NORMAL COM DESTAQUE VERDE
+        const badgeApis = document.getElementById('badge-apis');
+        if (badgeApis) {
+            badgeApis.classList.remove('animate-pulse', 'bg-amber-100', 'border-amber-300');
+            badgeApis.classList.add('bg-emerald-50', 'border-emerald-300', 'shadow-sm');
+            setTimeout(() => {
+                badgeApis.classList.remove('bg-emerald-50', 'border-emerald-300', 'shadow-sm');
+                badgeApis.classList.add('bg-indigo-50', 'border-indigo-200'); 
+            }, 3000);
+        }
       }
     }
 
@@ -236,22 +260,22 @@ export default function Home() {
 
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      if (cor === 'auto') return "PALETA DE CORES: Analise a imagem e copie TODAS as cores (fundos e botões).";
+      if (cor === 'auto') return "PALETA DE CORES (EXTRAÇÃO FIEL DA IMAGEM): Analise a imagem anexada como um scanner. Você é OBRIGADO a usar EXATAMENTE as mesmas cores de fundo (background), textos e botões da imagem original. Se a imagem tiver fundo escuro, o site DEVE ter fundo escuro (ex: bg-slate-900 ou style inline). NUNCA invente um tema claro/branco se a referência visual for escura.";
       if (cor === 'personalizada') {
          const cp = (document.getElementById('corPrimaria') as HTMLInputElement)?.value || '#2563eb';
          const cf = (document.getElementById('corFundo') as HTMLInputElement)?.value || '#ffffff';
          const cd = (document.getElementById('corDestaque') as HTMLInputElement)?.value || '#10b981';
-         return `PALETA PERSONALIZADA: Ignore as cores da imagem e use: Fundo: ${cf}, Principal: ${cp}, Destaque: ${cd}.`;
+         return `OVERRIDE - PALETA PERSONALIZADA: Ignore a imagem original e aplique ESTAS cores HEX: Fundo: ${cf}, Principal: ${cp}, Destaque: ${cd}.`;
       }
-      if (cor === 'azul') return "PALETA: Azul Meia-Noite";
-      if (cor === 'verde') return "PALETA: Verde Esmeralda";
-      if (cor === 'terracota') return "PALETA: Terracota";
-      if (cor === 'roxo') return "PALETA: Roxo Real";
-      if (cor === 'dark') return "PALETA: Dark Mode (Fundo escuro)";
-      if (cor === 'cinza') return "PALETA: Escala de cinza";
-      if (cor === 'vermelho') return "PALETA: Vermelho Rubi";
-      if (cor === 'amarelo') return "PALETA: Amarelo Solar e Preto";
-      if (cor === 'rosa') return "PALETA: Rosa Pastel";
+      if (cor === 'azul') return "PALETA: Azul Meia-Noite como cor principal, fundo correspondente e botões em destaque.";
+      if (cor === 'verde') return "PALETA: Verde Esmeralda/Musgo como cor principal.";
+      if (cor === 'terracota') return "PALETA: Terracota, Nude e Areia.";
+      if (cor === 'roxo') return "PALETA: Roxo Real ou Violeta Escuro.";
+      if (cor === 'dark') return "PALETA: Fundo Preto ou Cinza muito escuro (Dark Mode obrigatório). Botões em Dourado ou cor vibrante.";
+      if (cor === 'cinza') return "PALETA: Escala de cinza e grafite.";
+      if (cor === 'vermelho') return "PALETA: Vermelho Rubi e Bordô.";
+      if (cor === 'amarelo') return "PALETA: Amarelo Solar e Preto (Dark Mode com amarelo).";
+      if (cor === 'rosa') return "PALETA: Rosa Pastel e Magenta.";
       return "";
     };
 
@@ -261,13 +285,13 @@ export default function Home() {
         return; 
       }
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
-      const diretrizMenu = isMenuChecked ? "CRIE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR.";
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
       const modo = (document.getElementById('modoClonagem') as HTMLSelectElement)?.value || 'exato';
-      const diretrizModo = modo === 'exato' ? "CLONAGEM VISUAL: Reconstrua fielmente o design." : "MODELAGEM: Inspire-se, mas foque na conversão.";
+      const diretrizModo = modo === 'exato' ? "MODO DE ENGENHARIA REVERSA (PIXEL PERFECT): Reconstrua o layout da imagem com 100% de fidelidade visual. Copie a estrutura, o alinhamento, a ordem das seções e as CORES exatas do background." : "MODO MODELAGEM: Inspire-se no design da imagem, mas otimize estruturalmente para alta conversão.";
       
-      const systemInstruction = `Especialista Sênior UI/UX. OBRIGATÓRIO: Retorne APENAS o código HTML puro e completo da página. Não inclua Markdown, não explique, não use formato JSON. \nMODO: ${diretrizModo}. ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+      const systemInstruction = `Especialista Sênior Front-end em Tailwind CSS. MODO: ${diretrizModo}. ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       
-      let promptParts: any[] = [{ text: "Analise a imagem abaixo com atenção aos detalhes. Extraia os textos, recrie a estrutura do layout em HTML/Tailwind CSS e aplique fielmente o estilo visual da referência:" }];
+      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais e recrie o layout perfeitamente." }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
@@ -276,9 +300,9 @@ export default function Home() {
       const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
       if (!content) { (window as any).showNotification('Insira conteúdo ou comando.', 'error'); return; }
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
-      const diretrizMenu = isMenuChecked ? "CRIE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR.";
-      const systemInstruction = `Copywriter de Elite. OBRIGATÓRIO: Retorne APENAS o código HTML puro e completo da página. Não inclua Markdown, não explique, não use formato JSON. \n${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-      chamarIA(systemInstruction, [{ text: "Construa a Landing Page estruturando todo este conteúdo:\n" + content }], false);
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
+      const systemInstruction = `Copywriter de Elite e Especialista Tailwind CSS. \n${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+      chamarIA(systemInstruction, [{ text: "Gere a Landing Page a partir deste conteúdo/comando:\n" + content }], false);
     };
 
     (window as any).refinarSiteEstrito = () => {
@@ -291,17 +315,21 @@ export default function Home() {
       }
 
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
-      const diretrizMenu = isMenuChecked ? "CRIE UM MENU SUPERIOR NAVEGÁVEL SE NÃO EXISTIR." : "REMOVA O MENU SUPERIOR SE ELE ESTIVER LÁ.";
+      const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA. Lembre-se de colocar ID nas seções para o scroll." : "REMOVA O MENU SUPERIOR SE ELE EXISTIR NO CÓDIGO.";
 
-      const systemInstruction = `Engenheiro de Manutenção. OBRIGATÓRIO: Retorne APENAS o código HTML modificado e completo. Não inclua Markdown, não explique e NÃO RETORNE JSON.
-DIRETRIZ CIRÚRGICA: Modifique apenas o que foi solicitado. Preserve todo o restante do conteúdo, textos e scripts do rodapé.
-Aplique ao HTML:
+      const systemInstruction = `PROGRAMADOR DE MANUTENÇÃO ESTRITA.
+DIRETRIZ CIRÚRGICA: Você vai receber o código HTML de uma Landing Page e um pedido de alteração do usuário. VOCÊ É ESTRITAMENTE PROIBIDO DE REESCREVER A PÁGINA INTEIRA DO ZERO OU EXCLUIR O CONTEÚDO ORIGINAL.
+1. Se o usuário pedir para "remover o fundo", ou "mudar botão", REMOVA/MUDE APENAS ISSO. MANTENHA todas as imagens originais da página (tags img), os textos originais, as cores não mencionadas e a estrutura.
+2. PRESERVE A TODO CUSTO todas as tags <script> originais do arquivo e todos os blocos de Informações Legais/Rodapé.
+3. Aplique as diretrizes:
 ${diretrizMenu}
+${getMegaPromptEstilo()}
+${getMegaPromptHero()}
 ${getMegaPromptCores()}`;
 
-      const textoPedidoExtra = prompt ? `COMANDO: ${prompt}` : "Atualize o código com as configurações visuais.";
+      const textoPedidoExtra = prompt ? `COMANDO CIRÚRGICO DO USUÁRIO:\n"${prompt}"\n(Cumpra a risca apenas isso e devolva o resto do HTML intacto)` : "Apenas atualize as opções do painel mantendo o conteúdo da copy intacto.";
 
-      chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\n=== CÓDIGO HTML ORIGINAL ===\n${codigo}`}], true);
+      chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\n=== CÓDIGO HTML ATUAL PARA SER MODIFICADO ===\n${codigo}`}], true);
     };
 
     (window as any).handleElementImageUpload = (event: any, index: number) => {
@@ -865,6 +893,14 @@ ${getMegaPromptCores()}`;
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-semibold py-1 px-2 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
+                    
+                    {/* ETIQUETA DA API AQUI NO TOPO */}
+                    <div id="badge-apis" className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded text-[10px] font-medium text-indigo-800 transition-all duration-300 hidden md:flex">
+                        <span className="flex items-center gap-1"><i className="fas fa-robot text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.texto}</strong></span>
+                        <span className="text-indigo-300">|</span>
+                        <span className="flex items-center gap-1"><i className="fas fa-camera text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
+                    </div>
+
                 </div>
 
                 <div className="flex items-center gap-2">
