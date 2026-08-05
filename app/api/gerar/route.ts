@@ -6,9 +6,17 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts } = body;
+    const { systemInstruction, promptParts, imageStyle } = body;
 
     const anoAtual = new Date().getFullYear();
+
+    // LÓGICA DINÂMICA DO ESTILO DE IMAGEM
+    let regraImagens = "- REGRA ABSOLUTA DE IMAGENS: Não use desenhos, animações, gráficos ou ficção científica. Apenas fotografias humanas e cenários reais.";
+    if (imageStyle === 'ilustracao') {
+      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo ILUSTRAÇÃO. Gere palavras-chave focadas em ilustrações, vetores, 3d render, minimal art ou digital painting.";
+    } else if (imageStyle === 'tecnologia') {
+      regraImagens = "- REGRA DE IMAGENS: O usuário escolheu o estilo TECNOLOGIA. Gere palavras-chave focadas em tecnologia, cyber, data, sci-fi, futurismo e abstrato.";
+    }
 
     const regrasObrigatorias = `
 === REGRAS OBRIGATÓRIAS DE DESIGN SÊNIOR, COMPLIANCE E UI/UX ===
@@ -17,9 +25,9 @@ export async function POST(req: Request) {
 - ESPAÇAMENTO ESTRITO: Organize o layout para que os títulos dos tópicos tenham sempre um espaço exato de uma linha em branco entre eles e os parágrafos subsequentes.
 - ÍCONES: NUNCA USE EMOJIS (🚫). É terminantemente proibido. Use exclusivamente a biblioteca FontAwesome (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">).
 
-2. IMAGENS IDEAIS E REAIS:
-- Para imagens, utilize placeholders no formato: https://images.unsplash.com/random/1200x800/?{palavra-chave}
-- REGRA ABSOLUTA DE IMAGENS: Não use desenhos, animações, gráficos ou ficção científica. Apenas fotografias humanas e cenários reais.
+2. IMAGENS IDEAIS E PLACEHOLDERS:
+- Para imagens, utilize placeholders no formato: https://images.unsplash.com/random/1200x800/?{palavra-chave_em_ingles}
+${regraImagens}
 - TAMANHO IDEAL: Aplique classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
 
 3. COMPLIANCE E RODAPÉ PROFISSIONAL:
@@ -124,7 +132,7 @@ export async function POST(req: Request) {
     }
 
     // =========================================================================
-    // PROCESSAMENTO E ROTATIVIDADE DE IMAGENS (UNSPLASH VS POLLINATIONS)
+    // PROCESSAMENTO DE IMAGENS (UNSPLASH VS LOREM FLICKR)
     // =========================================================================
     let provedorImagemUsado = 'Sem substituição';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
@@ -146,16 +154,14 @@ export async function POST(req: Request) {
               htmlCode = htmlCode.replace(item.fullMatch, uData.results[randomIndex].urls.regular);
             }
           }
-          provedorImagemUsado = 'Unsplash API (Fotos Reais)';
+          provedorImagemUsado = 'Unsplash API';
         } catch (e) {
-          // Fallback para Pollinations se Unsplash falhar
-          htmlCode = substituirPorPollinations(htmlCode, urlsToReplace);
-          provedorImagemUsado = 'Pollinations.ai (IA Fotográfica)';
+          htmlCode = substituirPorFlickr(htmlCode, urlsToReplace);
+          provedorImagemUsado = 'LoremFlickr (Backup Seguro)';
         }
       } else {
-        // Fallback automático para Pollinations se não houver chave do Unsplash
-        htmlCode = substituirPorPollinations(htmlCode, urlsToReplace);
-        provedorImagemUsado = 'Pollinations.ai (IA Fotográfica)';
+        htmlCode = substituirPorFlickr(htmlCode, urlsToReplace);
+        provedorImagemUsado = 'LoremFlickr (Backup Seguro)';
       }
     }
 
@@ -185,13 +191,13 @@ function extrairHtmlDeJson(responseText: string): string {
   return htmlCode.replace(/```html/i, '').replace(/```/g, '').trim();
 }
 
-function substituirPorPollinations(html: string, urlsToReplace: any[]): string {
+function substituirPorFlickr(html: string, urlsToReplace: any[]): string {
   let updatedHtml = html;
   for (const item of urlsToReplace) {
-    const promptLimpo = encodeURIComponent(`high resolution realistic photograph of ${item.keyword}, realistic human, natural lighting, shot on 35mm lens`);
-    const seed = Math.floor(Math.random() * 99999);
-    const pollinationsUrl = `https://image.pollinations.ai/prompt/${promptLimpo}?width=1200&height=800&nologo=true&model=flux&seed=${seed}`;
-    updatedHtml = updatedHtml.replace(item.fullMatch, pollinationsUrl);
+    const keywordLimpa = encodeURIComponent(item.keyword.split(',')[0]);
+    const lockId = Math.floor(Math.random() * 9999);
+    const flickrUrl = `https://loremflickr.com/1200/800/${keywordLimpa}?lock=${lockId}`;
+    updatedHtml = updatedHtml.replace(item.fullMatch, flickrUrl);
   }
   return updatedHtml;
 }
