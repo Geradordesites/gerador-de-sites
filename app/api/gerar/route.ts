@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica } = body;
+    const { systemInstruction, promptParts, imageStyle, dinamica, chaveAtivaIndex = 0 } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -27,16 +27,21 @@ export async function POST(req: Request) {
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione Markdown.
 2. ENGENHARIA REVERSA: EXTRAIA AS CORES EXATAS. Se a imagem for ESCURA, o código HTML DEVE ter fundo escuro (bg-slate-900).
 
-=== REGRAS DE ESTRUTURA E IMAGENS (CONTROLE DE TAMANHO E ORIENTAÇÃO) ===
-3. CONTROLE DE IMAGENS (OBRIGATÓRIO E VITAL): Para evitar que as imagens fiquem gigantes e quebrem o site, TODA tag <img> OBRIGATORIAMENTE deve conter estas classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
-- Para imagens HORIZONTAIS (paisagem), utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword
-- Para imagens VERTICAIS (retrato), utilize EXATAMENTE o src: https://images.unsplash.com/random/800x1200/?keyword
-(substitua keyword por UMA única palavra em inglês).
+=== REGRAS DE NAVEGAÇÃO E MENU (O GATILHO E O ALVO) ===
+3. OBRIGATÓRIO PARA O MENU SUPERIOR: Para evitar recarregamento de página, siga estritamente esta estrutura:
+- NO BOTÃO DO MENU (O GATILHO): Use o atributo href começando com uma hashtag (#) seguida do nome do destino. Obrigatório usar target="_self". Exemplo: <a href="#quem-somos" target="_self">Quem Somos</a>
+- NA SEÇÃO DE DESTINO (O ALVO): Use o atributo id com exatamente o mesmo nome (sem a hashtag). Exemplo: <section id="quem-somos" class="...">
+- NUNCA use links absolutos (como href="/") no menu.
+
+=== REGRAS DE ESTRUTURA E IMAGENS ===
+4. CONTROLE DE IMAGENS: TODA tag <img> OBRIGATORIAMENTE deve conter estas classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
+- Para imagens HORIZONTAIS, src exato: https://images.unsplash.com/random/1200x800/?keyword
+- Para imagens VERTICAIS, src exato: https://images.unsplash.com/random/800x1200/?keyword
 ${regraImagens}
 ${instrucaoDinamica}
 
 === COMPLIANCE FACEBOOK ADS E RODAPÉ JURÍDICO ===
-4. OBRIGATÓRIO: Você é PROIBIDO de resumir este bloco. Copie e cole exatamente como está abaixo no final do código HTML. Ele contém os gatilhos legais exigidos pelos robôs da Meta (Facebook Ads) para não bloquear a conta de anúncios. Textos devem manter as classes text-base ou text-lg.
+5. OBRIGATÓRIO: Você é PROIBIDO de resumir este bloco. Copie e cole exatamente como está abaixo no final do código HTML. Textos devem manter as classes text-base ou text-lg.
 <footer class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-5xl mx-auto px-6">
         <div class="flex flex-wrap justify-center gap-8 md:gap-16 mb-8 font-medium">
@@ -88,20 +93,27 @@ ${instrucaoDinamica}
     let provedorTextoUsado = 'Google Gemini';
     let logErros: string[] = [];
 
-    // TODAS AS CHAVES UNIFICADAS NO MODELO gemini-2.5-flash
-    const rotasGemini = [
+    const rotasGeminiGlobais = [
         { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1" },
         { key: process.env.GEMINI_API_KEY_2, model: "gemini-2.5-flash", nome: "Chave 2" },
         { key: process.env.GEMINI_API_KEY_3, model: "gemini-2.5-flash", nome: "Chave 3" }
     ].filter(r => r.key);
 
-    if (rotasGemini.length === 0) {
-        throw new Error("Nenhuma chave API do Google Gemini configurada no ambiente.");
+    if (rotasGeminiGlobais.length === 0) {
+        throw new Error("Nenhuma chave API do Google Gemini configurada.");
     }
+
+    // Aplica o Rodízio: Coloca a chave solicitada pelo frontend em 1º lugar na fila
+    const indexSeguro = chaveAtivaIndex % rotasGeminiGlobais.length;
+    const rotasPriorizadas = [
+        rotasGeminiGlobais[indexSeguro],
+        ...rotasGeminiGlobais.slice(indexSeguro + 1),
+        ...rotasGeminiGlobais.slice(0, indexSeguro)
+    ];
 
     let isRateLimit = false;
 
-    for (const rota of rotasGemini) {
+    for (const rota of rotasPriorizadas) {
         try {
             const genAI = new GoogleGenerativeAI(rota.key!);
             const model = genAI.getGenerativeModel({
@@ -125,12 +137,8 @@ ${instrucaoDinamica}
 
         } catch (err: any) {
             let msg = err.message || "";
-            if(msg.includes('429')) {
-                msg = "Cota Esgotada (429)";
-                isRateLimit = true;
-            } else if (msg.includes('503')) {
-                msg = "Servidor do Google Sobrecarregado (503)";
-            }
+            if(msg.includes('429')) { msg = "Cota Esgotada (429)"; isRateLimit = true; } 
+            else if (msg.includes('503')) { msg = "Servidor Sobrecarregado (503)"; }
             logErros.push(`${rota.nome}: ${msg}`);
             htmlCode = ''; 
         }
@@ -150,7 +158,6 @@ ${instrucaoDinamica}
         if (!htmlCode.includes('AOS.init') && htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // FILTRO DINÂMICO DE IMAGENS (IDENTIFICA VERTICAL E HORIZONTAL)
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/(\d+x\d+)\/\?([^"&<>\s]+)/g;
     let match;
@@ -166,8 +173,7 @@ ${instrucaoDinamica}
         let imagemEncontrada = false;
         const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
         
-        // Define a orientação correta baseada no pedido da IA
-        let orientacaoAPI = 'landscape'; // Padrão
+        let orientacaoAPI = 'landscape';
         if (item.dimensao === '800x1200') orientacaoAPI = 'portrait';
         else if (item.dimensao === '800x800') orientacaoAPI = 'squarish';
 
@@ -188,7 +194,6 @@ ${instrucaoDinamica}
 
         if (!imagemEncontrada) {
           const lockId = Math.floor(Math.random() * 9999);
-          // Se falhar, usa o LoremFlickr respeitando a dimensão pedida
           let w = '1200', h = '800';
           if (item.dimensao === '800x1200') { w = '800'; h = '1200'; }
           const flickrUrl = `https://loremflickr.com/${w}/${h}/${keywordLimpaFormatada}?lock=${lockId}`;

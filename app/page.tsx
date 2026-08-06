@@ -4,22 +4,23 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE INTELIGENTE
-// Bloqueia navegação externa (Inception), mas permite que as Sanfonas (FAQs) e o Javascript fluam normalmente.
+// ESCUDO DE CLIQUE BLINDADO CONTRA INCEPTION
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
             var href = link.getAttribute('href') || '';
-            // Se for link âncora (#) ou gatilho javascript, permite o clique fluir
-            if (href.startsWith('#') || href.startsWith('javascript:') || href === '') {
-                return;
+            // Se for link âncora (#) do nosso menu corrigido, permite o clique rolar a página
+            if (href.startsWith('#')) {
+                return; 
             }
-            // Bloqueio limpo para qualquer outro link real, impedindo que abra dentro do painel
+            // Bloqueio limpo para qualquer outro link externo ou absoluto (/)
             e.preventDefault();
+            e.stopPropagation();
+            console.log('Navegação externa bloqueada pelo Escudo.');
         }
-    }); 
-    document.addEventListener('submit', function(e) { e.preventDefault(); });
+    }, true); 
+    document.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 </script>`;
 
 export default function Home() {
@@ -42,6 +43,8 @@ export default function Home() {
     imagem: 'Aguardando...' 
   });
 
+  // CONTADORES DO RODÍZIO
+  const [totalGeracoes, setTotalGeracoes] = useState(0);
   const [apiUsage, setApiUsage] = useState({ chave1: 0, chave2: 0, chave3: 0 });
 
   useEffect(() => {
@@ -51,6 +54,11 @@ export default function Home() {
     };
     verificarSessao();
 
+    // Recupera total de gerações do navegador para não perder o rodízio ao atualizar a página
+    const salvos = localStorage.getItem('totalGeracoesOCO');
+    if (salvos) setTotalGeracoes(parseInt(salvos));
+
+    // Zera os velocímetros a cada 60 segundos exatos
     const interval = setInterval(() => {
         setApiUsage({ chave1: 0, chave2: 0, chave3: 0 });
     }, 60000);
@@ -194,6 +202,16 @@ export default function Home() {
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
 
+      // PEGA A CHAVE DO RODÍZIO ATUAL
+      // Ex: Divide o total de cliques por 3. Resto da divisão (0, 1 ou 2) é a chave.
+      const getChaveAtiva = () => {
+         const salvos = localStorage.getItem('totalGeracoesOCO');
+         const total = salvos ? parseInt(salvos) : totalGeracoes;
+         return Math.floor(total / 3) % 3; // Troca de chave a cada 3 cliques
+      };
+      
+      const chaveParaEnviar = getChaveAtiva();
+
       try {
         const response = await fetch('/api/gerar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -201,25 +219,32 @@ export default function Home() {
               systemInstruction: systemInstructionText, 
               promptParts: promptParts, 
               imageStyle: imageStyle,
-              dinamica: dinamicaStyle
+              dinamica: dinamicaStyle,
+              chaveAtivaIndex: chaveParaEnviar // MANDANDO O TURNO DA CHAVE
           })
         });
         const data = await response.json();
         
         if (!data.success) {
-            if (data.error === 'RATE_LIMIT_EXCEEDED') {
-                throw new Error("LIMIT_MODAL"); // Dispara o modal de limite
-            }
+            if (data.error === 'RATE_LIMIT_EXCEEDED') { throw new Error("LIMIT_MODAL"); }
             throw new Error(data.error);
         }
 
+        // AUMENTA O CONTADOR GLOBAL PARA O RODÍZIO
+        setTotalGeracoes(prev => {
+            const next = prev + 1;
+            localStorage.setItem('totalGeracoesOCO', next.toString());
+            return next;
+        });
+
+        // AUMENTA O VELOCÍMETRO VISUAL DA TELA
         if (data.provedorTexto) {
             if (data.provedorTexto.includes('Chave 1')) {
                 setApiUsage(prev => ({...prev, chave1: prev.chave1 + 1}));
             } else if (data.provedorTexto.includes('Chave 2')) {
-                setApiUsage(prev => ({...prev, chave1: 15, chave2: prev.chave2 + 1})); 
+                setApiUsage(prev => ({...prev, chave2: prev.chave2 + 1})); 
             } else if (data.provedorTexto.includes('Chave 3')) {
-                setApiUsage(prev => ({...prev, chave1: 15, chave2: 15, chave3: prev.chave3 + 1}));
+                setApiUsage(prev => ({...prev, chave3: prev.chave3 + 1}));
             }
         }
 
@@ -227,9 +252,7 @@ export default function Home() {
         const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
         
         if (codEl) {
-          if (codEl.value) {
-            setHistoricoCodigo(prev => [...prev, codEl.value]);
-          }
+          if (codEl.value) setHistoricoCodigo(prev => [...prev, codEl.value]);
           codEl.value = data.html; 
         }
         if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
@@ -750,7 +773,6 @@ ${getMegaPromptCores()}`;
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
   const totalPaginas = Math.ceil(listaSites.length / SITES_POR_PAGINA);
 
-  // FUNÇÃO ISOLADA DO MODAL PARA EVITAR BUG DO VS CODE (ts 2304)
   const renderConteudoModal = () => {
     if (carregandoSites) {
       return <p className="text-center text-sm text-slate-500">Carregando...</p>;
@@ -793,6 +815,9 @@ ${getMegaPromptCores()}`;
       </>
     );
   };
+
+  // Identifica visualmente qual é a chave ativa para o usuário
+  const chaveAtivaNum = Math.floor(totalGeracoes / 3) % 3;
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
@@ -1001,13 +1026,13 @@ ${getMegaPromptCores()}`;
                     
                     {/* CONTADORES VISUAIS DE USO DAS CHAVES */}
                     <div className="flex items-center gap-1.5 ml-4 hidden lg:flex border border-slate-100 rounded p-1 bg-slate-50">
-                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${apiUsage.chave1 >= 15 ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} title="Uso da Chave 1 neste minuto">
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${chaveAtivaNum === 0 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Chave 1">
                             <i className="fas fa-key"></i> C1: {apiUsage.chave1}/15
                         </div>
-                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${apiUsage.chave2 >= 15 ? 'bg-red-50 text-red-600 border-red-200' : apiUsage.chave1 >= 15 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Uso da Chave 2 neste minuto">
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${chaveAtivaNum === 1 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Chave 2">
                             <i className="fas fa-key"></i> C2: {apiUsage.chave2}/15
                         </div>
-                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${apiUsage.chave3 >= 15 ? 'bg-red-50 text-red-600 border-red-200' : apiUsage.chave2 >= 15 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Uso da Chave 3 neste minuto">
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${chaveAtivaNum === 2 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Chave 3">
                             <i className="fas fa-key"></i> C3: {apiUsage.chave3}/15
                         </div>
                     </div>
