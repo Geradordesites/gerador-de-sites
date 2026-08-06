@@ -4,15 +4,15 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE CORRIGIDO
-// Bloqueia navegação externa (Inception) mas permite que as Sanfonas e o Javascript funcionem.
+// ESCUDO DE CLIQUE INTELIGENTE
+// Bloqueia navegação externa (Inception), mas permite que as Sanfonas (FAQs) e o Javascript fluam normalmente.
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
             var href = link.getAttribute('href') || '';
-            // Se for link âncora (#) para sanfonas ou menus de rolagem, permite a ação.
-            if (href.startsWith('#')) {
+            // Se for link âncora (#) ou gatilho javascript, permite o clique fluir
+            if (href.startsWith('#') || href.startsWith('javascript:') || href === '') {
                 return;
             }
             // Bloqueio limpo para qualquer outro link real, impedindo que abra dentro do painel
@@ -208,7 +208,7 @@ export default function Home() {
         
         if (!data.success) {
             if (data.error === 'RATE_LIMIT_EXCEEDED') {
-                throw new Error("LIMIT_MODAL");
+                throw new Error("LIMIT_MODAL"); // Dispara o modal de limite
             }
             throw new Error(data.error);
         }
@@ -750,6 +750,50 @@ ${getMegaPromptCores()}`;
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
   const totalPaginas = Math.ceil(listaSites.length / SITES_POR_PAGINA);
 
+  // FUNÇÃO ISOLADA DO MODAL PARA EVITAR BUG DO VS CODE (ts 2304)
+  const renderConteudoModal = () => {
+    if (carregandoSites) {
+      return <p className="text-center text-sm text-slate-500">Carregando...</p>;
+    }
+    if (listaSites.length === 0) {
+      return (
+        <div className="text-center py-16 text-slate-400 space-y-2">
+          <p className="text-sm font-semibold">Nenhum site publicado ainda.</p>
+        </div>
+      );
+    }
+    return (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sitesAtuais.map((site) => {
+            const linkUrl = `${window.location.origin}/${site.slug}`;
+            return (
+              <div key={site.id} className="bg-white border rounded-xl p-4 shadow-sm flex flex-col">
+                <h3 className="font-bold text-sm mb-2">{site.titulo}</h3>
+                <input type="text" readOnly value={linkUrl} className="bg-slate-50 border rounded text-[11px] w-full p-1.5 mb-3" />
+                <div className="flex justify-between items-center">
+                  <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-semibold">Abrir Site</a>
+                  <div className="flex gap-2">
+                    <button onClick={() => editarSite(site)} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200">Editar</button>
+                    <button onClick={() => deletarSite(site.id, site.slug)} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200">Deletar</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {totalPaginas > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-slate-100">
+            <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition">Anterior</button>
+            <span className="text-xs font-semibold text-slate-500">Página {paginaAtual} de {totalPaginas}</span>
+            <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition">Próxima</button>
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -774,6 +818,9 @@ ${getMegaPromptCores()}`;
         #loadingSpinner { border: 4px solid rgba(59,130,246,0.2); border-top: 4px solid #3b82f6; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 2rem; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         #loadingText { color: white; font-weight: 500; font-size: 1.1rem; letter-spacing: 0.05em; text-align: center; max-width: 80%; line-height: 1.5; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
       `}} />
 
       <div id="main-app-container" className="w-full h-full flex overflow-hidden">
@@ -920,10 +967,10 @@ ${getMegaPromptCores()}`;
                 <div id="elementManagerCard" className="card border-blue-200 bg-blue-50 mb-2" style={{ display: 'none' }}>
                     <h3 className="label-style text-blue-800 text-[10px] mb-1"><i className="fas fa-edit"></i>Gerenciador</h3>
                     <div id="imageSection" style={{ display: 'none' }} className="mb-1">
-                        <div id="imageInputsContainer" className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1"></div>
+                        <div id="imageInputsContainer" className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar"></div>
                     </div>
                     <div id="linkSection" style={{ display: 'none' }}>
-                        <div id="linkInputsContainer" className="space-y-1.5 max-h-24 overflow-y-auto pr-1 mt-1 border-t border-blue-100 pt-1"></div>
+                        <div id="linkInputsContainer" className="space-y-1.5 max-h-24 overflow-y-auto pr-1 mt-1 border-t border-blue-100 pt-1 custom-scrollbar"></div>
                     </div>
                     
                     <button onClick={() => (window as any).dispararAtualizacao()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[9px] py-1 rounded mt-1.5 transition-colors">
@@ -933,7 +980,7 @@ ${getMegaPromptCores()}`;
 
                 <div className="card border-emerald-200 bg-emerald-50 mb-1 flex-1 flex flex-col min-h-[160px]">
                     <label className="text-[10px] font-bold text-emerald-800 uppercase mb-1 block"><i className="fas fa-wand-magic-sparkles mr-1"></i> Refinamento Cirúrgico</label>
-                    <textarea id="promptRefinamento" className="input-style w-full resize-none text-[11px] flex-1" placeholder="Ex: Remova apenas a imagem X..."></textarea>
+                    <textarea id="promptRefinamento" className="input-style w-full resize-none text-[11px] flex-1 custom-scrollbar" placeholder="Ex: Remova apenas a imagem X..."></textarea>
                     <button onClick={() => (window as any).refinarSiteEstrito()} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] py-2 mt-2 rounded w-full flex items-center justify-center gap-1.5 shadow-sm transition-colors">
                         <i className="fas fa-rotate"></i> Aplicar Opções ao Site
                     </button>
@@ -988,7 +1035,7 @@ ${getMegaPromptCores()}`;
             <div className="flex-grow bg-gray-200 relative">
                 <iframe id="previewFrame" className="w-full h-full active border-none bg-white" sandbox="allow-scripts allow-same-origin" title="Preview"></iframe>
                 <div id="codigoContainer" className="w-full h-full">
-                    <textarea id="codigoGerado" className="w-full h-full p-6 font-mono text-sm bg-gray-900 text-green-400 border-none outline-none resize-none"></textarea>
+                    <textarea id="codigoGerado" className="w-full h-full p-6 font-mono text-sm bg-gray-900 text-green-400 border-none outline-none resize-none custom-scrollbar"></textarea>
                 </div>
             </div>
         </div>
@@ -1001,43 +1048,8 @@ ${getMegaPromptCores()}`;
               <h2 className="text-lg font-bold text-slate-800">Meus Sites Publicados</h2>
               <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-200 font-bold">✕</button>
             </div>
-            <div className="p-6 flex-1 overflow-y-auto">
-              {carregandoSites ? <p className="text-center text-sm text-slate-500">Carregando...</p> : 
-                listaSites.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 space-y-2">
-                    <p className="text-sm font-semibold">Nenhum site publicado ainda.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {sitesAtuais.map((site) => {
-                        const linkUrl = `${window.location.origin}/${site.slug}`;
-                        return (
-                          <div key={site.id} className="bg-white border rounded-xl p-4 shadow-sm flex flex-col">
-                            <h3 className="font-bold text-sm mb-2">{site.titulo}</h3>
-                            <input type="text" readOnly value={linkUrl} className="bg-slate-50 border rounded text-[11px] w-full p-1.5 mb-3" />
-                            <div className="flex justify-between items-center">
-                              <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-semibold">Abrir Site</a>
-                              <div className="flex gap-2">
-                                <button onClick={() => editarSite(site)} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded border border-amber-200">Editar</button>
-                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200">Deletar</button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {totalPaginas > 1 && (
-                      <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t border-slate-100">
-                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition">Anterior</button>
-                        <span className="text-xs font-semibold text-slate-500">Página {paginaAtual} de {totalPaginas}</span>
-                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded disabled:opacity-50 hover:bg-slate-200 transition">Próxima</button>
-                      </div>
-                    )}
-                  </>
-                )
-              }
+            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+              {renderConteudoModal()}
             </div>
           </div>
         </div>

@@ -88,10 +88,11 @@ ${instrucaoDinamica}
     let provedorTextoUsado = 'Google Gemini';
     let logErros: string[] = [];
 
+    // TODAS AS CHAVES UNIFICADAS NO MODELO gemini-2.5-flash
     const rotasGemini = [
         { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1" },
-        { key: process.env.GEMINI_API_KEY_2, model: "gemini-1.5-flash", nome: "Chave 2" },
-        { key: process.env.GEMINI_API_KEY_3, model: "gemini-1.5-flash", nome: "Chave 3" }
+        { key: process.env.GEMINI_API_KEY_2, model: "gemini-2.5-flash", nome: "Chave 2" },
+        { key: process.env.GEMINI_API_KEY_3, model: "gemini-2.5-flash", nome: "Chave 3" }
     ].filter(r => r.key);
 
     if (rotasGemini.length === 0) {
