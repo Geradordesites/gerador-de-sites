@@ -8,7 +8,6 @@ export async function POST(req: Request) {
 
     const anoAtual = new Date().getFullYear();
 
-    // Verificando se há imagens no prompt para decidir qual Motor de IA usar
     let temImagem = false;
     let textoDoPrompt = "";
     
@@ -17,7 +16,6 @@ export async function POST(req: Request) {
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
-    // REGRA ESTRITA DE IMAGENS E ESPAÇAMENTO (PEDIDO PELO USUÁRIO)
     const regraImagens = "- REGRA ABSOLUTA DE IMAGENS: É TERMINANTEMENTE PROIBIDO o uso de ilustrações, desenhos animados, gráficos 3D ou elementos de tecnologia/sci-fi. Você deve focar estritamente em FOTOGRAFIAS HUMANAS REAIS E CENÁRIOS AUTÊNTICOS (REAIS).";
     
     let instrucaoDinamica = "";
@@ -30,6 +28,7 @@ export async function POST(req: Request) {
     const regrasObrigatorias = `
 === REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE ===
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione Markdown antes ou depois do JSON.
+🚨 ALERTA CRÍTICO: O valor de "codigo_html" DEVE CONTER O SITE INTEIRO (do <!DOCTYPE html> até o </html>). É ESTRITAMENTE PROIBIDO cortar, resumir, omitir ou usar comentários como "<!-- resto do código -->". Devolva a página inteira 100% funcional.
 
 === REGRAS DE ESPAÇAMENTO E TIPOGRAFIA (OBRIGATÓRIO) ===
 2. ARQUITETURA DE BLOCOS: O layout deve ser impecável. Em TODOS os blocos de texto, você deve OBRIGATORIAMENTE manter um espaço exato de UMA LINHA entre os títulos dos tópicos (h2, h3) e os parágrafos (p). Use classes como 'mb-4' ou 'mb-6' no Tailwind para garantir essa separação respirável.
@@ -87,11 +86,7 @@ ${instrucaoDinamica}
     let htmlCode = '';
     let provedorTextoUsado = '';
 
-    // =========================================================================
-    // ROTEADOR HÍBRIDO MESTRE (GEMINI PARA IMAGENS | GROQ PARA TEXTOS)
-    // =========================================================================
     if (temImagem) {
-        // [MODO ARQUITETO VISUAL] - USA O GEMINI (Somente 2.5 Flash)
         provedorTextoUsado = 'Google Gemini (Visão)';
         
         const rotasGemini = [
@@ -101,7 +96,6 @@ ${instrucaoDinamica}
 
         if (rotasGemini.length === 0) throw new Error("Nenhuma chave API do Google Gemini configurada.");
 
-        // Tenta a chave primária, se falhar por limite, pula pra segunda
         let sucessoGemini = false;
         let erroFinal = "";
 
@@ -136,7 +130,6 @@ ${instrucaoDinamica}
         }
 
     } else {
-        // [MODO COPYWRITER ULTRA RÁPIDO] - USA O GROQ
         provedorTextoUsado = 'Groq Engine (LLaMA 3)';
         
         if (!process.env.GROQ_API_KEY) throw new Error("Chave do GROQ (GROQ_API_KEY) não configurada no painel.");
@@ -148,12 +141,14 @@ ${instrucaoDinamica}
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile", // O MODELO CORRETO E ATUALIZADO AQUI
+                model: "llama-3.3-70b-versatile",
                 messages: [
                     { role: "system", content: systemInstructionFinal },
                     { role: "user", content: textoDoPrompt }
                 ],
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                max_tokens: 8000, // LIMITE ESTENDIDO PARA NÃO CORTAR O SITE
+                temperature: 0.1  // MODO EXATO PARA NÃO INVENTAR CÓDIGO
             })
         });
 
@@ -167,11 +162,10 @@ ${instrucaoDinamica}
         htmlCode = extrairHtmlDeJson(contentResposta);
 
         if (!htmlCode || !htmlCode.includes('<html')) {
-            throw new Error("Groq não retornou um HTML válido no JSON.");
+            throw new Error("O Groq falhou ao retornar a página completa. Tente novamente.");
         }
     }
 
-    // Processamento Dinâmico (Animações AOS)
     if (dinamica && dinamica !== 'estatico') {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
@@ -179,7 +173,6 @@ ${instrucaoDinamica}
         if (!htmlCode.includes('AOS.init') && htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // FILTRO DINÂMICO DE IMAGENS
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/(\d+x\d+)\/\?([^"&<>\s]+)/g;
     let match;
