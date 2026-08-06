@@ -43,26 +43,12 @@ export default function Home() {
     imagem: 'Aguardando...' 
   });
 
-  // CONTADORES DO RODÍZIO
-  const [totalGeracoes, setTotalGeracoes] = useState(0);
-  const [apiUsage, setApiUsage] = useState({ chave1: 0, chave2: 0, chave3: 0 });
-
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { window.location.href = '/login'; }
     };
     verificarSessao();
-
-    // Recupera total de gerações do navegador para não perder o rodízio ao atualizar a página
-    const salvos = localStorage.getItem('totalGeracoesOCO');
-    if (salvos) setTotalGeracoes(parseInt(salvos));
-
-    // Zera os velocímetros a cada 60 segundos exatos
-    const interval = setInterval(() => {
-        setApiUsage({ chave1: 0, chave2: 0, chave3: 0 });
-    }, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = async () => {
@@ -182,11 +168,11 @@ export default function Home() {
               badgeApis.classList.remove('bg-indigo-50', 'border-indigo-200');
               badgeApis.classList.add('bg-amber-100', 'border-amber-300', 'animate-pulse');
           }
-          setStatusApis({ texto: 'Testando chaves...', imagem: 'Consultando bancos...' });
+          setStatusApis({ texto: 'Acessando motores de IA...', imagem: 'Aguarde...' });
 
           const mensagens = [
-              "Analisando referência visual...",
-              "Acessando Motor Google Gemini...",
+              "Analisando requisição...",
+              "Acessando Motor de Inteligência...",
               "Ajustando Imagens e Textos de Compliance...",
               "Aplicando blocos Tailwind CSS...",
               "Injetando Scripts de Animação e Rodapé..."
@@ -202,16 +188,6 @@ export default function Home() {
       const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
 
-      // PEGA A CHAVE DO RODÍZIO ATUAL
-      // Ex: Divide o total de cliques por 3. Resto da divisão (0, 1 ou 2) é a chave.
-      const getChaveAtiva = () => {
-         const salvos = localStorage.getItem('totalGeracoesOCO');
-         const total = salvos ? parseInt(salvos) : totalGeracoes;
-         return Math.floor(total / 3) % 3; // Troca de chave a cada 3 cliques
-      };
-      
-      const chaveParaEnviar = getChaveAtiva();
-
       try {
         const response = await fetch('/api/gerar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -219,8 +195,7 @@ export default function Home() {
               systemInstruction: systemInstructionText, 
               promptParts: promptParts, 
               imageStyle: imageStyle,
-              dinamica: dinamicaStyle,
-              chaveAtivaIndex: chaveParaEnviar // MANDANDO O TURNO DA CHAVE
+              dinamica: dinamicaStyle
           })
         });
         const data = await response.json();
@@ -228,24 +203,6 @@ export default function Home() {
         if (!data.success) {
             if (data.error === 'RATE_LIMIT_EXCEEDED') { throw new Error("LIMIT_MODAL"); }
             throw new Error(data.error);
-        }
-
-        // AUMENTA O CONTADOR GLOBAL PARA O RODÍZIO
-        setTotalGeracoes(prev => {
-            const next = prev + 1;
-            localStorage.setItem('totalGeracoesOCO', next.toString());
-            return next;
-        });
-
-        // AUMENTA O VELOCÍMETRO VISUAL DA TELA
-        if (data.provedorTexto) {
-            if (data.provedorTexto.includes('Chave 1')) {
-                setApiUsage(prev => ({...prev, chave1: prev.chave1 + 1}));
-            } else if (data.provedorTexto.includes('Chave 2')) {
-                setApiUsage(prev => ({...prev, chave2: prev.chave2 + 1})); 
-            } else if (data.provedorTexto.includes('Chave 3')) {
-                setApiUsage(prev => ({...prev, chave3: prev.chave3 + 1}));
-            }
         }
 
         const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
@@ -269,7 +226,7 @@ export default function Home() {
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
         if (err.message === "LIMIT_MODAL") {
-            (window as any).showNotification("As suas chaves atingiram a cota máxima! Aguarde exatamente 1 minuto para o Google liberar mais saldo.", "limit");
+            (window as any).showNotification("Cota atingida! Aguarde exatamente 1 minuto para a IA liberar mais saldo.", "limit");
         } else {
             (window as any).showNotification(err.message, 'error');
         }
@@ -816,9 +773,6 @@ ${getMegaPromptCores()}`;
     );
   };
 
-  // Identifica visualmente qual é a chave ativa para o usuário
-  const chaveAtivaNum = Math.floor(totalGeracoes / 3) % 3;
-
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -1023,20 +977,6 @@ ${getMegaPromptCores()}`;
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-semibold py-1 px-2 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
-                    
-                    {/* CONTADORES VISUAIS DE USO DAS CHAVES */}
-                    <div className="flex items-center gap-1.5 ml-4 hidden lg:flex border border-slate-100 rounded p-1 bg-slate-50">
-                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${chaveAtivaNum === 0 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Chave 1">
-                            <i className="fas fa-key"></i> C1: {apiUsage.chave1}/15
-                        </div>
-                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${chaveAtivaNum === 1 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Chave 2">
-                            <i className="fas fa-key"></i> C2: {apiUsage.chave2}/15
-                        </div>
-                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${chaveAtivaNum === 2 ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Chave 3">
-                            <i className="fas fa-key"></i> C3: {apiUsage.chave3}/15
-                        </div>
-                    </div>
-
                 </div>
 
                 <div className="flex items-center gap-2">
