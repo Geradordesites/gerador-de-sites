@@ -93,10 +93,13 @@ ${instrucaoDinamica}
     let provedorTextoUsado = 'Google Gemini';
     let logErros: string[] = [];
 
+    // =====================================================================
+    // ATENÇÃO AQUI: Chave 1 usa 2.5. Chaves 2 e 3 usam 1.5!
+    // =====================================================================
     const rotasGeminiGlobais = [
         { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1" },
-        { key: process.env.GEMINI_API_KEY_2, model: "gemini-2.5-flash", nome: "Chave 2" },
-        { key: process.env.GEMINI_API_KEY_3, model: "gemini-2.5-flash", nome: "Chave 3" }
+        { key: process.env.GEMINI_API_KEY_2, model: "gemini-1.5-flash", nome: "Chave 2" },
+        { key: process.env.GEMINI_API_KEY_3, model: "gemini-1.5-flash", nome: "Chave 3" }
     ].filter(r => r.key);
 
     if (rotasGeminiGlobais.length === 0) {
