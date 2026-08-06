@@ -4,23 +4,37 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE BLINDADO CONTRA INCEPTION
+// ESCUDO DE CLIQUE BLINDADO CONTRA INCEPTION (NÍVEL MÁXIMO)
 const SCRIPT_PREVIEW = `<script>
-    document.addEventListener('click', function(e) {
+    window.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
-            var href = link.getAttribute('href') || '';
-            // Se for link âncora (#) do nosso menu corrigido, permite o clique rolar a página
-            if (href.startsWith('#')) {
-                return; 
-            }
-            // Bloqueio limpo para qualquer outro link externo ou absoluto (/)
+            // 1. MATA QUALQUER AÇÃO DO NAVEGADOR IMEDIATAMENTE (Tolerância Zero)
             e.preventDefault();
             e.stopPropagation();
-            console.log('Navegação externa bloqueada pelo Escudo.');
+            
+            var href = link.getAttribute('href') || '';
+            
+            // 2. IDENTIFICA SE TEM ALGUMA ÂNCORA (Mesmo que a IA tenha errado e colocado "/#id")
+            if (href.includes('#')) {
+                var hash = href.substring(href.indexOf('#'));
+                if (hash.length > 1) {
+                    try {
+                        var targetEl = document.querySelector(hash);
+                        if (targetEl) {
+                            // 3. FAZ O SCROLL MANUALMENTE VIA JS
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    } catch(err) {}
+                }
+            }
         }
-    }, true); 
-    document.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+    }, true); // O "true" obriga o script a rodar antes do HTML sequer pensar em agir
+
+    window.addEventListener('submit', function(e) { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+    }, true);
 </script>`;
 
 export default function Home() {
