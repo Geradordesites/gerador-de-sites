@@ -86,14 +86,15 @@ ${instrucaoDinamica}
     let provedorTextoUsado = 'Google Gemini';
     let logErros: string[] = [];
 
+    // CASCATA INTELIGENTE: Chave 1 (antiga) usa 2.5-flash. Chaves 2 e 3 (novas) usam 1.5-flash.
     const rotasGemini = [
         { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1" },
-        { key: process.env.GEMINI_API_KEY_2, model: "gemini-2.5-flash", nome: "Chave 2" },
-        { key: process.env.GEMINI_API_KEY_3, model: "gemini-2.5-flash", nome: "Chave 3" }
+        { key: process.env.GEMINI_API_KEY_2, model: "gemini-1.5-flash", nome: "Chave 2" },
+        { key: process.env.GEMINI_API_KEY_3, model: "gemini-1.5-flash", nome: "Chave 3" }
     ].filter(r => r.key);
 
     if (rotasGemini.length === 0) {
-        throw new Error("Nenhuma chave API configurada.");
+        throw new Error("Nenhuma chave API do Google Gemini configurada no ambiente.");
     }
 
     let isRateLimit = false;
@@ -125,6 +126,8 @@ ${instrucaoDinamica}
             if(msg.includes('429')) {
                 msg = "Cota Esgotada (429)";
                 isRateLimit = true;
+            } else if (msg.includes('503')) {
+                msg = "Servidor do Google Sobrecarregado (503)";
             }
             logErros.push(`${rota.nome}: ${msg}`);
             htmlCode = ''; 

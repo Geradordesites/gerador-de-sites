@@ -4,20 +4,20 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE FASE DE CAPTURA BLINDADO
-// Intercepta todos os cliques do iframe. Se for âncora (#) ele deixa fluir, se for link ele bloqueia.
+// ESCUDO DE CLIQUE ABSOLUTO
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
             var href = link.getAttribute('href') || '';
+            // Se for um link âncora (#) longo o suficiente, permite o scroll suave da página
             if (href.startsWith('#') && href.length > 1) {
-                // Permite scroll suave interno para sanfonas e menus âncora
                 return;
             }
-            // Bloqueia qualquer outro clique (impede abrir site dentro do site)
+            // Bloqueio absoluto para qualquer outro link
             e.preventDefault();
             e.stopPropagation();
+            console.log('Navegação bloqueada pelo Modo Preview.');
         }
     }, true); 
     document.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
@@ -43,7 +43,6 @@ export default function Home() {
     imagem: 'Aguardando...' 
   });
 
-  // MONITORES INDIVIDUAIS DE USO DAS CHAVES (Zeram a cada minuto)
   const [apiUsage, setApiUsage] = useState({ chave1: 0, chave2: 0, chave3: 0 });
 
   useEffect(() => {
@@ -53,7 +52,6 @@ export default function Home() {
     };
     verificarSessao();
 
-    // Zera os velocímetros a cada 60 segundos exatos
     const interval = setInterval(() => {
         setApiUsage({ chave1: 0, chave2: 0, chave3: 0 });
     }, 60000);
@@ -211,12 +209,11 @@ export default function Home() {
         
         if (!data.success) {
             if (data.error === 'RATE_LIMIT_EXCEEDED') {
-                throw new Error("LIMIT_MODAL"); // Dispara o modal elegante
+                throw new Error("LIMIT_MODAL");
             }
             throw new Error(data.error);
         }
 
-        // CÁLCULO INTELIGENTE DO USO DA CHAVE
         if (data.provedorTexto) {
             if (data.provedorTexto.includes('Chave 1')) {
                 setApiUsage(prev => ({...prev, chave1: prev.chave1 + 1}));
@@ -292,7 +289,7 @@ export default function Home() {
 
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      if (cor === 'auto') return "PALETA DE CORES: Analise a imagem anexada como um scanner. VOCÊ DEVE OBRIGATORIAMENTE CLONAR AS CORES DE FUNDO E BOTÕES. Se a foto for escura, use fundo escuro (ex: bg-slate-900). Se a foto for clara, use fundo claro.";
+      if (cor === 'auto') return "PALETA DE CORES: Analise a imagem anexada como um scanner. VOCÊ DEVE OBRIGATORIAMENTE CLONAR AS CORES DE FUNDO. Se a foto for escura, use bg-slate-900. Se a foto for clara, use fundo claro.";
       if (cor === 'personalizada') {
          const cp = (document.getElementById('corPrimaria') as HTMLInputElement)?.value || '#2563eb';
          const cf = (document.getElementById('corFundo') as HTMLInputElement)?.value || '#ffffff';
@@ -323,7 +320,7 @@ export default function Home() {
       
       const systemInstruction = `Especialista Sênior Front-end em Tailwind CSS. MODO: ${diretrizModo}. ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       
-      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais e recrie o layout perfeitamente." }];
+      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais sem resumir e recrie o layout perfeitamente." }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
@@ -654,7 +651,7 @@ ${getMegaPromptCores()}`;
       }
     };
 
-    // ALERTA VISUAL ELEGANTE (SUBSTITUI O VERMELHO)
+    // ALERTA VISUAL ELEGANTE E COM ROLAGEM SE FOR TEXTO LONGO
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast');
       if(exist) exist.remove();
@@ -663,7 +660,7 @@ ${getMegaPromptCores()}`;
       div.id = 'custom-toast';
       
       if(type === 'limit') {
-          div.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-4 border-amber-300 px-8 py-8 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[9999] flex flex-col items-center text-center max-w-sm w-full`;
+          div.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-4 border-amber-300 px-8 py-8 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[9999] flex flex-col items-center text-center max-w-sm w-full transition-all`;
           div.innerHTML = `
               <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner"><i class="fas fa-hourglass-half animate-pulse"></i></div>
               <h4 class="font-black text-amber-600 text-xl mb-2 uppercase tracking-wide">Pausa Temporária!</h4>
@@ -671,15 +668,27 @@ ${getMegaPromptCores()}`;
               <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Fechando em breve...</p>
           `;
       } else if(type === 'error') {
-          div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 animate-bounce max-w-md w-full`;
-          div.innerHTML = `<i class="fas fa-exclamation-circle text-red-500 text-2xl mt-1"></i> <div class="flex-1"><h4 class="font-bold text-red-600 text-sm mb-1">Aviso do Sistema</h4><p class="text-[13px] font-medium leading-relaxed">${msg}</p></div>`;
+          // REMOVIDO o animate-bounce e adicionado scroll (overflow-y-auto)
+          div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 max-w-2xl w-full max-h-[80vh] overflow-y-auto transition-all`;
+          div.innerHTML = `
+              <i class="fas fa-exclamation-circle text-red-500 text-2xl mt-1"></i> 
+              <div class="flex-1">
+                  <h4 class="font-bold text-red-600 text-sm mb-1">Aviso do Sistema</h4>
+                  <p class="text-[13px] font-medium leading-relaxed break-words whitespace-pre-wrap">${msg}</p>
+              </div>
+              <button onclick="document.getElementById('custom-toast').remove()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+          `;
       } else {
           div.className = `fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded shadow-xl z-[9999] flex items-center gap-2 transition-all`;
           div.innerHTML = `<i class="fas fa-check-circle"></i> <span class="font-medium text-sm">${msg}</span>`;
       }
       
       document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, type === 'limit' ? 6000 : type === 'error' ? 8000 : 3000); 
+      
+      // Auto-fechar os modais
+      if(type !== 'error') {
+          setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, type === 'limit' ? 6000 : 3000); 
+      }
     };
 
     (window as any).copiarCodigo = () => {
