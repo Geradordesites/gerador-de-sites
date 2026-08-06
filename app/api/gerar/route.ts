@@ -27,9 +27,11 @@ export async function POST(req: Request) {
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione Markdown.
 2. ENGENHARIA REVERSA: EXTRAIA AS CORES EXATAS. Se a imagem for ESCURA, o código HTML DEVE ter fundo escuro (bg-slate-900).
 
-=== REGRAS DE ESTRUTURA E IMAGENS (CONTROLE DE TAMANHO) ===
+=== REGRAS DE ESTRUTURA E IMAGENS (CONTROLE DE TAMANHO E ORIENTAÇÃO) ===
 3. CONTROLE DE IMAGENS (OBRIGATÓRIO E VITAL): Para evitar que as imagens fiquem gigantes e quebrem o site, TODA tag <img> OBRIGATORIAMENTE deve conter estas classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
-- Utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por palavra em inglês).
+- Para imagens HORIZONTAIS (paisagem), utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword
+- Para imagens VERTICAIS (retrato), utilize EXATAMENTE o src: https://images.unsplash.com/random/800x1200/?keyword
+(substitua keyword por UMA única palavra em inglês).
 ${regraImagens}
 ${instrucaoDinamica}
 
@@ -86,7 +88,6 @@ ${instrucaoDinamica}
     let provedorTextoUsado = 'Google Gemini';
     let logErros: string[] = [];
 
-    // CASCATA INTELIGENTE: Chave 1 (antiga) usa 2.5-flash. Chaves 2 e 3 (novas) usam 1.5-flash.
     const rotasGemini = [
         { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Chave 1" },
         { key: process.env.GEMINI_API_KEY_2, model: "gemini-1.5-flash", nome: "Chave 2" },
@@ -148,13 +149,14 @@ ${instrucaoDinamica}
         if (!htmlCode.includes('AOS.init') && htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
+    // FILTRO DINÂMICO DE IMAGENS (IDENTIFICA VERTICAL E HORIZONTAL)
     let provedorImagemUsado = 'Sem imagens';
-    const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/1200x800\/\?([^"&<>\s]+)/g;
+    const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/(\d+x\d+)\/\?([^"&<>\s]+)/g;
     let match;
     const urlsToReplace = [];
 
     while ((match = regexUnsplash.exec(htmlCode)) !== null) {
-      urlsToReplace.push({ fullMatch: match[0], keyword: match[1] });
+      urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keyword: match[2] });
     }
 
     if (urlsToReplace.length > 0) {
@@ -162,10 +164,15 @@ ${instrucaoDinamica}
       for (const item of urlsToReplace) {
         let imagemEncontrada = false;
         const keywordLimpaFormatada = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
+        
+        // Define a orientação correta baseada no pedido da IA
+        let orientacaoAPI = 'landscape'; // Padrão
+        if (item.dimensao === '800x1200') orientacaoAPI = 'portrait';
+        else if (item.dimensao === '800x800') orientacaoAPI = 'squarish';
 
         if (process.env.UNSPLASH_API_KEY) {
           try {
-            const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${keywordLimpaFormatada}&per_page=15&orientation=landscape&client_id=${process.env.UNSPLASH_API_KEY}`);
+            const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${keywordLimpaFormatada}&per_page=15&orientation=${orientacaoAPI}&client_id=${process.env.UNSPLASH_API_KEY}`);
             if (unsplashRes.ok) {
               const uData = await unsplashRes.json();
               if (uData.results && uData.results.length > 0) {
@@ -180,7 +187,10 @@ ${instrucaoDinamica}
 
         if (!imagemEncontrada) {
           const lockId = Math.floor(Math.random() * 9999);
-          const flickrUrl = `https://loremflickr.com/1200/800/${keywordLimpaFormatada}?lock=${lockId}`;
+          // Se falhar, usa o LoremFlickr respeitando a dimensão pedida
+          let w = '1200', h = '800';
+          if (item.dimensao === '800x1200') { w = '800'; h = '1200'; }
+          const flickrUrl = `https://loremflickr.com/${w}/${h}/${keywordLimpaFormatada}?lock=${lockId}`;
           htmlCode = htmlCode.replace(item.fullMatch, flickrUrl);
           flickrUsado = true;
         }

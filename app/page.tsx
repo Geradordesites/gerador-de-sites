@@ -4,23 +4,22 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE ABSOLUTO
+// ESCUDO DE CLIQUE CORRIGIDO
+// Bloqueia navegação externa (Inception) mas permite que as Sanfonas e o Javascript funcionem.
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
             var href = link.getAttribute('href') || '';
-            // Se for um link âncora (#) longo o suficiente, permite o scroll suave da página
-            if (href.startsWith('#') && href.length > 1) {
+            // Se for link âncora (#) para sanfonas ou menus de rolagem, permite a ação.
+            if (href.startsWith('#')) {
                 return;
             }
-            // Bloqueio absoluto para qualquer outro link
+            // Bloqueio limpo para qualquer outro link real, impedindo que abra dentro do painel
             e.preventDefault();
-            e.stopPropagation();
-            console.log('Navegação bloqueada pelo Modo Preview.');
         }
-    }, true); 
-    document.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+    }); 
+    document.addEventListener('submit', function(e) { e.preventDefault(); });
 </script>`;
 
 export default function Home() {
@@ -668,7 +667,6 @@ ${getMegaPromptCores()}`;
               <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Fechando em breve...</p>
           `;
       } else if(type === 'error') {
-          // REMOVIDO o animate-bounce e adicionado scroll (overflow-y-auto)
           div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 max-w-2xl w-full max-h-[80vh] overflow-y-auto transition-all`;
           div.innerHTML = `
               <i class="fas fa-exclamation-circle text-red-500 text-2xl mt-1"></i> 
@@ -685,7 +683,6 @@ ${getMegaPromptCores()}`;
       
       document.body.appendChild(div);
       
-      // Auto-fechar os modais
       if(type !== 'error') {
           setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, type === 'limit' ? 6000 : 3000); 
       }
