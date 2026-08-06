@@ -23,49 +23,48 @@ export async function POST(req: Request) {
     }
 
     const regrasObrigatorias = `
-=== REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE VISUAL ===
+=== REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE ===
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione Markdown.
 2. ENGENHARIA REVERSA: EXTRAIA AS CORES EXATAS. Se a imagem for ESCURA, o código HTML DEVE ter fundo escuro (bg-slate-900).
-3. TAMANHO DE FONTES (ANTIBLOQUEIO FACEBOOK): Todos os textos de parágrafos, FAQs e rodapés devem ter tamanho text-base ou text-lg. NUNCA faça textos pequenos.
 
-=== REGRAS DE ALTA PERFORMANCE (BASEADO NO FERRAMENTAF) ===
-4. PRÉ-CONEXÃO E DNS: No <head>, insira <link rel="preconnect" href="https://cdn.tailwindcss.com"> e <link rel="preconnect" href="https://fonts.googleapis.com">.
-5. PREVENÇÃO FOUC: Adicione uma tag <style> logo após o <title> com: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; background-color: [SUA COR DE FUNDO AQUI]; color: [SUA COR DE TEXTO]; }
-
-=== REGRAS DE ESTRUTURA E IMAGENS RESPONSIVAS ===
-6. CONTROLE DE IMAGENS (OBRIGATÓRIO): Para EVITAR imagens gigantes e desproporcionais, TODA tag <img> OBRIGATORIAMENTE deve conter as classes Tailwind: "w-full max-w-full h-auto object-cover". 
+=== REGRAS DE ESTRUTURA E IMAGENS (CONTROLE DE TAMANHO) ===
+3. CONTROLE DE IMAGENS (OBRIGATÓRIO E VITAL): Para evitar que as imagens fiquem gigantes e quebrem o site, TODA tag <img> OBRIGATORIAMENTE deve conter estas classes Tailwind: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
 - Utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por palavra em inglês).
 ${regraImagens}
 ${instrucaoDinamica}
 
-7. COMPLIANCE E RODAPÉ JURÍDICO (PROIBIDO RESUMIR):
-Você é obrigado a copiar e colar o bloco abaixo no final do código HTML. NÃO abrevie e NÃO modifique este bloco, ele foi desenhado para aprovação do Facebook Ads.
+=== COMPLIANCE FACEBOOK ADS E RODAPÉ JURÍDICO ===
+4. OBRIGATÓRIO: Você é PROIBIDO de resumir este bloco. Copie e cole exatamente como está abaixo no final do código HTML. Ele contém os gatilhos legais exigidos pelos robôs da Meta (Facebook Ads) para não bloquear a conta de anúncios. Textos devem manter as classes text-base ou text-lg.
 <footer class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-5xl mx-auto px-6">
         <div class="flex flex-wrap justify-center gap-8 md:gap-16 mb-8 font-medium">
-            <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Política de Privacidade</a>
-            <a href="#termos" onclick="toggleLegal('panel-termos', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Termos de Uso</a>
-            <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Política de Cookies</a>
+            <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8 text-base">Política de Privacidade</a>
+            <a href="#termos" onclick="toggleLegal('panel-termos', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8 text-base">Termos de Uso</a>
+            <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8 text-base">Política de Cookies</a>
         </div>
         <div id="legal-panels" class="text-left mb-10 text-slate-200 text-base leading-relaxed hidden bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-inner max-w-4xl mx-auto transition-all duration-300">
             <div id="panel-privacidade" class="legal-panel hidden space-y-4">
                 <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Política de Privacidade e Proteção de Dados</h4>
                 <p>A sua privacidade é nossa prioridade. Esta política descreve como coletamos, usamos, armazenamos e protegemos os seus dados pessoais, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
-                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você ao preencher formulários em nosso site, além de dados de navegação coletados automaticamente por ferramentas de analytics e pixels de rastreamento para fins de otimização de campanhas e inteligência de mercado.</p>
-                <p><strong>2. Uso das Informações:</strong> Seus dados são utilizados exclusivamente para o processamento de pagamentos, fornecimento do serviço ou produto solicitado, comunicações essenciais e suporte ao cliente. Não vendemos, alugamos ou compartilhamos seus dados com terceiros não autorizados.</p>
+                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você ao preencher formulários. Também coletamos dados de navegação automaticamente via cookies e pixels de rastreamento de parceiros (como a Meta/Facebook e Google) para otimização de campanhas publicitárias.</p>
+                <p><strong>2. Uso e Compartilhamento:</strong> Seus dados são utilizados para processamento de pagamentos, entrega do produto, suporte e envio de comunicações essenciais. Não vendemos seus dados. Compartilhamos apenas com plataformas parceiras seguras de pagamento e e-mail marketing.</p>
+                <p><strong>3. Seus Direitos:</strong> Você tem o direito de solicitar o acesso, a correção, a anonimização ou a exclusão total dos seus dados pessoais de nossa base a qualquer momento, enviando uma solicitação aos nossos canais de atendimento.</p>
             </div>
             <div id="panel-termos" class="legal-panel hidden space-y-4">
-                <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Termos e Condições de Uso</h4>
-                <p>Ao acessar e utilizar este site e nossos produtos/serviços, você concorda expressamente em cumprir estes Termos de Serviço, todas as leis e regulamentos aplicáveis. O uso contínuo constitui a aceitação incondicional destes termos.</p>
-                <p><strong>1. Licença e Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado neste site, incluindo textos, gráficos, logotipos, vídeos, metodologias e áudios, é de propriedade exclusiva dos criadores e é protegido por leis rigorosas de direitos autorais. É terminantemente proibida a cópia, reprodução, distribuição, modificação ou revenda não autorizada.</p>
+                <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Termos e Condições de Uso (Aviso Legal)</h4>
+                <p>Ao acessar e utilizar este site e nossos produtos, você concorda expressamente em cumprir estes Termos de Serviço. O uso contínuo constitui a aceitação incondicional.</p>
+                <p><strong>1. Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado, incluindo textos, vídeos e metodologias, é protegido por leis de direitos autorais. É terminantemente proibida a pirataria, rateio, cópia, distribuição ou revenda não autorizada.</p>
+                <p><strong>2. Isenção de Responsabilidade e Resultados:</strong> Os resultados apresentados neste site variam de pessoa para pessoa. Não oferecemos garantias de resultados específicos, ganhos ou curas. O sucesso depende da aplicação correta e do esforço individual. <em>Aviso legal importante:</em> Este site não é afiliado, patrocinado ou endossado pelo Facebook, Inc. (Meta). Os conteúdos aqui dispostos são de inteira responsabilidade nossa.</p>
+                <p><strong>3. Política de Reembolso:</strong> Em estrita conformidade com o Código de Defesa do Consumidor (Artigo 49), garantimos a devolução incondicional do seu investimento dentro do prazo de 7 (sete) dias corridos, caso você não esteja satisfeito com o material.</p>
             </div>
             <div id="panel-cookies" class="legal-panel hidden space-y-4">
                 <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Política de Cookies e Rastreamento</h4>
-                <p>Para proporcionar a melhor experiência de navegação possível, analisar o tráfego do site e veicular anúncios altamente personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes do mercado.</p>
-                <p><strong>1. O que são Cookies?</strong> Cookies são pequenos arquivos de texto fundamentais que são baixados e armazenados no seu dispositivo físico quando você visita o nosso site. Eles permitem que o nosso ecossistema reconheça o seu dispositivo e lembre das suas preferências em visitas futuras.</p>
+                <p>Utilizamos cookies e tecnologias semelhantes para garantir o funcionamento do site, analisar o tráfego e personalizar a sua experiência e nossos anúncios em plataformas de terceiros.</p>
+                <p><strong>1. Tipos de Cookies Utilizados:</strong> <em>Cookies Estritamente Necessários:</em> fundamentais para segurança e checkout. <em>Cookies de Desempenho e Analytics:</em> nos ajudam a entender como os visitantes interagem com a página. <em>Cookies de Publicidade e Pixels:</em> utilizados para rastrear o desempenho de anúncios e direcionar campanhas relevantes (ex: Pixel da Meta).</p>
+                <p><strong>2. Gerenciamento:</strong> Ao navegar em nosso site, você concorda com a utilização destas tecnologias. Você pode desativar os cookies a qualquer momento nas configurações do seu navegador.</p>
             </div>
         </div>
-        <p class="text-slate-500 font-medium tracking-wide">&copy; ${anoAtual} Todos os direitos reservados. É proibida a cópia parcial ou total.</p>
+        <p class="text-slate-500 font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p>
     </div>
     <script>
         function toggleLegal(panelId, event) {
@@ -94,7 +93,7 @@ Você é obrigado a copiar e colar o bloco abaixo no final do código HTML. NÃO
     ].filter(r => r.key);
 
     if (rotasGemini.length === 0) {
-        throw new Error("Nenhuma chave API do Google Gemini configurada no ambiente.");
+        throw new Error("Nenhuma chave API configurada.");
     }
 
     let isRateLimit = false;

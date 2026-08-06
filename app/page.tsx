@@ -5,16 +5,17 @@ import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
 // ESCUDO DE FASE DE CAPTURA BLINDADO
-// Bloqueia qualquer link de abrir sites dentro do painel, garantindo a integridade do app.
+// Intercepta todos os cliques do iframe. Se for âncora (#) ele deixa fluir, se for link ele bloqueia.
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
-            var href = link.getAttribute('href');
-            if (href && href.startsWith('#') && href.length > 1) {
+            var href = link.getAttribute('href') || '';
+            if (href.startsWith('#') && href.length > 1) {
                 // Permite scroll suave interno para sanfonas e menus âncora
                 return;
             }
+            // Bloqueia qualquer outro clique (impede abrir site dentro do site)
             e.preventDefault();
             e.stopPropagation();
         }
@@ -181,7 +182,7 @@ export default function Home() {
           const mensagens = [
               "Analisando referência visual...",
               "Acessando Motor Google Gemini...",
-              "Extraindo cores e garantindo Pixel Perfect...",
+              "Ajustando Imagens e Textos de Compliance...",
               "Aplicando blocos Tailwind CSS...",
               "Injetando Scripts de Animação e Rodapé..."
           ];
@@ -210,7 +211,7 @@ export default function Home() {
         
         if (!data.success) {
             if (data.error === 'RATE_LIMIT_EXCEEDED') {
-                throw new Error("LIMIT_MODAL"); // Gatilho para o modal elegante
+                throw new Error("LIMIT_MODAL"); // Dispara o modal elegante
             }
             throw new Error(data.error);
         }
@@ -249,7 +250,7 @@ export default function Home() {
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
         if (err.message === "LIMIT_MODAL") {
-            (window as any).showNotification("As suas chaves atingiram a cota máxima! Aguarde exatamente 1 minuto para o Google resetar o saldo de uso.", "limit");
+            (window as any).showNotification("As suas chaves atingiram a cota máxima! Aguarde exatamente 1 minuto para o Google liberar mais saldo.", "limit");
         } else {
             (window as any).showNotification(err.message, 'error');
         }
@@ -291,7 +292,7 @@ export default function Home() {
 
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      if (cor === 'auto') return "PALETA DE CORES: Analise a imagem anexada como um scanner. VOCÊ DEVE OBRIGATORIAMENTE CLONAR AS CORES DE FUNDO. Se a foto for escura, use bg-slate-900. Se a foto for clara, use fundo claro.";
+      if (cor === 'auto') return "PALETA DE CORES: Analise a imagem anexada como um scanner. VOCÊ DEVE OBRIGATORIAMENTE CLONAR AS CORES DE FUNDO E BOTÕES. Se a foto for escura, use fundo escuro (ex: bg-slate-900). Se a foto for clara, use fundo claro.";
       if (cor === 'personalizada') {
          const cp = (document.getElementById('corPrimaria') as HTMLInputElement)?.value || '#2563eb';
          const cf = (document.getElementById('corFundo') as HTMLInputElement)?.value || '#ffffff';
@@ -322,7 +323,7 @@ export default function Home() {
       
       const systemInstruction = `Especialista Sênior Front-end em Tailwind CSS. MODO: ${diretrizModo}. ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       
-      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais sem resumir e recrie o layout perfeitamente." }];
+      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais e recrie o layout perfeitamente." }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
@@ -653,7 +654,7 @@ ${getMegaPromptCores()}`;
       }
     };
 
-    // MODAL ELEGANTE E AVISOS VISUAIS
+    // ALERTA VISUAL ELEGANTE (SUBSTITUI O VERMELHO)
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast');
       if(exist) exist.remove();
@@ -665,9 +666,9 @@ ${getMegaPromptCores()}`;
           div.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-4 border-amber-300 px-8 py-8 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[9999] flex flex-col items-center text-center max-w-sm w-full`;
           div.innerHTML = `
               <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner"><i class="fas fa-hourglass-half animate-pulse"></i></div>
-              <h4 class="font-black text-amber-600 text-xl mb-2 uppercase tracking-wide">Pausa Dramática!</h4>
+              <h4 class="font-black text-amber-600 text-xl mb-2 uppercase tracking-wide">Pausa Temporária!</h4>
               <p class="text-sm font-medium text-slate-600 leading-relaxed mb-4">${msg}</p>
-              <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Aguardando reset da cota...</p>
+              <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Fechando em breve...</p>
           `;
       } else if(type === 'error') {
           div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 animate-bounce max-w-md w-full`;
