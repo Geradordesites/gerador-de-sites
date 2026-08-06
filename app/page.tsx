@@ -4,37 +4,25 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO DE CLIQUE BLINDADO CONTRA INCEPTION (NÍVEL MÁXIMO)
 const SCRIPT_PREVIEW = `<script>
     window.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
-            // 1. MATA QUALQUER AÇÃO DO NAVEGADOR IMEDIATAMENTE (Tolerância Zero)
             e.preventDefault();
             e.stopPropagation();
-            
             var href = link.getAttribute('href') || '';
-            
-            // 2. IDENTIFICA SE TEM ALGUMA ÂNCORA (Mesmo que a IA tenha errado e colocado "/#id")
             if (href.includes('#')) {
                 var hash = href.substring(href.indexOf('#'));
                 if (hash.length > 1) {
                     try {
                         var targetEl = document.querySelector(hash);
-                        if (targetEl) {
-                            // 3. FAZ O SCROLL MANUALMENTE VIA JS
-                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
+                        if (targetEl) { targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
                     } catch(err) {}
                 }
             }
         }
-    }, true); // O "true" obriga o script a rodar antes do HTML sequer pensar em agir
-
-    window.addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        e.stopPropagation(); 
-    }, true);
+    }, true); 
+    window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 </script>`;
 
 export default function Home() {
@@ -339,17 +327,24 @@ export default function Home() {
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA. Lembre-se de colocar ID nas seções para o scroll." : "REMOVA O MENU SUPERIOR SE ELE EXISTIR NO CÓDIGO.";
 
+      // AQUI ESTÁ A TRAVA ANTI-PREGUIÇA NO PROMPT DO GROQ
       const systemInstruction = `PROGRAMADOR DE MANUTENÇÃO ESTRITA.
-DIRETRIZ CIRÚRGICA: Você vai receber o código HTML de uma Landing Page e um pedido de alteração do usuário. VOCÊ É ESTRITAMENTE PROIBIDO DE REESCREVER A PÁGINA INTEIRA DO ZERO OU EXCLUIR O CONTEÚDO ORIGINAL.
-1. Se o usuário pedir para "remover o fundo", ou "mudar botão", REMOVA/MUDE APENAS ISSO. MANTENHA todas as imagens originais da página (tags img), os textos originais, as cores não mencionadas e a estrutura.
-2. PRESERVE A TODO CUSTO todas as tags <script> originais do arquivo e todos os blocos de Informações Legais/Rodapé.
-3. Aplique as diretrizes:
+REGRA DE OURO DE SOBREVIVÊNCIA: VOCÊ DEVE DEVOLVER O CÓDIGO HTML COMPLETO DA PÁGINA DO INÍCIO AO FIM (desde a tag <!DOCTYPE html> até a tag </html>). 
+É TERMINANTEMENTE PROIBIDO sofrer de "preguiça da IA" e omitir partes do site usando frases como "<!-- resto do código -->" ou "<!-- demais seções mantidas -->". Se você não devolver o HTML inteiro, o site do usuário vai quebrar e sumir.
+
+Sua tarefa:
+1. Encontre a seção exata que o usuário pediu para alterar no HTML atual.
+2. Faça APENAS a alteração pedida.
+3. Copie OBRIGATORIAMENTE todo o resto do site EXATAMENTE como estava (Imagens, Rodapé, Scripts, Seções não mencionadas).
+4. Devolva o arquivo HTML INTEIRO E FUNCIONAL.
+
+Diretrizes adicionais:
 ${diretrizMenu}
 ${getMegaPromptEstilo()}
 ${getMegaPromptHero()}
 ${getMegaPromptCores()}`;
 
-      const textoPedidoExtra = prompt ? `COMANDO CIRÚRGICO DO USUÁRIO:\n"${prompt}"\n(Cumpra a risca apenas isso e devolva o resto do HTML intacto)` : "Apenas atualize as opções do painel mantendo o conteúdo da copy intacto.";
+      const textoPedidoExtra = prompt ? `COMANDO CIRÚRGICO DO USUÁRIO:\n"${prompt}"\n(Cumpra a risca apenas isso, mas VOCÊ DEVE DEVOLVER O HTML DA PÁGINA INTEIRA NA SUA RESPOSTA)` : "Apenas atualize as opções do painel mantendo o HTML da página inteira.";
 
       chamarIA(systemInstruction, [{text: `${textoPedidoExtra}\n\n=== CÓDIGO HTML ATUAL PARA SER MODIFICADO ===\n${codigo}`}], true);
     };
@@ -992,7 +987,6 @@ ${getMegaPromptCores()}`;
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
                     
-                    {/* STATUS DINÂMICO DO MOTOR DE IA */}
                     <div className="flex items-center gap-1.5 ml-4 hidden lg:flex border border-indigo-100 rounded p-1 bg-indigo-50/50 shadow-inner">
                         <div className="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1.5 text-indigo-700" title="Motor de IA Atual">
                             <i className="fas fa-microchip animate-pulse text-indigo-500"></i> Motor: {statusApis.texto}
