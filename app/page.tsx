@@ -4,21 +4,22 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO BLINDADO: Impede navegação, mas permite que o usuário use as sanfonas e menus dentro do preview
+// ESCUDO DE FASE DE CAPTURA BLINDADO
+// Bloqueia qualquer link de abrir sites dentro do painel, garantindo a integridade do app.
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
-            var href = link.getAttribute('href') || '';
-            // Se for um link âncora (ex: #termo), deixa rolar a página normalmente
-            if (href.startsWith('#') && href.length > 1) {
+            var href = link.getAttribute('href');
+            if (href && href.startsWith('#') && href.length > 1) {
+                // Permite scroll suave interno para sanfonas e menus âncora
                 return;
             }
-            // Bloqueia qualquer outro clique para não abrir sites dentro do painel
             e.preventDefault();
+            e.stopPropagation();
         }
-    });
-    document.addEventListener('submit', function(e) { e.preventDefault(); });
+    }, true); 
+    document.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 </script>`;
 
 export default function Home() {
@@ -170,6 +171,13 @@ export default function Home() {
       if (loadOverlay) {
           loadOverlay.style.display = 'flex';
 
+          const badgeApis = document.getElementById('badge-apis');
+          if (badgeApis) {
+              badgeApis.classList.remove('bg-indigo-50', 'border-indigo-200');
+              badgeApis.classList.add('bg-amber-100', 'border-amber-300', 'animate-pulse');
+          }
+          setStatusApis({ texto: 'Testando chaves...', imagem: 'Consultando bancos...' });
+
           const mensagens = [
               "Analisando referência visual...",
               "Acessando Motor Google Gemini...",
@@ -202,7 +210,7 @@ export default function Home() {
         
         if (!data.success) {
             if (data.error === 'RATE_LIMIT_EXCEEDED') {
-                throw new Error("LIMIT_MODAL"); // Gatilho para o modal bonito
+                throw new Error("LIMIT_MODAL"); // Gatilho para o modal elegante
             }
             throw new Error(data.error);
         }
@@ -212,7 +220,7 @@ export default function Home() {
             if (data.provedorTexto.includes('Chave 1')) {
                 setApiUsage(prev => ({...prev, chave1: prev.chave1 + 1}));
             } else if (data.provedorTexto.includes('Chave 2')) {
-                setApiUsage(prev => ({...prev, chave1: 15, chave2: prev.chave2 + 1})); // Se caiu pra 2, a 1 esgotou
+                setApiUsage(prev => ({...prev, chave1: 15, chave2: prev.chave2 + 1})); 
             } else if (data.provedorTexto.includes('Chave 3')) {
                 setApiUsage(prev => ({...prev, chave1: 15, chave2: 15, chave3: prev.chave3 + 1}));
             }
@@ -234,12 +242,14 @@ export default function Home() {
         if (data.provedorTexto && data.provedorImagem) {
             setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
             (window as any).showNotification(`Concluído via ${data.provedorTexto}!`, 'success');
+        } else {
+            (window as any).showNotification('Sucesso!', 'success');
         }
         
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
         if (err.message === "LIMIT_MODAL") {
-            (window as any).showNotification("As chaves atingiram a cota máxima! Aguarde exatamente 1 minuto para o Google resetar seu saldo.", "limit");
+            (window as any).showNotification("As suas chaves atingiram a cota máxima! Aguarde exatamente 1 minuto para o Google resetar o saldo de uso.", "limit");
         } else {
             (window as any).showNotification(err.message, 'error');
         }
@@ -247,6 +257,16 @@ export default function Home() {
       } finally {
         if (loadingInterval) clearInterval(loadingInterval);
         if (loadOverlay) loadOverlay.style.display = 'none';
+        
+        const badgeApis = document.getElementById('badge-apis');
+        if (badgeApis) {
+            badgeApis.classList.remove('animate-pulse', 'bg-amber-100', 'border-amber-300');
+            badgeApis.classList.add('bg-emerald-50', 'border-emerald-300', 'shadow-sm');
+            setTimeout(() => {
+                badgeApis.classList.remove('bg-emerald-50', 'border-emerald-300', 'shadow-sm');
+                badgeApis.classList.add('bg-indigo-50', 'border-indigo-200'); 
+            }, 3000);
+        }
       }
     }
 
@@ -633,7 +653,7 @@ ${getMegaPromptCores()}`;
       }
     };
 
-    // ALERTA VISUAL MELHORADO E MODAL ELEGANTE
+    // MODAL ELEGANTE E AVISOS VISUAIS
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast');
       if(exist) exist.remove();
@@ -642,13 +662,12 @@ ${getMegaPromptCores()}`;
       div.id = 'custom-toast';
       
       if(type === 'limit') {
-          // MODAL DE LIMITE SUPER ELEGANTE
           div.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-4 border-amber-300 px-8 py-8 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[9999] flex flex-col items-center text-center max-w-sm w-full`;
           div.innerHTML = `
               <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner"><i class="fas fa-hourglass-half animate-pulse"></i></div>
               <h4 class="font-black text-amber-600 text-xl mb-2 uppercase tracking-wide">Pausa Dramática!</h4>
               <p class="text-sm font-medium text-slate-600 leading-relaxed mb-4">${msg}</p>
-              <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Fechando em breve...</p>
+              <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Aguardando reset da cota...</p>
           `;
       } else if(type === 'error') {
           div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 animate-bounce max-w-md w-full`;

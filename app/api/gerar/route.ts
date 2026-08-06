@@ -23,21 +23,23 @@ export async function POST(req: Request) {
     }
 
     const regrasObrigatorias = `
-=== REGRA DE OURO: FIDELIDADE VISUAL MÁXIMA ===
-1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira.
-2. ENGENHARIA REVERSA: EXTRAIA AS CORES EXATAS. Se a imagem for ESCURA, o código HTML DEVE ter fundo escuro (bg-slate-900). É PROIBIDO criar site claro se a referência for escura.
+=== REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE VISUAL ===
+1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione Markdown.
+2. ENGENHARIA REVERSA: EXTRAIA AS CORES EXATAS. Se a imagem for ESCURA, o código HTML DEVE ter fundo escuro (bg-slate-900).
 3. TAMANHO DE FONTES (ANTIBLOQUEIO FACEBOOK): Todos os textos de parágrafos, FAQs e rodapés devem ter tamanho text-base ou text-lg. NUNCA faça textos pequenos.
 
-=== REGRAS DE ESTRUTURA E UI/UX ===
-4. ESTRUTURA PREMIUM: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }.
-- ESPAÇAMENTO: OBRIGATÓRIO um espaço de uma linha em branco entre títulos e parágrafos.
+=== REGRAS DE ALTA PERFORMANCE (BASEADO NO FERRAMENTAF) ===
+4. PRÉ-CONEXÃO E DNS: No <head>, insira <link rel="preconnect" href="https://cdn.tailwindcss.com"> e <link rel="preconnect" href="https://fonts.googleapis.com">.
+5. PREVENÇÃO FOUC: Adicione uma tag <style> logo após o <title> com: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; background-color: [SUA COR DE FUNDO AQUI]; color: [SUA COR DE TEXTO]; }
+
+=== REGRAS DE ESTRUTURA E IMAGENS RESPONSIVAS ===
+6. CONTROLE DE IMAGENS (OBRIGATÓRIO): Para EVITAR imagens gigantes e desproporcionais, TODA tag <img> OBRIGATORIAMENTE deve conter as classes Tailwind: "w-full max-w-full h-auto object-cover". 
+- Utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por palavra em inglês).
+${regraImagens}
 ${instrucaoDinamica}
 
-5. IMAGENS: Utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por palavra em inglês).
-${regraImagens}
-
-6. COMPLIANCE E RODAPÉ JURÍDICO (NÃO ALTERE, NÃO RESUMA):
-O site gerado DEVE conter obrigatoriamente este bloco no final. As classes de tamanho grande (text-base, text-lg) são obrigatórias contra bloqueios.
+7. COMPLIANCE E RODAPÉ JURÍDICO (PROIBIDO RESUMIR):
+Você é obrigado a copiar e colar o bloco abaixo no final do código HTML. NÃO abrevie e NÃO modifique este bloco, ele foi desenhado para aprovação do Facebook Ads.
 <footer class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-5xl mx-auto px-6">
         <div class="flex flex-wrap justify-center gap-8 md:gap-16 mb-8 font-medium">
@@ -95,7 +97,7 @@ O site gerado DEVE conter obrigatoriamente este bloco no final. As classes de ta
         throw new Error("Nenhuma chave API do Google Gemini configurada no ambiente.");
     }
 
-    let limitReached = false;
+    let isRateLimit = false;
 
     for (const rota of rotasGemini) {
         try {
@@ -116,17 +118,22 @@ O site gerado DEVE conter obrigatoriamente este bloco no final. As classes de ta
                 provedorTextoUsado = `Google Gemini (${rota.nome})`;
                 break; 
             } else {
-                throw new Error("A IA gerou um formato inválido.");
+                throw new Error("Formato inválido retornado.");
             }
 
         } catch (err: any) {
-            logErros.push(`${rota.nome}: ${err.message}`);
+            let msg = err.message || "";
+            if(msg.includes('429')) {
+                msg = "Cota Esgotada (429)";
+                isRateLimit = true;
+            }
+            logErros.push(`${rota.nome}: ${msg}`);
             htmlCode = ''; 
         }
     }
 
     if (!htmlCode) {
-        if (logErros.some(e => e.includes('429'))) {
+        if (isRateLimit && logErros.every(e => e.includes('429') || e.includes('Esgotada'))) {
             throw new Error("RATE_LIMIT_EXCEEDED");
         }
         throw new Error(`As tentativas falharam. Motivos: ${logErros.join(' | ')}`);
@@ -178,14 +185,11 @@ O site gerado DEVE conter obrigatoriamente este bloco no final. As classes de ta
       }
       if (unsplashUsado && flickrUsado) provedorImagemUsado = 'Unsplash + Flickr (Misto)';
       else if (unsplashUsado) provedorImagemUsado = 'Unsplash API (Premium)';
-      else if (flickrUsado) provedorImagemUsado = 'LoremFlickr (Backup Seguro)';
+      else if (flickrUsado) provedorImagemUsado = 'LoremFlickr (Seguro)';
     }
 
     return NextResponse.json({
-      success: true,
-      html: htmlCode,
-      provedorTexto: provedorTextoUsado,
-      provedorImagem: provedorImagemUsado
+      success: true, html: htmlCode, provedorTexto: provedorTextoUsado, provedorImagem: provedorImagemUsado
     });
 
   } catch (error: any) {
