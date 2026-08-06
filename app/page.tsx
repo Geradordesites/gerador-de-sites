@@ -4,16 +4,20 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
+// ESCUDO BLINDADO CONTRA O EFEITO INCEPTION
 const SCRIPT_PREVIEW = `<script>
-    document.addEventListener('click', function(e) { 
-        var link = e.target.closest('a'); 
-        if (link) { 
-            var href = link.getAttribute('href') || '';
-            if (!href.startsWith('#') || href === '#') {
-                e.preventDefault(); 
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a');
+        if (link) {
+            var href = link.getAttribute('href');
+            // Se for link de âncora (#) longo o suficiente, permite a rolagem natural da sanfona/menu
+            if (href && href.startsWith('#') && href.length > 1) {
+                return;
             }
-        } 
-    }); 
+            // Bloqueia qualquer outro link que tente abrir coisas dentro do frame
+            e.preventDefault();
+        }
+    });
     document.addEventListener('submit', function(e) { e.preventDefault(); });
 </script>`;
 
@@ -32,11 +36,13 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
-  // Controle da Etiqueta de API no Topo
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
     texto: 'Aguardando geração...', 
     imagem: 'Aguardando...' 
   });
+
+  // CONTADOR DE REQUISIÇÕES (Zera a cada 60 segundos)
+  const [apiUsage, setApiUsage] = useState(0);
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -44,6 +50,12 @@ export default function Home() {
       if (!session) { window.location.href = '/login'; }
     };
     verificarSessao();
+
+    // Lógica para zerar o contador a cada 1 minuto
+    const interval = setInterval(() => {
+        setApiUsage(0);
+    }, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = async () => {
@@ -157,8 +169,8 @@ export default function Home() {
 
       if (loadOverlay) {
           loadOverlay.style.display = 'flex';
-          
-          // EFEITO VISUAL NO BADGE DO TOPO
+          setApiUsage(prev => prev + 1); // Atualiza velocímetro
+
           const badgeApis = document.getElementById('badge-apis');
           if (badgeApis) {
               badgeApis.classList.remove('bg-indigo-50', 'border-indigo-200');
@@ -195,7 +207,13 @@ export default function Home() {
           })
         });
         const data = await response.json();
-        if (!data.success) throw new Error(data.error);
+        
+        if (!data.success) {
+            if (data.error === 'RATE_LIMIT_EXCEEDED') {
+                throw new Error("⏳ <b>LIMITE DE GERAÇÕES ATINGIDO!</b><br><br>As cotas gratuitas das chaves esgotaram por um momento. Respire fundo, tome uma água e aguarde 1 minutinho antes de tentar de novo.");
+            }
+            throw new Error(data.error);
+        }
 
         const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
         const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -210,7 +228,6 @@ export default function Home() {
         
         if (!isRefinement && (window as any).mapearElementosGerados) (window as any).mapearElementosGerados(data.html, true);
         
-        // ATUALIZA A ETIQUETA NO TOPO COM A CHAVE QUE DEU CERTO
         if (data.provedorTexto && data.provedorImagem) {
             setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
             (window as any).showNotification(`Concluído via ${data.provedorTexto}!`, 'success');
@@ -226,7 +243,6 @@ export default function Home() {
         if (loadingInterval) clearInterval(loadingInterval);
         if (loadOverlay) loadOverlay.style.display = 'none';
         
-        // VOLTA A ETIQUETA AO NORMAL COM DESTAQUE VERDE
         const badgeApis = document.getElementById('badge-apis');
         if (badgeApis) {
             badgeApis.classList.remove('animate-pulse', 'bg-amber-100', 'border-amber-300');
@@ -260,7 +276,7 @@ export default function Home() {
 
     const getMegaPromptCores = () => {
       const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      if (cor === 'auto') return "PALETA DE CORES (EXTRAÇÃO FIEL DA IMAGEM): Analise a imagem anexada como um scanner. Você é OBRIGADO a usar EXATAMENTE as mesmas cores de fundo (background), textos e botões da imagem original. Se a imagem tiver fundo escuro, o site DEVE ter fundo escuro (ex: bg-slate-900 ou style inline). NUNCA invente um tema claro/branco se a referência visual for escura.";
+      if (cor === 'auto') return "PALETA DE CORES: Analise a imagem anexada como um scanner. VOCÊ DEVE OBRIGATORIAMENTE CLONAR AS CORES DE FUNDO. Se a foto for escura, use bg-slate-900. Se a foto for clara, use fundo claro.";
       if (cor === 'personalizada') {
          const cp = (document.getElementById('corPrimaria') as HTMLInputElement)?.value || '#2563eb';
          const cf = (document.getElementById('corFundo') as HTMLInputElement)?.value || '#ffffff';
@@ -287,11 +303,11 @@ export default function Home() {
       const isMenuChecked = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked;
       const diretrizMenu = isMenuChecked ? "CRIE OBRIGATORIAMENTE UM MENU SUPERIOR NAVEGÁVEL COM LINKS ÂNCORA." : "NÃO CRIE MENU SUPERIOR. PÁGINA DIRETA SEM NAVEGAÇÃO NO TOPO.";
       const modo = (document.getElementById('modoClonagem') as HTMLSelectElement)?.value || 'exato';
-      const diretrizModo = modo === 'exato' ? "MODO DE ENGENHARIA REVERSA (PIXEL PERFECT): Reconstrua o layout da imagem com 100% de fidelidade visual. Copie a estrutura, o alinhamento, a ordem das seções e as CORES exatas do background." : "MODO MODELAGEM: Inspire-se no design da imagem, mas otimize estruturalmente para alta conversão.";
+      const diretrizModo = modo === 'exato' ? "MODO DE ENGENHARIA REVERSA (PIXEL PERFECT): Reconstrua o layout da imagem com 100% de fidelidade visual. Copie a estrutura, o alinhamento e a ordem das seções." : "MODO MODELAGEM: Inspire-se no design da imagem, mas otimize estruturalmente para alta conversão.";
       
       const systemInstruction = `Especialista Sênior Front-end em Tailwind CSS. MODO: ${diretrizModo}. ${diretrizMenu}. \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       
-      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais e recrie o layout perfeitamente." }];
+      let promptParts: any[] = [{ text: "ATENÇÃO MÁXIMA: Faça a engenharia reversa da imagem abaixo. Extraia as CORES REAIS EXATAS (fundo, botões, textos), transcreva os textos originais sem resumir e recrie o layout perfeitamente." }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       chamarIA(systemInstruction, promptParts, false);
     };
@@ -622,12 +638,24 @@ ${getMegaPromptCores()}`;
       }
     };
 
+    // ALERTA VISUAL MELHORADO E ELEGANTE (SUBSTITUI O VERMELHO FEIO)
     (window as any).showNotification = (msg: string, type: string) => {
+      const exist = document.getElementById('custom-toast');
+      if(exist) exist.remove();
+      
       const div = document.createElement('div');
-      div.className = `fixed bottom-4 right-4 text-white px-4 py-3 rounded shadow-lg transition-opacity z-50 font-medium text-sm flex items-center gap-2 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
-      div.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`;
+      div.id = 'custom-toast';
+      
+      if(type === 'error') {
+          div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 animate-bounce max-w-md w-full`;
+          div.innerHTML = `<i class="fas fa-exclamation-circle text-red-500 text-2xl mt-1"></i> <div class="flex-1"><h4 class="font-bold text-red-600 text-sm mb-1">Aviso do Sistema</h4><p class="text-[13px] font-medium leading-relaxed">${msg}</p></div>`;
+      } else {
+          div.className = `fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded shadow-xl z-[9999] flex items-center gap-2 transition-all`;
+          div.innerHTML = `<i class="fas fa-check-circle"></i> <span class="font-medium text-sm">${msg}</span>`;
+      }
+      
       document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 300); }, 5000); 
+      setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, type === 'error' ? 8000 : 3000); 
     };
 
     (window as any).copiarCodigo = () => {
@@ -894,11 +922,16 @@ ${getMegaPromptCores()}`;
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
                     
-                    {/* ETIQUETA DA API AQUI NO TOPO */}
+                    {/* ETIQUETA DA API E VELOCÍMETRO DE USO AQUI NO TOPO */}
                     <div id="badge-apis" className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded text-[10px] font-medium text-indigo-800 transition-all duration-300 hidden md:flex">
                         <span className="flex items-center gap-1"><i className="fas fa-robot text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.texto}</strong></span>
                         <span className="text-indigo-300">|</span>
                         <span className="flex items-center gap-1"><i className="fas fa-camera text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
+                    </div>
+
+                    <div className="flex flex-col items-center ml-2 px-3 py-0.5 bg-slate-50 border border-slate-200 rounded shadow-sm" title="Contador zera a cada 60 segundos">
+                        <span className="text-slate-400 text-[8px] font-bold uppercase leading-none">Uso/Minuto</span>
+                        <span className={`${apiUsage >= 12 ? 'text-red-600' : 'text-emerald-600'} font-black text-xs leading-tight`}>{apiUsage} <span className="text-slate-400 text-[10px] font-normal">/ 15</span></span>
                     </div>
 
                 </div>
