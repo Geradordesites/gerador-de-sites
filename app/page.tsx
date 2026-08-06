@@ -39,7 +39,7 @@ export default function Home() {
   const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
 
   const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ 
-    texto: 'Aguardando geração...', 
+    texto: 'Aguardando ação...', 
     imagem: 'Aguardando...' 
   });
 
@@ -977,6 +977,13 @@ ${getMegaPromptCores()}`;
                     <button onClick={desfazerCodigo} className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-[10px] font-semibold py-1 px-2 rounded border border-amber-200 transition flex items-center gap-1 ml-2" title="Retornar para o código anterior">
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
+                    
+                    {/* STATUS DINÂMICO DO MOTOR DE IA */}
+                    <div className="flex items-center gap-1.5 ml-4 hidden lg:flex border border-indigo-100 rounded p-1 bg-indigo-50/50 shadow-inner">
+                        <div className="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1.5 text-indigo-700" title="Motor de IA Atual">
+                            <i className="fas fa-microchip animate-pulse text-indigo-500"></i> Motor: {statusApis.texto}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">

@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, chaveAtivaIndex = 0 } = body;
+    const { systemInstruction, promptParts, imageStyle, dinamica } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
-    // REGRA ESTRITA DE IMAGENS E ESPAÇAMENTO 
+    // REGRA ESTRITA DE IMAGENS E ESPAÇAMENTO (PEDIDO PELO USUÁRIO)
     const regraImagens = "- REGRA ABSOLUTA DE IMAGENS: É TERMINANTEMENTE PROIBIDO o uso de ilustrações, desenhos animados, gráficos 3D ou elementos de tecnologia/sci-fi. Você deve focar estritamente em FOTOGRAFIAS HUMANAS REAIS E CENÁRIOS AUTÊNTICOS (REAIS).";
     
     let instrucaoDinamica = "";
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
 3. OBRIGATÓRIO PARA O MENU SUPERIOR: 
 - NO BOTÃO DO MENU: Use o atributo href começando com uma hashtag (#) seguida do nome do destino e target="_self". Ex: <a href="#quem-somos" target="_self">Quem Somos</a>
 - NA SEÇÃO DE DESTINO: Use o atributo id com o mesmo nome. Ex: <section id="quem-somos" class="...">
+- NUNCA use links absolutos (como href="/") no menu.
 
 === REGRAS DE ESTRUTURA E IMAGENS ===
 4. CONTROLE DE IMAGENS: TODA tag <img> deve conter as classes: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
@@ -135,7 +136,7 @@ ${instrucaoDinamica}
         }
 
     } else {
-        // [MODO COPYWRITER ULTRA RÁPIDO] - USA O GROQ (LlaMA 3)
+        // [MODO COPYWRITER ULTRA RÁPIDO] - USA O GROQ
         provedorTextoUsado = 'Groq Engine (LLaMA 3)';
         
         if (!process.env.GROQ_API_KEY) throw new Error("Chave do GROQ (GROQ_API_KEY) não configurada no painel.");
@@ -147,12 +148,12 @@ ${instrucaoDinamica}
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "llama3-70b-8192", // Modelo de alta capacidade para código e raciocínio
+                model: "llama-3.3-70b-versatile", // O MODELO CORRETO E ATUALIZADO AQUI
                 messages: [
                     { role: "system", content: systemInstructionFinal },
                     { role: "user", content: textoDoPrompt }
                 ],
-                response_format: { type: "json_object" } // Força o Groq a devolver só o JSON
+                response_format: { type: "json_object" }
             })
         });
 
