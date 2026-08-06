@@ -4,17 +4,17 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// ESCUDO BLINDADO CONTRA O EFEITO INCEPTION
+// ESCUDO BLINDADO: Impede navegação, mas permite que o usuário use as sanfonas e menus dentro do preview
 const SCRIPT_PREVIEW = `<script>
     document.addEventListener('click', function(e) {
         var link = e.target.closest('a');
         if (link) {
-            var href = link.getAttribute('href');
-            // Se for link de âncora (#) longo o suficiente, permite a rolagem natural da sanfona/menu
-            if (href && href.startsWith('#') && href.length > 1) {
+            var href = link.getAttribute('href') || '';
+            // Se for um link âncora (ex: #termo), deixa rolar a página normalmente
+            if (href.startsWith('#') && href.length > 1) {
                 return;
             }
-            // Bloqueia qualquer outro link que tente abrir coisas dentro do frame
+            // Bloqueia qualquer outro clique para não abrir sites dentro do painel
             e.preventDefault();
         }
     });
@@ -41,8 +41,8 @@ export default function Home() {
     imagem: 'Aguardando...' 
   });
 
-  // CONTADOR DE REQUISIÇÕES (Zera a cada 60 segundos)
-  const [apiUsage, setApiUsage] = useState(0);
+  // MONITORES INDIVIDUAIS DE USO DAS CHAVES (Zeram a cada minuto)
+  const [apiUsage, setApiUsage] = useState({ chave1: 0, chave2: 0, chave3: 0 });
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -51,9 +51,9 @@ export default function Home() {
     };
     verificarSessao();
 
-    // Lógica para zerar o contador a cada 1 minuto
+    // Zera os velocímetros a cada 60 segundos exatos
     const interval = setInterval(() => {
-        setApiUsage(0);
+        setApiUsage({ chave1: 0, chave2: 0, chave3: 0 });
     }, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -169,14 +169,6 @@ export default function Home() {
 
       if (loadOverlay) {
           loadOverlay.style.display = 'flex';
-          setApiUsage(prev => prev + 1); // Atualiza velocímetro
-
-          const badgeApis = document.getElementById('badge-apis');
-          if (badgeApis) {
-              badgeApis.classList.remove('bg-indigo-50', 'border-indigo-200');
-              badgeApis.classList.add('bg-amber-100', 'border-amber-300', 'animate-pulse');
-          }
-          setStatusApis({ texto: 'Testando chaves...', imagem: 'Consultando bancos...' });
 
           const mensagens = [
               "Analisando referência visual...",
@@ -210,9 +202,20 @@ export default function Home() {
         
         if (!data.success) {
             if (data.error === 'RATE_LIMIT_EXCEEDED') {
-                throw new Error("⏳ <b>LIMITE DE GERAÇÕES ATINGIDO!</b><br><br>As cotas gratuitas das chaves esgotaram por um momento. Respire fundo, tome uma água e aguarde 1 minutinho antes de tentar de novo.");
+                throw new Error("LIMIT_MODAL"); // Gatilho para o modal bonito
             }
             throw new Error(data.error);
+        }
+
+        // CÁLCULO INTELIGENTE DO USO DA CHAVE
+        if (data.provedorTexto) {
+            if (data.provedorTexto.includes('Chave 1')) {
+                setApiUsage(prev => ({...prev, chave1: prev.chave1 + 1}));
+            } else if (data.provedorTexto.includes('Chave 2')) {
+                setApiUsage(prev => ({...prev, chave1: 15, chave2: prev.chave2 + 1})); // Se caiu pra 2, a 1 esgotou
+            } else if (data.provedorTexto.includes('Chave 3')) {
+                setApiUsage(prev => ({...prev, chave1: 15, chave2: 15, chave3: prev.chave3 + 1}));
+            }
         }
 
         const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
@@ -231,27 +234,19 @@ export default function Home() {
         if (data.provedorTexto && data.provedorImagem) {
             setStatusApis({ texto: data.provedorTexto, imagem: data.provedorImagem });
             (window as any).showNotification(`Concluído via ${data.provedorTexto}!`, 'success');
-        } else {
-            (window as any).showNotification('Sucesso!', 'success');
         }
         
         if ((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
       } catch (err: any) {
-        (window as any).showNotification(err.message, 'error');
+        if (err.message === "LIMIT_MODAL") {
+            (window as any).showNotification("As chaves atingiram a cota máxima! Aguarde exatamente 1 minuto para o Google resetar seu saldo.", "limit");
+        } else {
+            (window as any).showNotification(err.message, 'error');
+        }
         setStatusApis({ texto: 'Falha na geração', imagem: 'Erro' });
       } finally {
         if (loadingInterval) clearInterval(loadingInterval);
         if (loadOverlay) loadOverlay.style.display = 'none';
-        
-        const badgeApis = document.getElementById('badge-apis');
-        if (badgeApis) {
-            badgeApis.classList.remove('animate-pulse', 'bg-amber-100', 'border-amber-300');
-            badgeApis.classList.add('bg-emerald-50', 'border-emerald-300', 'shadow-sm');
-            setTimeout(() => {
-                badgeApis.classList.remove('bg-emerald-50', 'border-emerald-300', 'shadow-sm');
-                badgeApis.classList.add('bg-indigo-50', 'border-indigo-200'); 
-            }, 3000);
-        }
       }
     }
 
@@ -638,7 +633,7 @@ ${getMegaPromptCores()}`;
       }
     };
 
-    // ALERTA VISUAL MELHORADO E ELEGANTE (SUBSTITUI O VERMELHO FEIO)
+    // ALERTA VISUAL MELHORADO E MODAL ELEGANTE
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast');
       if(exist) exist.remove();
@@ -646,7 +641,16 @@ ${getMegaPromptCores()}`;
       const div = document.createElement('div');
       div.id = 'custom-toast';
       
-      if(type === 'error') {
+      if(type === 'limit') {
+          // MODAL DE LIMITE SUPER ELEGANTE
+          div.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-4 border-amber-300 px-8 py-8 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[9999] flex flex-col items-center text-center max-w-sm w-full`;
+          div.innerHTML = `
+              <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner"><i class="fas fa-hourglass-half animate-pulse"></i></div>
+              <h4 class="font-black text-amber-600 text-xl mb-2 uppercase tracking-wide">Pausa Dramática!</h4>
+              <p class="text-sm font-medium text-slate-600 leading-relaxed mb-4">${msg}</p>
+              <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Fechando em breve...</p>
+          `;
+      } else if(type === 'error') {
           div.className = `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 text-slate-800 px-6 py-4 rounded shadow-2xl z-[9999] flex items-start gap-4 animate-bounce max-w-md w-full`;
           div.innerHTML = `<i class="fas fa-exclamation-circle text-red-500 text-2xl mt-1"></i> <div class="flex-1"><h4 class="font-bold text-red-600 text-sm mb-1">Aviso do Sistema</h4><p class="text-[13px] font-medium leading-relaxed">${msg}</p></div>`;
       } else {
@@ -655,7 +659,7 @@ ${getMegaPromptCores()}`;
       }
       
       document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, type === 'error' ? 8000 : 3000); 
+      setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, type === 'limit' ? 6000 : type === 'error' ? 8000 : 3000); 
     };
 
     (window as any).copiarCodigo = () => {
@@ -922,16 +926,17 @@ ${getMegaPromptCores()}`;
                       <i className="fas fa-undo text-[9px]"></i> Desfazer
                     </button>
                     
-                    {/* ETIQUETA DA API E VELOCÍMETRO DE USO AQUI NO TOPO */}
-                    <div id="badge-apis" className="flex items-center gap-2 ml-4 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded text-[10px] font-medium text-indigo-800 transition-all duration-300 hidden md:flex">
-                        <span className="flex items-center gap-1"><i className="fas fa-robot text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.texto}</strong></span>
-                        <span className="text-indigo-300">|</span>
-                        <span className="flex items-center gap-1"><i className="fas fa-camera text-indigo-600"></i> <strong className="text-indigo-900">{statusApis.imagem}</strong></span>
-                    </div>
-
-                    <div className="flex flex-col items-center ml-2 px-3 py-0.5 bg-slate-50 border border-slate-200 rounded shadow-sm" title="Contador zera a cada 60 segundos">
-                        <span className="text-slate-400 text-[8px] font-bold uppercase leading-none">Uso/Minuto</span>
-                        <span className={`${apiUsage >= 12 ? 'text-red-600' : 'text-emerald-600'} font-black text-xs leading-tight`}>{apiUsage} <span className="text-slate-400 text-[10px] font-normal">/ 15</span></span>
+                    {/* CONTADORES VISUAIS DE USO DAS CHAVES */}
+                    <div className="flex items-center gap-1.5 ml-4 hidden lg:flex border border-slate-100 rounded p-1 bg-slate-50">
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${apiUsage.chave1 >= 15 ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} title="Uso da Chave 1 neste minuto">
+                            <i className="fas fa-key"></i> C1: {apiUsage.chave1}/15
+                        </div>
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${apiUsage.chave2 >= 15 ? 'bg-red-50 text-red-600 border-red-200' : apiUsage.chave1 >= 15 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Uso da Chave 2 neste minuto">
+                            <i className="fas fa-key"></i> C2: {apiUsage.chave2}/15
+                        </div>
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${apiUsage.chave3 >= 15 ? 'bg-red-50 text-red-600 border-red-200' : apiUsage.chave2 >= 15 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`} title="Uso da Chave 3 neste minuto">
+                            <i className="fas fa-key"></i> C3: {apiUsage.chave3}/15
+                        </div>
                     </div>
 
                 </div>

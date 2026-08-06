@@ -24,47 +24,46 @@ export async function POST(req: Request) {
 
     const regrasObrigatorias = `
 === REGRA DE OURO: FIDELIDADE VISUAL MÁXIMA ===
-1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione textos Markdown.
-2. ENGENHARIA REVERSA E CORES: Se a imagem anexada possuir fundo ESCURO ou PRETO, você é ESTRITAMENTE OBRIGADO a gerar o código com fundo escuro (ex: bg-slate-900 ou bg-black) e textos claros (text-white). É TERMINANTEMENTE PROIBIDO gerar layout branco se a foto for escura. Copie as exatas cores de botões e fundos.
+1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira.
+2. ENGENHARIA REVERSA: EXTRAIA AS CORES EXATAS. Se a imagem for ESCURA, o código HTML DEVE ter fundo escuro (bg-slate-900). É PROIBIDO criar site claro se a referência for escura.
+3. TAMANHO DE FONTES (ANTIBLOQUEIO FACEBOOK): Todos os textos de parágrafos, FAQs e rodapés devem ter tamanho text-base ou text-lg. NUNCA faça textos pequenos.
 
 === REGRAS DE ESTRUTURA E UI/UX ===
-3. ESTRUTURA PREMIUM: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }.
-- NAVEGAÇÃO POR ÂNCORAS: Crie os IDs nas seções para os menus funcionarem.
+4. ESTRUTURA PREMIUM: html, body { width: 100%; max-width: 100%; overflow-x: hidden; scroll-behavior: smooth; }.
 - ESPAÇAMENTO: OBRIGATÓRIO um espaço de uma linha em branco entre títulos e parágrafos.
 ${instrucaoDinamica}
 
-4. PLACEHOLDERS E IMAGENS (BLINDAGEM):
-- TAG <img>: Utilize EXATAMENTE: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por palavra em inglês, sem chaves e sem colchetes). 
+5. IMAGENS: Utilize EXATAMENTE o src: https://images.unsplash.com/random/1200x800/?keyword (substitua keyword por palavra em inglês).
 ${regraImagens}
 
-5. COMPLIANCE E RODAPÉ JURÍDICO (PROIBIDO RESUMIR ESTE BLOCO):
-Você é obrigado a copiar e colar o bloco abaixo no final do código HTML, sem omitir NENHUMA palavra.
-<footer class="bg-slate-900 text-slate-400 py-12 text-center text-xs mt-12" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
-    <div class="max-w-4xl mx-auto px-4">
-        <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-6 text-[13px]">
-            <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Privacidade</a>
-            <a href="#termos" onclick="toggleLegal('panel-termos', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Termos de Uso</a>
-            <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4">Política de Cookies</a>
+6. COMPLIANCE E RODAPÉ JURÍDICO (NÃO ALTERE, NÃO RESUMA):
+O site gerado DEVE conter obrigatoriamente este bloco no final. As classes de tamanho grande (text-base, text-lg) são obrigatórias contra bloqueios.
+<footer class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="flex flex-wrap justify-center gap-8 md:gap-16 mb-8 font-medium">
+            <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Política de Privacidade</a>
+            <a href="#termos" onclick="toggleLegal('panel-termos', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Termos de Uso</a>
+            <a href="#cookies" onclick="toggleLegal('panel-cookies', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Política de Cookies</a>
         </div>
-        <div id="legal-panels" class="text-left mb-8 text-slate-300 text-sm hidden bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-inner max-w-3xl mx-auto transition-all duration-300">
-            <div id="panel-privacidade" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Política de Privacidade e Proteção de Dados</h4>
+        <div id="legal-panels" class="text-left mb-10 text-slate-200 text-base leading-relaxed hidden bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-inner max-w-4xl mx-auto transition-all duration-300">
+            <div id="panel-privacidade" class="legal-panel hidden space-y-4">
+                <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Política de Privacidade e Proteção de Dados</h4>
                 <p>A sua privacidade é nossa prioridade. Esta política descreve como coletamos, usamos, armazenamos e protegemos os seus dados pessoais, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 - LGPD).</p>
-                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você ao preencher formulários em nosso site, além de dados de navegação coletados automaticamente por ferramentas de analytics e pixels de rastreamento para fins de otimização de campanhas.</p>
-                <p><strong>2. Uso das Informações:</strong> Seus dados são utilizados exclusivamente para o processamento de pagamentos, fornecimento do serviço ou produto solicitado e suporte ao cliente. Não vendemos, alugamos ou compartilhamos seus dados com terceiros não essenciais para a operação.</p>
+                <p><strong>1. Coleta de Informações:</strong> Coletamos informações fornecidas voluntariamente por você ao preencher formulários em nosso site, além de dados de navegação coletados automaticamente por ferramentas de analytics e pixels de rastreamento para fins de otimização de campanhas e inteligência de mercado.</p>
+                <p><strong>2. Uso das Informações:</strong> Seus dados são utilizados exclusivamente para o processamento de pagamentos, fornecimento do serviço ou produto solicitado, comunicações essenciais e suporte ao cliente. Não vendemos, alugamos ou compartilhamos seus dados com terceiros não autorizados.</p>
             </div>
-            <div id="panel-termos" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Termos e Condições de Uso</h4>
+            <div id="panel-termos" class="legal-panel hidden space-y-4">
+                <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Termos e Condições de Uso</h4>
                 <p>Ao acessar e utilizar este site e nossos produtos/serviços, você concorda expressamente em cumprir estes Termos de Serviço, todas as leis e regulamentos aplicáveis. O uso contínuo constitui a aceitação incondicional destes termos.</p>
-                <p><strong>1. Licença e Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado neste site, incluindo textos, gráficos, logotipos, vídeos, metodologias e áudios, é de propriedade exclusiva dos criadores e é protegido por leis de direitos autorais.</p>
+                <p><strong>1. Licença e Propriedade Intelectual:</strong> Todo o conteúdo disponibilizado neste site, incluindo textos, gráficos, logotipos, vídeos, metodologias e áudios, é de propriedade exclusiva dos criadores e é protegido por leis rigorosas de direitos autorais. É terminantemente proibida a cópia, reprodução, distribuição, modificação ou revenda não autorizada.</p>
             </div>
-            <div id="panel-cookies" class="legal-panel hidden space-y-3">
-                <h4 class="font-bold text-white mb-2 text-lg">Política de Cookies e Rastreamento</h4>
-                <p>Para proporcionar a melhor experiência possível, analisar o tráfego do site e veicular anúncios personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes.</p>
-                <p><strong>1. O que são Cookies?</strong> Cookies são pequenos arquivos de texto que são baixados e armazenados no seu dispositivo quando você visita o nosso site. Eles permitem que o site reconheça o seu dispositivo e lembre das suas preferências.</p>
+            <div id="panel-cookies" class="legal-panel hidden space-y-4">
+                <h4 class="font-bold text-white mb-4 text-xl border-b border-slate-600 pb-2">Política de Cookies e Rastreamento</h4>
+                <p>Para proporcionar a melhor experiência de navegação possível, analisar o tráfego do site e veicular anúncios altamente personalizados, utilizamos cookies e tecnologias de rastreamento semelhantes do mercado.</p>
+                <p><strong>1. O que são Cookies?</strong> Cookies são pequenos arquivos de texto fundamentais que são baixados e armazenados no seu dispositivo físico quando você visita o nosso site. Eles permitem que o nosso ecossistema reconheça o seu dispositivo e lembre das suas preferências em visitas futuras.</p>
             </div>
         </div>
-        <p>&copy; ${anoAtual} Todos os direitos reservados.</p>
+        <p class="text-slate-500 font-medium tracking-wide">&copy; ${anoAtual} Todos os direitos reservados. É proibida a cópia parcial ou total.</p>
     </div>
     <script>
         function toggleLegal(panelId, event) {
@@ -93,10 +92,10 @@ Você é obrigado a copiar e colar o bloco abaixo no final do código HTML, sem 
     ].filter(r => r.key);
 
     if (rotasGemini.length === 0) {
-        throw new Error("Nenhuma chave API configurada.");
+        throw new Error("Nenhuma chave API do Google Gemini configurada no ambiente.");
     }
 
-    let isRateLimit = false;
+    let limitReached = false;
 
     for (const rota of rotasGemini) {
         try {
@@ -117,25 +116,20 @@ Você é obrigado a copiar e colar o bloco abaixo no final do código HTML, sem 
                 provedorTextoUsado = `Google Gemini (${rota.nome})`;
                 break; 
             } else {
-                throw new Error("Formato inválido retornado.");
+                throw new Error("A IA gerou um formato inválido.");
             }
 
         } catch (err: any) {
-            let msg = err.message || "";
-            if(msg.includes('429')) {
-                msg = "Cota Esgotada (429)";
-                isRateLimit = true;
-            }
-            logErros.push(`${rota.nome}: ${msg}`);
+            logErros.push(`${rota.nome}: ${err.message}`);
             htmlCode = ''; 
         }
     }
 
     if (!htmlCode) {
-        if (isRateLimit) {
+        if (logErros.some(e => e.includes('429'))) {
             throw new Error("RATE_LIMIT_EXCEEDED");
         }
-        throw new Error(`Falhas: ${logErros.join(' | ')}`);
+        throw new Error(`As tentativas falharam. Motivos: ${logErros.join(' | ')}`);
     }
 
     if (dinamica && dinamica !== 'estatico') {
@@ -168,11 +162,13 @@ Você é obrigado a copiar e colar o bloco abaixo no final do código HTML, sem 
               if (uData.results && uData.results.length > 0) {
                 const randomIndex = Math.floor(Math.random() * uData.results.length);
                 htmlCode = htmlCode.replace(item.fullMatch, uData.results[randomIndex].urls.regular);
-                imagemEncontrada = true; unsplashUsado = true;
+                imagemEncontrada = true;
+                unsplashUsado = true;
               }
             }
           } catch (e) {}
         }
+
         if (!imagemEncontrada) {
           const lockId = Math.floor(Math.random() * 9999);
           const flickrUrl = `https://loremflickr.com/1200/800/${keywordLimpaFormatada}?lock=${lockId}`;
@@ -182,11 +178,14 @@ Você é obrigado a copiar e colar o bloco abaixo no final do código HTML, sem 
       }
       if (unsplashUsado && flickrUsado) provedorImagemUsado = 'Unsplash + Flickr (Misto)';
       else if (unsplashUsado) provedorImagemUsado = 'Unsplash API (Premium)';
-      else if (flickrUsado) provedorImagemUsado = 'LoremFlickr (Seguro)';
+      else if (flickrUsado) provedorImagemUsado = 'LoremFlickr (Backup Seguro)';
     }
 
     return NextResponse.json({
-      success: true, html: htmlCode, provedorTexto: provedorTextoUsado, provedorImagem: provedorImagemUsado
+      success: true,
+      html: htmlCode,
+      provedorTexto: provedorTextoUsado,
+      provedorImagem: provedorImagemUsado
     });
 
   } catch (error: any) {
