@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM MÁXIMA ANTI-INCEPTION E SELEÇÃO CIRÚRGICA
+// SCRIPT DO IFRAME: BLINDAGEM MÁXIMA ANTI-INCEPTION (IMPEDE QUE O SISTEMA ABRA DENTRO DELE MESMO)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -51,7 +51,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.animationClass !== undefined) {
-                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300', 'hover:-translate-y-2');
+                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300');
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
@@ -99,72 +99,95 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(e.target !== elSelecionado) { e.target.style.outline = e.target.dataset.oldOutline || ''; }
     });
 
-    // INTERCEPTAÇÃO ABSOLUTA DE CLIQUES (PREVINE O INCEPTION BUG)
+    // SILENCIA FORMULÁRIOS: Se a IA criar um form vazio, ele não recarregará a página
+    window.addEventListener('submit', function(e) { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+    }, true);
+
+    // ESCUDO DE CLIQUES (INTERCEPTA TUDO ANTES DO NAVEGADOR AGIR)
     document.addEventListener('click', (e) => {
-        let link = e.target.closest('a');
-        let btn = e.target.closest('button');
-        
-        // Bloqueio forçado de comportamento padrão em MODO EDIÇÃO
+        // --- 1. MODO DE EDIÇÃO: Bloqueio Total Absoluto ---
         if (modoEdicao) {
-            e.preventDefault();
+            e.preventDefault(); 
             e.stopPropagation();
-        } else {
-            // Comportamento normal quando NÃO está editando
-            if (link) {
-                if (link.hasAttribute('onclick')) return; // Deixa scripts de rodapé funcionarem
-                e.preventDefault();
-                e.stopPropagation();
-                var href = link.getAttribute('href') || '';
-                if(href.startsWith('#')) {
-                    var hash = href.substring(href.indexOf('#'));
-                    if (hash.length > 1) {
-                        try { var targetEl = document.querySelector(hash); if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
-                    }
-                } else if (href && !href.startsWith('javascript:')) {
-                    window.open(href, '_blank');
-                }
+
+            let targetEl = e.target;
+            // Impede a seleção acidental do site inteiro se clicar num espaço vazio
+            if (targetEl.tagName === 'SECTION' || targetEl.tagName === 'DIV' && targetEl.children.length > 2) {
                 return;
             }
-            if (btn && btn.type === 'submit') { e.preventDefault(); return; }
-            return;
+
+            if(elSelecionado) elSelecionado.style.outline = '';
+            elSelecionado = targetEl;
+            elSelecionado.style.outline = '3px solid #4f46e5';
+
+            if(!elSelecionado.id) elSelecionado.id = 'el_' + Math.random().toString(36).substr(2,9);
+
+            let compStyle = window.getComputedStyle(elSelecionado);
+            let bgImg = elSelecionado.style.backgroundImage || '';
+            if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
+            else bgImg = '';
+
+            window.parent.postMessage({
+                type: 'ELEMENT_SELECTED',
+                id: elSelecionado.id,
+                tagName: elSelecionado.tagName.toLowerCase(),
+                text: elSelecionado.innerText || '',
+                src: elSelecionado.src || '',
+                href: elSelecionado.getAttribute('href') || '',
+                className: elSelecionado.className,
+                bgColor: rgbToHex(compStyle.backgroundColor),
+                textColor: rgbToHex(compStyle.color),
+                borderColor: rgbToHex(compStyle.borderColor),
+                fontSize: parseInt(compStyle.fontSize) || 16,
+                bgImage: bgImg,
+                customClasses: elSelecionado.dataset.customClasses || '',
+                outerHTML: elSelecionado.outerHTML
+            }, '*');
+            
+            return; // Encerra a ação do clique na edição aqui.
         }
 
-        let targetEl = e.target;
-        if (targetEl.tagName === 'SECTION' || targetEl.tagName === 'DIV' && targetEl.children.length > 2) {
-            return; // Evita selecionar containers inteiros sem querer
+        // --- 2. MODO DE VISUALIZAÇÃO: Escudo Inteligente de Links ---
+        let link = e.target.closest('a');
+        let btn = e.target.closest('button');
+
+        // Se clicou num botão nativo, impede que ele reinicie a tela
+        if (btn && btn.type === 'submit') {
+            e.preventDefault();
         }
 
-        if(elSelecionado) elSelecionado.style.outline = '';
-        elSelecionado = targetEl;
-        elSelecionado.style.outline = '3px solid #4f46e5';
+        // Tratamento especial para Links
+        if (link) {
+            let href = link.getAttribute('href') || '';
+            
+            // Permite Scripts locais (ex: Botão "Termos de Uso" no Rodapé) rodarem sem resetar a tela
+            if (link.hasAttribute('onclick')) {
+                if (href === '' || href === '#' || href === '/' || href.startsWith('http')) {
+                    e.preventDefault();
+                }
+                return; 
+            }
 
-        if(!elSelecionado.id) elSelecionado.id = 'el_' + Math.random().toString(36).substr(2,9);
-
-        let compStyle = window.getComputedStyle(elSelecionado);
-        let bgImg = elSelecionado.style.backgroundImage || '';
-        if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
-        else bgImg = '';
-
-        window.parent.postMessage({
-            type: 'ELEMENT_SELECTED',
-            id: elSelecionado.id,
-            tagName: elSelecionado.tagName.toLowerCase(),
-            text: elSelecionado.innerText || '',
-            src: elSelecionado.src || '',
-            href: elSelecionado.getAttribute('href') || '',
-            className: elSelecionado.className,
-            bgColor: rgbToHex(compStyle.backgroundColor),
-            textColor: rgbToHex(compStyle.color),
-            borderColor: rgbToHex(compStyle.borderColor),
-            fontSize: parseInt(compStyle.fontSize) || 16,
-            bgImage: bgImg,
-            customClasses: elSelecionado.dataset.customClasses || '',
-            outerHTML: elSelecionado.outerHTML
-        }, '*');
+            e.preventDefault(); 
+            e.stopPropagation();
+            
+            if(href.startsWith('#')) {
+                // Rola a página para baixo suavemente se for uma âncora local
+                let hash = href.substring(href.indexOf('#'));
+                if (hash.length > 1) {
+                    try { 
+                        let targetEl = document.querySelector(hash); 
+                        if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                    } catch(err) {}
+                }
+            } else if (href && !href.startsWith('javascript:')) {
+                // SE FOR UM LINK EXTERNO (OU /), FORÇA ABERTURA EM NOVA ABA (Garante a integridade do seu painel)
+                window.open(href, '_blank');
+            }
+        }
     }, true); 
-    
-    // Bloqueia qualquer formulário de dar refresh na página
-    window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 </script>`;
 
 export default function Home() {
@@ -206,6 +229,8 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/login'; };
+
   const toggleModoEdicao = () => {
       const newMode = !modoEdicaoVisual;
       setModoEdicaoVisual(newMode);
@@ -226,8 +251,9 @@ export default function Home() {
       const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Digite o que deseja mudar na IA.", "error"); return; }
 
-      const systemInstruction = `Você é um Copywriter de Elite e Programador Cirúrgico. Receberá o HTML de UM único elemento. Modifique apenas o que for pedido: "${comando}". 
-      REGRA MÁXIMA: APENAS DEVOLVA O TEXTO PERSUASIVO FINAL DENTRO DA TAG HTML. NUNCA escreva literais como "Aqui está a reescrita" ou "Refazendo...".
+      const systemInstruction = `Você é um Copywriter de Elite e Programador Cirúrgico.
+      Receberá o HTML de UM único elemento. Modifique apenas o que for pedido: "${comando}". 
+      REGRA MÁXIMA: Se for pedido para reescrever, melhorar ou refazer o texto, APENAS DEVOLVA O TEXTO PERSUASIVO FINAL DENTRO DA TAG HTML. NUNCA escreva coisas literais como "Aqui está a reescrita" ou "Refazendo o texto".
       Preserve o atributo id="${elementoSelecionado.id}".`;
       
       const resData = await (window as any).chamarIABase(systemInstruction, [{text: `HTML ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
@@ -536,7 +562,7 @@ export default function Home() {
 
       <div id="loadingOverlay" style={{ display: 'none' }}><div id="loadingSpinner"></div><p id="loadingText" className="text-white font-bold text-lg mt-4">Processando no Google Gemini...</p></div>
 
-      <div className="w-full md:w-[420px] bg-white shadow-xl flex flex-col h-full border-r border-slate-200 z-10">
+      <div className="w-full md:w-[420px] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.04)] flex flex-col h-full border-r border-slate-200 z-10">
           <div className="p-5 border-b border-slate-100 bg-white">
               <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center mb-4">
                   <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mr-3 shadow-md"><i className="fas fa-layer-group text-white text-sm"></i></div>
@@ -603,7 +629,7 @@ export default function Home() {
                                           <div className="pt-2 bg-slate-50 p-2.5 rounded-lg border">
                                               <label className="flex items-center gap-2 cursor-pointer mb-2">
                                                   <input type="checkbox" onChange={(e) => atualizarElementoManual('imgBorder', e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                  <span className="text-[10px] font-bold text-slate-700 uppercase">Moldura Branca</span>
+                                                  <span className="text-[10px] font-bold text-slate-700 uppercase">Ativar Borda Espessa</span>
                                               </label>
                                               <div className="flex items-center justify-between">
                                                   <label className="text-[9px] font-bold text-slate-500 uppercase">Cor da Borda</label>
