@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME BLINDADO (SEM DUPLICAÇÃO, COM SUPORTE TOTAL A FORMATOS E BORDAS)
+// SCRIPT DO IFRAME BLINDADO
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -61,7 +61,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     el.dataset.customClasses = event.data.customClasses; 
                 }
 
-                // CONTROLES DE IMAGEM CORRIGIDOS E DIRETOS
                 if(event.data.imgFormat !== undefined) {
                     el.classList.remove('aspect-video', 'aspect-square', 'aspect-[3/4]', 'aspect-[4/3]', 'h-auto', 'h-[450px]', 'h-[500px]', 'object-cover');
                     if (event.data.imgFormat) { 
@@ -130,10 +129,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(!modoEdicao) return;
         e.preventDefault(); e.stopPropagation();
 
-        // SELEÇÃO CIRÚRGICA DO ELEMENTO CLICADO (IMPEDE SELECIONAR BLOCOS INTEIROS POR ENGANO)
         let targetEl = e.target;
         if (targetEl.tagName === 'SECTION' || targetEl.tagName === 'DIV' && targetEl.children.length > 2) {
-            // Se clicar num container grande, tenta focar no elemento interno clicado
             return;
         }
 
@@ -254,13 +251,20 @@ export default function Home() {
       e.target.value = ''; 
   };
 
-  // BUSCA AUTOMÁTICA DE IMAGEM SEM ALERTA / PROMPT CHATO
-  const gerarNovaImagemIAAutomatica = async () => {
+  const handleUploadBgElem = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev: any) => { atualizarElementoManual('bgImage', ev.target.result); };
+      reader.readAsDataURL(file);
+      e.target.value = ''; 
+  };
+
+  const gerarNovaImagemIAAutomatica = async (isBackground = false) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("Buscando nova imagem inteligente...", "success");
       
-      // Extrai palavras-chave do alt ou usa um termo genérico profissional
-      let termoBusca = "professional business modern";
+      let termoBusca = "professional business modern background";
       if (elementoSelecionado.text && elementoSelecionado.text.length < 30) {
           termoBusca = elementoSelecionado.text;
       }
@@ -269,7 +273,11 @@ export default function Home() {
           const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}`);
           const data = await res.json();
           if(data && data.url) { 
-              atualizarElementoManual('src', data.url); 
+              if (isBackground) {
+                  atualizarElementoManual('bgImage', data.url);
+              } else {
+                  atualizarElementoManual('src', data.url); 
+              }
               (window as any).showNotification("Imagem atualizada com sucesso!", "success"); 
           }
       } catch(err) { 
@@ -573,7 +581,7 @@ export default function Home() {
                                               <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-link text-indigo-400 mr-1.5"></i> Link da Imagem</label>
                                               <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElementoManual('src', e.target.value)} className="w-full text-xs p-2.5 border rounded-lg bg-slate-50 outline-none font-mono mb-2" />
                                               <div className="flex gap-2">
-                                                  <button onClick={gerarNovaImagemIAAutomatica} className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 shadow-sm"><i className="fas fa-wand-magic-sparkles mr-1"></i> Buscar IA</button>
+                                                  <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 shadow-sm"><i className="fas fa-wand-magic-sparkles mr-1"></i> Buscar IA</button>
                                                   <label className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 text-center cursor-pointer shadow-sm"><i className="fas fa-upload mr-1"></i> Upload PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadImgElem} /></label>
                                               </div>
                                           </div>
@@ -638,6 +646,16 @@ export default function Home() {
                                               <div className="bg-slate-50 p-2.5 rounded-lg border flex flex-col justify-between">
                                                   <label className="text-[9px] font-bold text-slate-500 uppercase flex justify-between items-center"><span>Fundo</span><input type="color" value={elementoSelecionado.bgColor} onChange={(e) => atualizarElementoManual('bgColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer" /></label>
                                                   <label className="text-[9px] font-bold text-slate-500 uppercase flex justify-between items-center pt-1 border-t"><span>Letra</span><input type="color" value={elementoSelecionado.textColor} onChange={(e) => atualizarElementoManual('textColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer" /></label>
+                                              </div>
+                                          </div>
+
+                                          {/* OPÇÕES DE IMAGEM DE FUNDO (URL, BUSCA IA AUTOMÁTICA E UPLOAD DO PC) */}
+                                          <div className="bg-slate-50 p-3 rounded-lg border space-y-2">
+                                              <label className="text-[9px] font-bold text-slate-500 uppercase flex items-center"><i className="fas fa-image text-indigo-400 mr-1"></i> Imagem de Fundo (Background)</label>
+                                              <input type="text" placeholder="https://..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElementoManual('bgImage', e.target.value)} className="w-full text-[10px] p-2 border rounded bg-white outline-none font-mono" />
+                                              <div className="flex gap-2 pt-1">
+                                                  <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-white text-indigo-600 text-[9px] font-bold py-1.5 rounded border border-indigo-200 shadow-sm"><i className="fas fa-wand-magic-sparkles mr-1"></i> Buscar IA</button>
+                                                  <label className="flex-1 bg-white text-indigo-600 text-[9px] font-bold py-1.5 rounded border border-indigo-200 text-center cursor-pointer shadow-sm"><i className="fas fa-upload mr-1"></i> Upload PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadBgElem} /></label>
                                               </div>
                                           </div>
 
@@ -813,7 +831,7 @@ export default function Home() {
           
           <div className="flex-grow relative bg-slate-800">
               {modoEdicaoVisual && (
-                  <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl font-black text-xs uppercase tracking-widest animate-bounce flex items-center gap-3 border-[3px] border-indigo-400">
+                  <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400">
                       <i className="fas fa-magic text-yellow-300"></i> Clique num elemento do site para editá-lo com o Groq!
                   </div>
               )}
