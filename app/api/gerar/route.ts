@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica } = body;
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -25,31 +25,35 @@ export async function POST(req: Request) {
         instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO usar atributos data-aos=\"fade-up\". Use Glassmorphism (bg-white/10 backdrop-blur-md) e coloque hover:scale-105 nos botões.";
     }
 
-    const regrasObrigatorias = `
+    // Se NÃO for a edição de um bloco minúsculo, aplica as regras completas de site inteiro
+    let regrasObrigatorias = "";
+    
+    if (!isBlockRefinement) {
+        regrasObrigatorias = `
 === REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE ===
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código da página inteira. Não adicione Markdown antes ou depois do JSON.
-🚨 ALERTA CRÍTICO: O valor de "codigo_html" DEVE CONTER O SITE INTEIRO (do <!DOCTYPE html> até o </html>). É ESTRITAMENTE PROIBIDO cortar, resumir, omitir ou usar comentários como "<!-- resto do código -->". Devolva a página inteira 100% funcional.
+🚨 ALERTA CRÍTICO: O valor de "codigo_html" DEVE CONTER O SITE INTEIRO (do <!DOCTYPE html> até o </html>). É ESTRITAMENTE PROIBIDO cortar, resumir ou usar comentários como "<!-- resto do código -->".
+
+=== NOVA REGRA MESTRA: MAPEAMENTO DE BLOCOS INVISÍVEIS ===
+2. MAPEAMENTO: Para que o painel de controle do usuário funcione, VOCÊ DEVE OBRIGATORIAMENTE adicionar um atributo chamado [data-bloco="nome_da_secao"] em TODAS as tags estruturais primárias (<header>, <section>, <footer>, <main>). 
+Exemplo: <section data-bloco="topo_hero" class="..."> ... </section>
 
 === REGRAS DE ESPAÇAMENTO E TIPOGRAFIA (OBRIGATÓRIO) ===
-2. ARQUITETURA DE BLOCOS: O layout deve ser impecável. Em TODOS os blocos de texto, você deve OBRIGATORIAMENTE manter um espaço exato de UMA LINHA entre os títulos dos tópicos (h2, h3) e os parágrafos (p). Use classes como 'mb-4' ou 'mb-6' no Tailwind para garantir essa separação respirável.
+3. ARQUITETURA DE BLOCOS: O layout deve ser impecável. Em TODOS os blocos de texto, mantenha um espaço exato de UMA LINHA entre os títulos (h2, h3) e os parágrafos (p). Use 'mb-4' ou 'mb-6' no Tailwind.
 
 === REGRAS DE NAVEGAÇÃO E MENU ===
-3. OBRIGATÓRIO PARA O MENU SUPERIOR: 
-- NO BOTÃO DO MENU: Use o atributo href começando com uma hashtag (#) seguida do nome do destino e target="_self". Ex: <a href="#quem-somos" target="_self">Quem Somos</a>
-- NA SEÇÃO DE DESTINO: Use o atributo id com o mesmo nome. Ex: <section id="quem-somos" class="...">
-- NUNCA use links absolutos (como href="/") no menu.
+4. OBRIGATÓRIO PARA O MENU SUPERIOR: NO BOTÃO DO MENU use href com hashtag (#) e target="_self". NA SEÇÃO DE DESTINO use o id exato.
 
 === REGRAS DE ESTRUTURA E IMAGENS ===
-4. CONTROLE DE IMAGENS: TODA tag <img> deve conter as classes: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
+5. CONTROLE DE IMAGENS: TODA tag <img> deve conter as classes: "w-full max-w-2xl mx-auto h-auto object-cover rounded-xl shadow-lg".
 - Para imagens HORIZONTAIS, src: https://images.unsplash.com/random/1200x800/?keyword
 - Para imagens VERTICAIS, src: https://images.unsplash.com/random/800x1200/?keyword
-(A keyword DEVE buscar apenas humanos/cenários reais).
 ${regraImagens}
 ${instrucaoDinamica}
 
 === COMPLIANCE FACEBOOK ADS E RODAPÉ JURÍDICO ===
-5. OBRIGATÓRIO: Copie e cole exatamente o rodapé abaixo no final do código HTML.
-<footer class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
+6. OBRIGATÓRIO: Copie e cole o rodapé abaixo no final do código HTML.
+<footer data-bloco="rodape" class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-5xl mx-auto px-6">
         <div class="flex flex-wrap justify-center gap-8 md:gap-16 mb-8 font-medium">
             <a href="#privacidade" onclick="toggleLegal('panel-privacidade', event)" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8 text-base">Política de Privacidade</a>
@@ -80,6 +84,16 @@ ${instrucaoDinamica}
     </script>
 </footer>
 `;
+    } else {
+        // Regras Enxutas se for só para refinar UM ÚNICO BLOCO
+        regrasObrigatorias = `
+=== REGRA DE OURO DA MICRO-EDIÇÃO ===
+Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
+🚨 ATENÇÃO: Devolva APENAS o bloco de código HTML modificado (a tag <section>, <header>, etc). NÃO adicione <html>, <head> ou <body>. 
+PRESERVE obrigatoriamente os atributos 'data-bloco' e 'data-editor-id' que vierem no código do usuário.
+Respeite o espaçamento exato de UMA LINHA entre títulos e parágrafos.
+        `;
+    }
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
 
@@ -114,7 +128,8 @@ ${instrucaoDinamica}
 
                 htmlCode = extrairHtmlDeJson(result.response.text());
                 
-                if (htmlCode && htmlCode.includes('<html')) {
+                // Se for refinamento de bloco, não precisa exigir '<html'
+                if (htmlCode && (htmlCode.includes('<html') || isBlockRefinement)) {
                     sucessoGemini = true;
                     provedorTextoUsado = `Google Gemini (${rota.nome})`;
                     break; 
@@ -147,8 +162,8 @@ ${instrucaoDinamica}
                     { role: "user", content: textoDoPrompt }
                 ],
                 response_format: { type: "json_object" },
-                max_tokens: 8000, // LIMITE ESTENDIDO PARA NÃO CORTAR O SITE
-                temperature: 0.1  // MODO EXATO PARA NÃO INVENTAR CÓDIGO
+                max_tokens: isBlockRefinement ? 2000 : 8000, 
+                temperature: 0.1
             })
         });
 
@@ -161,12 +176,12 @@ ${instrucaoDinamica}
         const contentResposta = groqData.choices[0].message.content;
         htmlCode = extrairHtmlDeJson(contentResposta);
 
-        if (!htmlCode || !htmlCode.includes('<html')) {
-            throw new Error("O Groq falhou ao retornar a página completa. Tente novamente.");
+        if (!htmlCode || (!htmlCode.includes('<html') && !isBlockRefinement)) {
+            throw new Error("A IA falhou ao retornar a página completa. Tente novamente.");
         }
     }
 
-    if (dinamica && dinamica !== 'estatico') {
+    if (dinamica && dinamica !== 'estatico' && !isBlockRefinement) {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
         if (!htmlCode.includes('aos.css') && htmlCode.includes('</head>')) htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
