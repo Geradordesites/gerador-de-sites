@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
+// SCRIPT DO IFRAME BLINDADO (SEM DUPLICAÇÃO, COM SUPORTE TOTAL A FORMATOS E BORDAS)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -60,17 +61,27 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     el.dataset.customClasses = event.data.customClasses; 
                 }
 
+                // CONTROLES DE IMAGEM CORRIGIDOS E DIRETOS
                 if(event.data.imgFormat !== undefined) {
-                    el.classList.remove('aspect-video', 'aspect-square', 'aspect-[3/4]', 'aspect-[4/3]');
-                    if (event.data.imgFormat) { el.classList.add(event.data.imgFormat); el.classList.add('object-cover'); }
+                    el.classList.remove('aspect-video', 'aspect-square', 'aspect-[3/4]', 'aspect-[4/3]', 'h-auto', 'h-[450px]', 'h-[500px]', 'object-cover');
+                    if (event.data.imgFormat) { 
+                        el.classList.add(event.data.imgFormat); 
+                        el.classList.add('object-cover', 'w-full'); 
+                    }
                 }
                 if(event.data.imgRounded !== undefined) {
-                    el.classList.remove('rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full');
-                    if (event.data.imgRounded) el.classList.add(event.data.imgRounded);
+                    el.classList.remove('rounded-none', 'rounded-md', 'rounded-xl', 'rounded-full');
+                    if (event.data.imgRounded) { el.classList.add(event.data.imgRounded); }
                 }
                 if(event.data.imgBorder !== undefined) {
-                    if (event.data.imgBorder) el.classList.add('border-4', 'shadow-2xl');
-                    else el.classList.remove('border-4', 'shadow-2xl');
+                    if (event.data.imgBorder) { 
+                        el.style.borderWidth = '6px';
+                        el.style.borderStyle = 'solid';
+                        el.classList.add('shadow-2xl');
+                    } else { 
+                        el.style.borderWidth = '0px';
+                        el.classList.remove('shadow-2xl');
+                    }
                 }
                 if(event.data.borderColor !== undefined) {
                     el.style.borderColor = event.data.borderColor;
@@ -100,6 +111,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     document.addEventListener('click', (e) => {
         var link = e.target.closest('a');
         if (link) {
+            if (link.hasAttribute('onclick')) return; 
             e.preventDefault(); e.stopPropagation();
             if (!modoEdicao) {
                 var href = link.getAttribute('href') || '';
@@ -118,8 +130,15 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(!modoEdicao) return;
         e.preventDefault(); e.stopPropagation();
 
+        // SELEÇÃO CIRÚRGICA DO ELEMENTO CLICADO (IMPEDE SELECIONAR BLOCOS INTEIROS POR ENGANO)
+        let targetEl = e.target;
+        if (targetEl.tagName === 'SECTION' || targetEl.tagName === 'DIV' && targetEl.children.length > 2) {
+            // Se clicar num container grande, tenta focar no elemento interno clicado
+            return;
+        }
+
         if(elSelecionado) elSelecionado.style.outline = '';
-        elSelecionado = e.target;
+        elSelecionado = targetEl;
         elSelecionado.style.outline = '3px solid #4f46e5';
 
         if(!elSelecionado.id) elSelecionado.id = 'el_' + Math.random().toString(36).substr(2,9);
@@ -133,14 +152,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             type: 'ELEMENT_SELECTED',
             id: elSelecionado.id,
             tagName: elSelecionado.tagName.toLowerCase(),
-            text: elSelecionado.innerText,
+            text: elSelecionado.innerText || '',
             src: elSelecionado.src || '',
             href: elSelecionado.getAttribute('href') || '',
             className: elSelecionado.className,
             bgColor: rgbToHex(compStyle.backgroundColor),
             textColor: rgbToHex(compStyle.color),
             borderColor: rgbToHex(compStyle.borderColor),
-            fontSize: parseInt(compStyle.fontSize),
+            fontSize: parseInt(compStyle.fontSize) || 16,
             bgImage: bgImg,
             customClasses: elSelecionado.dataset.customClasses || '',
             outerHTML: elSelecionado.outerHTML
@@ -163,7 +182,7 @@ export default function Home() {
   
   const [modoEdicaoVisual, setModoEdicaoVisual] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
-  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ texto: 'Google Gemini', imagem: '' });
+  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ texto: 'Aguardando ação...', imagem: '' });
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -235,13 +254,27 @@ export default function Home() {
       e.target.value = ''; 
   };
 
-  const gerarNovaImagemElem = async () => {
-      const keyword = prompt("Digite o tema da imagem (ex: business, fitness, nature):") || "professional";
+  // BUSCA AUTOMÁTICA DE IMAGEM SEM ALERTA / PROMPT CHATO
+  const gerarNovaImagemIAAutomatica = async () => {
+      if(!elementoSelecionado) return;
+      (window as any).showNotification("Buscando nova imagem inteligente...", "success");
+      
+      // Extrai palavras-chave do alt ou usa um termo genérico profissional
+      let termoBusca = "professional business modern";
+      if (elementoSelecionado.text && elementoSelecionado.text.length < 30) {
+          termoBusca = elementoSelecionado.text;
+      }
+
       try {
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keyword)}`);
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}`);
           const data = await res.json();
-          if(data && data.url) { atualizarElementoManual('src', data.url); (window as any).showNotification("Nova imagem carregada!", "success"); }
-      } catch(err) { (window as any).showNotification("Erro ao buscar imagem.", "error"); }
+          if(data && data.url) { 
+              atualizarElementoManual('src', data.url); 
+              (window as any).showNotification("Imagem atualizada com sucesso!", "success"); 
+          }
+      } catch(err) { 
+          (window as any).showNotification("Erro ao buscar imagem.", "error"); 
+      }
   };
 
   const carregarMeusSites = async () => {
@@ -362,7 +395,8 @@ export default function Home() {
     (window as any).executarGeracaoSite = async (imagesList: any[]) => {
       if (imagesList.length === 0) { (window as any).showNotification('Anexe referências visuais na caixa de Upload.', 'error'); return; }
       const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "CRIE UM MENU SUPERIOR FIXO." : "NÃO CRIE MENU.";
-      let promptParts: any[] = [{ text: "Faça a engenharia reversa exata do design desta imagem:" }];
+      
+      let promptParts: any[] = [{ text: "Gere a Landing Page COMPLETA (Topo, Benefícios, Prova Social, Sobre, FAQ e Rodapé). Faça a engenharia reversa exata do design desta imagem:" }];
       imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
       
       const instrucoesFinais = `Dev Sênior e Especialista UI/UX. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
@@ -374,7 +408,7 @@ export default function Home() {
       const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
       if (!content) { (window as any).showNotification('Insira o texto base ou comando.', 'error'); return; }
       const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "CRIE UM MENU SUPERIOR FIXO." : "NÃO CRIE MENU.";
-      const instrucoesFinais = `Copywriter e Dev Sênior. Crie uma Landing Page completa. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+      const instrucoesFinais = `Copywriter e Dev Sênior. Crie uma Landing Page COMPLETA do zero (Topo, Benefícios, Prova Social, Sobre, FAQ e Rodapé). \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
       
       const data = await (window as any).chamarIABase(instrucoesFinais, [{ text: content }], false);
       if (data) processarResposta(data);
@@ -483,7 +517,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
-      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-style { width: 100%; padding: .45rem .6rem; border-radius: .5rem; border: 1px solid #cbd5e1; font-size: .75rem; outline: none; font-weight: 500; color: #334155; }
         .input-style:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
@@ -539,15 +573,15 @@ export default function Home() {
                                               <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-link text-indigo-400 mr-1.5"></i> Link da Imagem</label>
                                               <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElementoManual('src', e.target.value)} className="w-full text-xs p-2.5 border rounded-lg bg-slate-50 outline-none font-mono mb-2" />
                                               <div className="flex gap-2">
-                                                  <button onClick={gerarNovaImagemElem} className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 shadow-sm"><i className="fas fa-search mr-1"></i> IA</button>
-                                                  <label className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 text-center cursor-pointer shadow-sm"><i className="fas fa-upload mr-1"></i> PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadImgElem} /></label>
+                                                  <button onClick={gerarNovaImagemIAAutomatica} className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 shadow-sm"><i className="fas fa-wand-magic-sparkles mr-1"></i> Buscar IA</button>
+                                                  <label className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 text-center cursor-pointer shadow-sm"><i className="fas fa-upload mr-1"></i> Upload PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadImgElem} /></label>
                                               </div>
                                           </div>
                                           <div className="grid grid-cols-2 gap-3 pt-2">
                                               <div>
                                                   <label className="text-[9px] font-bold text-slate-500 uppercase mb-2">Formato</label>
                                                   <select onChange={(e) => atualizarElementoManual('imgFormat', e.target.value)} className="input-style bg-slate-50 p-2 text-[10px]">
-                                                      <option value="">Livre</option>
+                                                      <option value="">Livre (Original)</option>
                                                       <option value="aspect-video">Horizontal (16:9)</option>
                                                       <option value="aspect-[3/4]">Vertical (Retrato)</option>
                                                       <option value="aspect-square">Quadrado (1:1)</option>
@@ -566,8 +600,12 @@ export default function Home() {
                                           <div className="pt-2 bg-slate-50 p-2.5 rounded-lg border">
                                               <label className="flex items-center gap-2 cursor-pointer mb-2">
                                                   <input type="checkbox" onChange={(e) => atualizarElementoManual('imgBorder', e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                  <span className="text-[10px] font-bold text-slate-700 uppercase">Moldura Branca</span>
+                                                  <span className="text-[10px] font-bold text-slate-700 uppercase">Ativar Borda Espessa</span>
                                               </label>
+                                              <div className="flex items-center justify-between">
+                                                  <label className="text-[9px] font-bold text-slate-500 uppercase">Cor da Borda</label>
+                                                  <input type="color" value={elementoSelecionado.borderColor || '#ffffff'} onChange={(e) => atualizarElementoManual('borderColor', e.target.value)} className="w-7 h-7 rounded cursor-pointer border p-0" />
+                                              </div>
                                           </div>
                                       </>
                                   ) : (

@@ -23,48 +23,39 @@ export async function POST(req: Request) {
     else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO usar data-aos=\"fade-up\". Use Glassmorphism e hover:scale-105 nos botões.";
 
     const regrasObrigatorias = `
-=== REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE ===
+=== REGRA DE OURO: SITE COMPLETO E PROFISSIONAL ===
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 ALERTA CRÍTICO: O valor DEVE CONTER O SITE INTEIRO (do <!DOCTYPE html> até o </html>). É PROIBIDO cortar ou resumir com "<!-- resto do código -->".
+🚨 ALERTA CRÍTICO DE INTEGRIDADE: O site DEVE ser gerado COMPLETO, contendo todas as seções essenciais de uma Landing Page de alta conversão (Topo/Hero com Chamada para Ação, Seção de Benefícios/Dores, Depoimentos/Prova Social, Seção sobre o Especialista/Método, Perguntas Frequentes (FAQ) e Rodapé). É ESTRITAMENTE PROIBIDO entregar páginas cortadas ou metades de sites.
 
 2. MAPEAMENTO: Adicione o atributo [data-bloco="nome_da_secao"] em TODAS as tags estruturais (<header>, <section>, <footer>). 
 
-3. ARQUITETURA DE BLOCOS: Em TODOS os textos, mantenha espaço exato de UMA LINHA entre títulos (h2, h3) e parágrafos (p). Use 'mb-4' ou 'mb-6' no Tailwind.
+3. ARQUITETURA DE BLOCOS: Em TODOS os blocos de texto, mantenha espaço exato de UMA LINHA entre títulos (h2, h3) e parágrafos (p) usando classes Tailwind como 'mb-4' ou 'mb-6'.
 
 4. IMAGENS: Use as classes "w-full mx-auto h-auto object-cover rounded-xl shadow-lg".
 src: https://images.unsplash.com/random/1200x800/?keyword (humanos reais).
 ${regraImagens}
 ${instrucaoDinamica}
 
-=== COMPLIANCE FACEBOOK ADS E RODAPÉ ===
-5. OBRIGATÓRIO: Copie e cole o rodapé abaixo no final do código HTML.
+=== RODAPÉ JURÍDICO OBRIGATÓRIO E INDEPENDENTE ===
+5. OBRIGATÓRIO: O rodapé abaixo DEVE ser inserido intacto no final do código HTML. Ele possui script próprio embutido para garantir que os modais de privacidade funcionem perfeitamente dentro de qualquer ambiente:
 <footer data-bloco="rodape" class="bg-slate-900 text-slate-300 py-16 text-center text-sm mt-12 border-t border-slate-800" ${dinamica !== 'estatico' ? 'data-aos="fade-up"' : ''}>
     <div class="max-w-5xl mx-auto px-6">
         <div class="flex flex-wrap justify-center gap-8 md:gap-16 mb-8 font-medium">
-            <a href="#privacidade" onclick="toggleLegal('panel-privacidade')" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Política de Privacidade</a>
-            <a href="#termos" onclick="toggleLegal('panel-termos')" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8">Termos de Uso</a>
+            <a href="#privacidade" onclick="var c=document.getElementById('legal-panels'), p=document.getElementById('panel-privacidade'), t=document.getElementById('panel-termos'); c.classList.remove('hidden'); t.classList.add('hidden'); p.classList.toggle('hidden'); event.preventDefault();" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8 cursor-pointer">Política de Privacidade</a>
+            <a href="#termos" onclick="var c=document.getElementById('legal-panels'), p=document.getElementById('panel-privacidade'), t=document.getElementById('panel-termos'); c.classList.remove('hidden'); p.classList.add('hidden'); t.classList.toggle('hidden'); event.preventDefault();" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-8 cursor-pointer">Termos de Uso</a>
         </div>
-        <div id="legal-panels" class="text-left mb-10 text-slate-200 text-base leading-relaxed hidden bg-slate-800 p-8 rounded-2xl max-w-4xl mx-auto">
-            <div id="panel-privacidade" class="legal-panel hidden space-y-4">
+        <div id="legal-panels" class="text-left mb-10 text-slate-200 text-base leading-relaxed hidden bg-slate-800 p-8 rounded-2xl max-w-4xl mx-auto border border-slate-700 shadow-xl">
+            <div id="panel-privacidade" class="hidden space-y-4">
                 <h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Política de Privacidade</h4>
-                <p>Nossa coleta de dados está em conformidade com a LGPD. Coletamos dados apenas para otimização de campanhas e suporte essencial.</p>
+                <p>Nossa coleta de dados está em conformidade com a LGPD. Coletamos informações estritamente necessárias apenas para otimização de campanhas, atendimento e suporte essencial ao cliente.</p>
             </div>
-            <div id="panel-termos" class="legal-panel hidden space-y-4">
+            <div id="panel-termos" class="hidden space-y-4">
                 <h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Termos de Uso</h4>
-                <p>Este site não é afiliado ou endossado pelo Facebook, Inc. (Meta). Os conteúdos são de nossa responsabilidade.</p>
+                <p>Este site não é afiliado ou endossado pelo Facebook, Inc. ou qualquer outra plataforma de mídia social. Todos os resultados dependem exclusivamente do esforço individual de cada usuário.</p>
             </div>
         </div>
         <p class="text-slate-500 font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p>
     </div>
-    <script>
-        function toggleLegal(panelId) {
-            var container = document.getElementById('legal-panels');
-            var target = document.getElementById(panelId);
-            var isVisible = !target.classList.contains('hidden');
-            document.querySelectorAll('.legal-panel').forEach(p => p.classList.add('hidden'));
-            if (isVisible) { container.classList.add('hidden'); } else { container.classList.remove('hidden'); target.classList.remove('hidden'); }
-        }
-    </script>
 </footer>
 `;
 
@@ -72,13 +63,9 @@ ${instrucaoDinamica}
     let htmlCode = '';
     let provedorTextoUsado = '';
 
-    // ROTEAMENTO INTELIGENTE DE MOTORES:
-    // Se for gerador/clonador de site inteiro -> Usa GEMINI (Mestre em código estruturado)
-    // Se for micro-edição de texto/elemento -> Usa GROQ (Mestre em copywriting rápido)
     const usarGroqParaTexto = isElementRefinement && !temImagem;
 
     if (!usarGroqParaTexto) {
-        // [MOTOR MESTRE] GOOGLE GEMINI PARA ESTRUTURA DE SITES
         provedorTextoUsado = 'Google Gemini';
         const rotasGemini = [{ key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Google Gemini" }].filter(r => r.key);
         if (rotasGemini.length === 0) throw new Error("Chave API do Google Gemini não configurada.");
@@ -101,7 +88,6 @@ ${instrucaoDinamica}
         if (!sucessoGemini) throw new Error(erroFinal.includes('429') ? "RATE_LIMIT_EXCEEDED" : `Falha no Gemini: ${erroFinal}`);
 
     } else {
-        // [MOTOR DE APOIO] GROQ EXCLUSIVO PARA TEXTOS / COPYWRITING
         provedorTextoUsado = 'Groq Engine (Copy)';
         if (!process.env.GROQ_API_KEY) throw new Error("Chave do GROQ (GROQ_API_KEY) não configurada.");
 
