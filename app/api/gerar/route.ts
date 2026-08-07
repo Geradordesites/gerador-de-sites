@@ -74,7 +74,8 @@ ${instrucaoDinamica}
         regrasObrigatorias = `
 === REGRA DE OURO DA MICRO-EDIÇÃO ===
 Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 ATENÇÃO: Devolva APENAS o HTML do elemento/bloco modificado. NÃO adicione <html> ou <body>. PRESERVE os IDs e classes originais a menos que pedido para alterar.
+🚨 ATENÇÃO: Devolva APENAS o HTML do elemento modificado. 
+🚨 REGRA COPYWRITER: Se o usuário pedir para "refazer", "escrever" ou "melhorar" um texto, ESCREVA O TEXTO FINAL DIRETAMENTE. É ESTRITAMENTE PROIBIDO escrever frases como "Refazendo o texto..." ou "Aqui está o texto melhorado". Apenas devolva o elemento com o texto final.
         `;
     }
 
