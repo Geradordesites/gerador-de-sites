@@ -4,14 +4,15 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM MÁXIMA ANTI-INCEPTION (IMPEDE QUE O SISTEMA ABRA DENTRO DELE MESMO)
+// SCRIPT DO IFRAME: BLINDAGEM ANTI-NAVEGAÇÃO E SELEÇÃO CIRÚRGICA
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
 
     function rgbToHex(rgb) {
+        if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
         let res = rgb.match(/\\d+/g);
-        if(!res) return '#000000';
+        if(!res) return '';
         return "#" + res.map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
     }
 
@@ -51,7 +52,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.animationClass !== undefined) {
-                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300');
+                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300', 'hover:-translate-y-2');
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
@@ -71,9 +72,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
                 if(event.data.imgBorder !== undefined) {
                     if (event.data.imgBorder) { 
-                        el.style.borderWidth = '6px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-2xl');
+                        el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
                     } else { 
-                        el.style.borderWidth = '0px'; el.classList.remove('shadow-2xl');
+                        el.style.borderWidth = '0px'; el.classList.remove('shadow-xl');
                     }
                 }
                 if(event.data.borderColor !== undefined) el.style.borderColor = event.data.borderColor;
@@ -90,39 +91,43 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     document.addEventListener('mouseover', (e) => {
         if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
         e.target.dataset.oldOutline = e.target.style.outline;
-        e.target.style.outline = '2px dashed #4f46e5';
+        e.target.style.outline = '2px solid #0ea5e9'; // Azul elegante do inspetor
+        e.target.style.outlineOffset = '-2px';
         e.target.style.cursor = 'crosshair';
     });
     
     document.addEventListener('mouseout', (e) => {
         if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
-        if(e.target !== elSelecionado) { e.target.style.outline = e.target.dataset.oldOutline || ''; }
+        if(e.target !== elSelecionado) { 
+            e.target.style.outline = e.target.dataset.oldOutline || ''; 
+            e.target.style.outlineOffset = '';
+        }
     });
 
-    // SILENCIA FORMULÁRIOS: Se a IA criar um form vazio, ele não recarregará a página
-    window.addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        e.stopPropagation(); 
-    }, true);
+    window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 
-    // ESCUDO DE CLIQUES (INTERCEPTA TUDO ANTES DO NAVEGADOR AGIR)
     document.addEventListener('click', (e) => {
-        // --- 1. MODO DE EDIÇÃO: Bloqueio Total Absoluto ---
+        let link = e.target.closest('a');
+        let btn = e.target.closest('button');
+        
         if (modoEdicao) {
             e.preventDefault(); 
             e.stopPropagation();
 
             let targetEl = e.target;
-            // Impede a seleção acidental do site inteiro se clicar num espaço vazio
-            if (targetEl.tagName === 'SECTION' || targetEl.tagName === 'DIV' && targetEl.children.length > 2) {
+            if (targetEl.tagName === 'SECTION' || targetEl.tagName === 'DIV' && targetEl.children.length > 3) {
                 return;
             }
 
-            if(elSelecionado) elSelecionado.style.outline = '';
+            if(elSelecionado) {
+                elSelecionado.style.outline = '';
+                elSelecionado.style.outlineOffset = '';
+            }
             elSelecionado = targetEl;
             elSelecionado.style.outline = '3px solid #4f46e5';
+            elSelecionado.style.outlineOffset = '-3px';
 
-            if(!elSelecionado.id) elSelecionado.id = 'el_' + Math.random().toString(36).substr(2,9);
+            if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
 
             let compStyle = window.getComputedStyle(elSelecionado);
             let bgImg = elSelecionado.style.backgroundImage || '';
@@ -146,47 +151,25 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 outerHTML: elSelecionado.outerHTML
             }, '*');
             
-            return; // Encerra a ação do clique na edição aqui.
+            return;
         }
 
-        // --- 2. MODO DE VISUALIZAÇÃO: Escudo Inteligente de Links ---
-        let link = e.target.closest('a');
-        let btn = e.target.closest('button');
-
-        // Se clicou num botão nativo, impede que ele reinicie a tela
-        if (btn && btn.type === 'submit') {
-            e.preventDefault();
-        }
-
-        // Tratamento especial para Links
         if (link) {
-            let href = link.getAttribute('href') || '';
-            
-            // Permite Scripts locais (ex: Botão "Termos de Uso" no Rodapé) rodarem sem resetar a tela
-            if (link.hasAttribute('onclick')) {
-                if (href === '' || href === '#' || href === '/' || href.startsWith('http')) {
-                    e.preventDefault();
-                }
-                return; 
-            }
-
-            e.preventDefault(); 
+            if (link.hasAttribute('onclick')) return; 
+            e.preventDefault();
             e.stopPropagation();
-            
+            var href = link.getAttribute('href') || '';
             if(href.startsWith('#')) {
-                // Rola a página para baixo suavemente se for uma âncora local
-                let hash = href.substring(href.indexOf('#'));
+                var hash = href.substring(href.indexOf('#'));
                 if (hash.length > 1) {
-                    try { 
-                        let targetEl = document.querySelector(hash); 
-                        if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
-                    } catch(err) {}
+                    try { var tEl = document.querySelector(hash); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
                 }
             } else if (href && !href.startsWith('javascript:')) {
-                // SE FOR UM LINK EXTERNO (OU /), FORÇA ABERTURA EM NOVA ABA (Garante a integridade do seu painel)
                 window.open(href, '_blank');
             }
+            return;
         }
+        if (btn && btn.type === 'submit') { e.preventDefault(); return; }
     }, true); 
 </script>`;
 
@@ -202,9 +185,11 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
-  const [modoEdicaoVisual, setModoEdicaoVisual] = useState(false);
+  // STATUS DE UI PREMIUM
+  const [abaAtiva, setAbaAtiva] = useState<'visual' | 'copy'>('visual');
+  const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
-  const [statusApis, setStatusApis] = useState<{ texto: string; imagem: string }>({ texto: 'Aguardando ação...', imagem: '' });
+  const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Motor Standby', processing: false });
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -220,7 +205,7 @@ export default function Home() {
             if (codEl) {
                 setHistoricoCodigo(prev => [...prev, codEl.value]);
                 let cleanHtml = e.data.html.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
-                cleanHtml = cleanHtml.replace(/ outline: 3px solid rgb\(79, 70, 229\);/g, '');
+                cleanHtml = cleanHtml.replace(/ outline: 3px solid rgb\(79, 70, 229\); outline-offset: -3px;/g, '');
                 codEl.value = cleanHtml;
             }
         }
@@ -231,75 +216,139 @@ export default function Home() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/login'; };
 
-  const toggleModoEdicao = () => {
-      const newMode = !modoEdicaoVisual;
-      setModoEdicaoVisual(newMode);
+  const toggleInspetor = () => {
+      const newMode = !modoInspetor;
+      setModoInspetor(newMode);
       setElementoSelecionado(null);
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       if(iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'TOGGLE_EDIT_MODE', value: newMode }, '*');
   };
 
-  const atualizarElementoManual = (field: string, value: string | number | boolean) => {
+  const atualizarElemento = (field: string, value: string | number | boolean) => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
 
-  const refinarElementoComIA = async (comandoOverride?: string) => {
+  const otimizarComIA = async (comandoOverride?: string) => {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
       const comando = comandoOverride || promptInput?.value.trim();
-      if(!comando || !elementoSelecionado) { (window as any).showNotification("Digite o que deseja mudar na IA.", "error"); return; }
+      if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe o parâmetro de otimização.", "error"); return; }
 
-      const systemInstruction = `Você é um Copywriter de Elite e Programador Cirúrgico.
-      Receberá o HTML de UM único elemento. Modifique apenas o que for pedido: "${comando}". 
-      REGRA MÁXIMA: Se for pedido para reescrever, melhorar ou refazer o texto, APENAS DEVOLVA O TEXTO PERSUASIVO FINAL DENTRO DA TAG HTML. NUNCA escreva coisas literais como "Aqui está a reescrita" ou "Refazendo o texto".
-      Preserve o atributo id="${elementoSelecionado.id}".`;
+      const systemInstruction = `Atue como Engenheiro de UI/UX e Copywriter Sênior B2B. Receberá o HTML de UM nó. Aplique a modificação: "${comando}". 
+      REGRA MÁXIMA: DEVOLVA APENAS O NÓ (TAG HTML) FINAL E OTIMIZADO. Não inclua Markdown, não explique, não use jargões como "Aqui está o texto". Preserve o ID original id="${elementoSelecionado.id}".`;
       
-      const resData = await (window as any).chamarIABase(systemInstruction, [{text: `HTML ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
+      const resData = await chamarMotorIA(systemInstruction, [{text: `NÓ ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
       
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
           if(promptInput) promptInput.value = '';
-          (window as any).showNotification("Elemento alterado por IA!", "success");
+          (window as any).showNotification("Nó otimizado com sucesso.", "success");
       }
   };
 
-  const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev: any) => { atualizarElementoManual('src', ev.target.result); };
-      reader.readAsDataURL(file);
-      e.target.value = ''; 
+  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
+    setStatusApis({ texto: isElementRefinement ? 'Inferência Groq...' : 'Motor Gemini Activo...', processing: true });
+
+    try {
+      const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
+      const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
+
+      const response = await fetch('/api/gerar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle, dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Rate limit atingido. Aguarde 60s." : data.error);
+      return data;
+    } catch (err: any) {
+      (window as any).showNotification(err.message, 'error');
+      return null;
+    } finally {
+      setStatusApis({ texto: 'Motor Standby', processing: false });
+    }
   };
 
-  const handleUploadBgElem = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const getMegaPromptEstilo = () => {
+    const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
+    if (estilo === 'premium') return "DIRETRIZ UI: Design sofisticado, premium SaaS. Tipografia elegante e espaçamentos precisos.";
+    if (estilo === 'terapia') return "DIRETRIZ UI: Layout minimalista, saúde/bem-estar. Muito negative space (respiro) e bordas suaves.";
+    if (estilo === 'agressivo') return "DIRETRIZ UI: Landing Page B2C agressiva, conversão direta. Alto contraste.";
+    return "DIRETRIZ UI: Interface moderna, enterprise-grade, clean e focada em conversão.";
+  };
+
+  const getMegaPromptCores = () => {
+    const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
+    if (cor === 'personalizada') return `CORES: Fundo principal: ${(document.getElementById('corFundo') as HTMLInputElement)?.value}, Destaque/CTA: ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value}`;
+    if (cor === 'auto') return "CORES: Extraia fielmente o esquema de cores primárias, secundárias e acentos da imagem fornecida.";
+    return `CORES: Tema otimizado focado em tons de ${cor.toUpperCase()}.`;
+  };
+
+  const getMegaPromptHero = () => {
+    const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
+    if (hero === 'center') return "LAYOUT HEADER: Text-center simétrico. Título, subtítulo e CTA perfeitamente alinhados ao centro.";
+    if (hero === 'split') return "LAYOUT HEADER: Split-screen. Copy persuasiva na esquerda, Hero Asset (Imagem) na direita.";
+    return "";
+  };
+
+  const executarGeracaoSiteVisual = async () => {
+    if (uploadedImages.length === 0) { (window as any).showNotification('Forneça um asset visual (imagem) de referência.', 'error'); return; }
+    const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "INCLUIR NAVIGATION BAR FIXA." : "SEM NAVIGATION BAR.";
+    
+    let promptParts: any[] = [{ text: "Gere a interface HTML/Tailwind completa (Navbar, Hero, Features, Social Proof, FAQ, Footer) aplicando engenharia reversa nesta imagem estrutural:" }];
+    uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
+    
+    const instrucoesFinais = `Senior Front-End Engineer. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
+    if (data) processarRespostaDOM(data);
+  };
+
+  const executarGeracaoSiteTexto = async () => {
+    const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
+    if (!content) { (window as any).showNotification('Forneça o escopo do projeto (Briefing).', 'error'); return; }
+    const isMenu = (document.getElementById('checkComMenuTexto') as HTMLInputElement)?.checked ? "INCLUIR NAVIGATION BAR FIXA." : "SEM NAVIGATION BAR.";
+    const instrucoesFinais = `Copywriter B2B e Senior Front-End Engineer. Desenvolva uma Landing Page completa do zero com base neste briefing: \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    
+    const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
+    if (data) processarRespostaDOM(data);
+  };
+
+  function processarRespostaDOM(data: any) {
+      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+      const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = data.html; }
+      if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
+      (window as any).showNotification(`Interface renderizada via ${data.provedorTexto}`, 'success');
+      if (modoInspetor) setModoInspetor(false);
+  }
+
+  // UPLOAD E INTEGRAÇÃO DE IMAGENS NOS ELEMENTOS
+  const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
       const file = e.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev: any) => { atualizarElementoManual('bgImage', ev.target.result); };
+      reader.onload = (ev: any) => { atualizarElemento(isBg ? 'bgImage' : 'src', ev.target.result); };
       reader.readAsDataURL(file);
       e.target.value = ''; 
   };
 
   const gerarNovaImagemIAAutomatica = async (isBackground = false) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("Buscando nova imagem inteligente...", "success");
-      let termoBusca = "professional business modern background";
+      (window as any).showNotification("Sintetizando ativo visual...", "success");
+      let termoBusca = "professional business modern minimal";
       if (elementoSelecionado.text && elementoSelecionado.text.length < 30) termoBusca = elementoSelecionado.text;
 
       try {
           const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}`);
           const data = await res.json();
           if(data && data.url) { 
-              if (isBackground) atualizarElementoManual('bgImage', data.url);
-              else atualizarElementoManual('src', data.url); 
-              (window as any).showNotification("Imagem atualizada com sucesso!", "success"); 
+              atualizarElemento(isBackground ? 'bgImage' : 'src', data.url);
+              (window as any).showNotification("Ativo integrado com sucesso.", "success"); 
           }
-      } catch(err) { (window as any).showNotification("Erro ao buscar imagem.", "error"); }
+      } catch(err) { (window as any).showNotification("Falha no pipeline de imagens.", "error"); }
   };
 
   const carregarMeusSites = async () => {
@@ -313,7 +362,7 @@ export default function Home() {
   };
 
   const deletarSite = async (id: string, slug: string) => {
-    if (!confirm(`Deletar o site "${slug}"?`)) return;
+    if (!confirm(`Remover projeto permanentemente?`)) return;
     await supabase.from('sites_gerados').delete().eq('id', id);
     setListaSites(listaSites.filter(site => site.id !== id));
     if (siteEditando?.id === id) setSiteEditando(null);
@@ -339,9 +388,7 @@ export default function Home() {
     if (e.target.files) { Array.from(e.target.files).forEach(file => processFile(file as File)); e.target.value = ''; }
   };
 
-  const removerImagem = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
-  };
+  const removerImagem = (index: number) => { setUploadedImages(prev => prev.filter((_, i) => i !== index)); };
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -356,143 +403,48 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    (window as any).mudarModoApp = (modo: string) => {
-      const btnV = document.getElementById('btnTabVisual'), btnC = document.getElementById('btnTabCopy');
-      const contV = document.getElementById('containerModoVisual'), contC = document.getElementById('containerModoCopy');
-      if (!btnV || !btnC || !contV || !contC) return;
-      if (modo === 'visual') {
-        btnV.className = "flex-1 py-1.5 text-xs font-bold rounded bg-white shadow-sm text-indigo-700 transition";
-        btnC.className = "flex-1 py-1.5 text-xs font-bold rounded text-slate-500 hover:text-slate-700 transition";
-        contV.style.display = 'block'; contC.style.display = 'none';
-      } else {
-        btnC.className = "flex-1 py-1.5 text-xs font-bold rounded bg-white shadow-sm text-indigo-700 transition";
-        btnV.className = "flex-1 py-1.5 text-xs font-bold rounded text-slate-500 hover:text-slate-700 transition";
-        contC.style.display = 'block'; contV.style.display = 'none';
-      }
-    };
-
-    (window as any).chamarIABase = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
-      const loadOverlay = document.getElementById('loadingOverlay');
-      if (loadOverlay) loadOverlay.style.display = 'flex';
-      setStatusApis({ texto: isElementRefinement ? 'Groq (Copy)' : 'Google Gemini', imagem: '' });
-
-      try {
-        const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
-        const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-
-        const response = await fetch('/api/gerar', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle, dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
-        });
-        const data = await response.json();
-        if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "LIMIT_MODAL" : data.error);
-        return data;
-      } catch (err: any) {
-        (window as any).showNotification(err.message === "LIMIT_MODAL" ? "Cota atingida! Aguarde 1 min." : err.message, 'error');
-        setStatusApis({ texto: 'Falha', imagem: '' }); return null;
-      } finally {
-        if (loadOverlay) loadOverlay.style.display = 'none';
-      }
-    };
-
-    const getMegaPromptEstilo = () => {
-      const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
-      if (estilo === 'premium') return "DIRETRIZ VISUAL: Design sofisticado (Premium). Tipografia serifada elegante.";
-      if (estilo === 'terapia') return "DIRETRIZ VISUAL: Layout minimalista, calmo e acolhedor. Muito espaço em branco e bordas arredondadas.";
-      if (estilo === 'agressivo') return "DIRETRIZ VISUAL: Altíssima conversão, Dark Mode agressivo com textos claros.";
-      return "DIRETRIZ VISUAL: Crie um design profissional, moderno e focado em conversão.";
-    };
-
-    const getMegaPromptCores = () => {
-      const cor = (document.getElementById('paletaCores') as HTMLSelectElement)?.value || 'auto';
-      if (cor === 'personalizada') return `OVERRIDE - CORES: Fundo principal: ${(document.getElementById('corFundo') as HTMLInputElement)?.value}, Cor de Destaque: ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value}`;
-      if (cor === 'auto') return "PALETA: Clone as cores exatas da referência visual.";
-      return `PALETA DE CORES: Foco em ${cor.toUpperCase()}.`;
-    };
-
-    const getMegaPromptHero = () => {
-      const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
-      if (hero === 'center') return "ESTRUTURA DO HERO: Centralizado (text-center).";
-      if (hero === 'split') return "ESTRUTURA DO HERO: Dividido em duas colunas (Texto e Imagem).";
-      return "";
-    };
-
-    (window as any).executarGeracaoSite = async (imagesList: any[]) => {
-      if (imagesList.length === 0) { (window as any).showNotification('Anexe referências visuais na caixa de Upload.', 'error'); return; }
-      const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "CRIE UM MENU SUPERIOR FIXO." : "NÃO CRIE MENU.";
-      
-      let promptParts: any[] = [{ text: "Gere a Landing Page COMPLETA (Topo, Benefícios, Prova Social, Sobre, FAQ e Rodapé). Faça a engenharia reversa exata do design desta imagem:" }];
-      imagesList.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
-      
-      const instrucoesFinais = `Dev Sênior e Especialista UI/UX. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-      const data = await (window as any).chamarIABase(instrucoesFinais, promptParts, false);
-      if (data) processarResposta(data);
-    };
-
-    (window as any).gerarSiteComCopy = async () => {
-      const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
-      if (!content) { (window as any).showNotification('Insira o texto base ou comando.', 'error'); return; }
-      const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "CRIE UM MENU SUPERIOR FIXO." : "NÃO CRIE MENU.";
-      const instrucoesFinais = `Copywriter e Dev Sênior. Crie uma Landing Page COMPLETA do zero (Topo, Benefícios, Prova Social, Sobre, FAQ e Rodapé). \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-      
-      const data = await (window as any).chamarIABase(instrucoesFinais, [{ text: content }], false);
-      if (data) processarResposta(data);
-    };
-
-    function processarResposta(data: any) {
-        const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-        const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-        if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = data.html; }
-        if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
-        setStatusApis({ texto: data.provedorTexto, imagem: '' });
-        (window as any).showNotification(`Site gerado por ${data.provedorTexto}!`, 'success');
-        setModoEdicaoVisual(false); 
-    }
-
     (window as any).mudarSeparador = (aba: string) => {
       document.getElementById('previewFrame')!.classList.toggle('active', aba === 'preview');
       document.getElementById('codigoContainer')!.classList.toggle('active', aba === 'code');
-      document.getElementById('tabPreview')!.classList.toggle('bg-white', aba === 'preview');
-      document.getElementById('tabPreview')!.classList.toggle('text-blue-600', aba === 'preview');
-      document.getElementById('tabCode')!.classList.toggle('bg-white', aba === 'code');
-      document.getElementById('tabCode')!.classList.toggle('text-blue-600', aba === 'code');
+      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-4 py-1.5 rounded-md font-semibold text-xs bg-zinc-900 text-white shadow-sm transition" : "px-4 py-1.5 rounded-md font-medium text-xs text-zinc-500 hover:text-zinc-900 transition";
+      document.getElementById('tabCode')!.className = aba === 'code' ? "px-4 py-1.5 rounded-md font-semibold text-xs bg-zinc-900 text-white shadow-sm transition" : "px-4 py-1.5 rounded-md font-medium text-xs text-zinc-500 hover:text-zinc-900 transition";
     };
 
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast'); if(exist) exist.remove();
       const div = document.createElement('div'); div.id = 'custom-toast';
-      div.className = type === 'error' ? `fixed top-10 left-1/2 -translate-x-1/2 bg-white border-l-4 border-red-500 px-6 py-4 rounded shadow-2xl z-[9999] flex gap-4 max-w-xl` : `fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded shadow-xl z-[9999] flex gap-2`;
-      div.innerHTML = type === 'error' ? `<i class="fas fa-exclamation-circle text-red-500 mt-1"></i> <div class="flex-1 text-sm font-medium text-slate-800">${msg}</div>` : `<i class="fas fa-check-circle"></i> <span class="text-sm font-medium">${msg}</span>`;
+      div.className = type === 'error' ? `fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-5 py-3 rounded-lg shadow-xl z-[9999] flex items-center gap-3 text-sm font-medium` : `fixed bottom-6 right-6 bg-zinc-900 text-white px-5 py-3 rounded-lg shadow-xl z-[9999] flex items-center gap-3 text-sm font-medium`;
+      div.innerHTML = type === 'error' ? `<i class="fas fa-exclamation-triangle text-red-500"></i> <span>${msg}</span>` : `<i class="fas fa-check-circle text-emerald-400"></i> <span>${msg}</span>`;
       document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 500); }, 3000);
+      setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 400); }, 3000);
     };
 
     (window as any).copiarCodigo = () => {
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('Código copiado!', 'success');
+      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('Markup copiado para o clipboard.', 'success');
     };
 
     (window as any).baixarHtmlGerado = () => {
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!txt) return;
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/html' }));
-      a.download = siteEditando ? `${siteEditando.slug}.html` : 'landing-page-pro.html'; a.click();
+      a.download = siteEditando ? `${siteEditando.slug}.html` : 'build-export.html'; a.click();
     };
 
     (window as any).handlePublicarSite = async () => {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) return;
       
-      let cleanHtml = htmlContent.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '')
-                                 .replace(/ outline: 3px solid rgb\(79, 70, 229\);/g, '');
+      let cleanHtml = htmlContent.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '').replace(/ outline: 3px solid rgb\(79, 70, 229\);/g, '');
 
-      if (siteEditando) { await supabase.from('sites_gerados').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Atualizado!', 'success'); return; }
-      const nome = prompt('Nome do site:'); if (!nome) return; 
+      if (siteEditando) { await supabase.from('sites_gerados').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Deploy atualizado com sucesso.', 'success'); return; }
+      const nome = prompt('Nome do Deploy (URL Slug):'); if (!nome) return; 
       let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { alert('Autenticação expirada.'); return; }
       await supabase.from('sites_gerados').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
       navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
-      alert(`Publicado!\nLink: ${window.location.origin}/${slug}`);
+      alert(`Deploy concluído!\nURL Copiada: ${window.location.origin}/${slug}`);
     };
   }, [siteEditando]); 
 
@@ -510,367 +462,405 @@ export default function Home() {
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
   const totalPaginas = Math.ceil(listaSites.length / SITES_POR_PAGINA);
 
-  const renderConteudoModal = () => {
-    if (carregandoSites) return <p className="text-center text-sm text-slate-500 py-8">Carregando...</p>;
-    if (listaSites.length === 0) return <div className="text-center py-16 text-slate-400"><p className="text-sm font-semibold">Nenhum site publicado.</p></div>;
-    return (
-      <>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sitesAtuais.map((site) => {
-            const linkUrl = `${window.location.origin}/${site.slug}`;
-            return (
-              <div key={site.id} className="bg-white border rounded-xl p-4 shadow-sm flex flex-col">
-                <h3 className="font-black text-sm mb-2">{site.titulo}</h3>
-                <input type="text" readOnly value={linkUrl} className="bg-slate-50 border rounded text-[11px] w-full p-1.5 mb-3 font-mono" />
-                <div className="flex justify-between items-center mt-auto">
-                  <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-bold">Abrir</a>
-                  <div className="flex gap-2">
-                    <button onClick={() => editarSite(site)} className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded">Editar</button>
-                    <button onClick={() => deletarSite(site.id, site.slug)} className="px-3 py-1 bg-red-50 text-red-600 text-xs font-bold rounded"><i className="fas fa-trash"></i></button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {totalPaginas > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-6 pt-4 border-t">
-            <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-3 py-1 bg-white border text-xs rounded">Anterior</button>
-            <span className="text-[11px] font-bold">Página {paginaAtual} de {totalPaginas}</span>
-            <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-3 py-1 bg-white border text-xs rounded">Próxima</button>
-          </div>
-        )}
-      </>
-    );
-  };
-
   return (
-    <div className="h-screen overflow-hidden flex relative bg-slate-100 text-slate-800 font-sans">
+    <div className="h-screen overflow-hidden flex relative bg-zinc-50 text-zinc-900 font-sans selection:bg-zinc-200">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
-        .input-style { width: 100%; padding: .45rem .6rem; border-radius: .5rem; border: 1px solid #cbd5e1; font-size: .75rem; outline: none; font-weight: 500; color: #334155; }
-        .input-style:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
-        .drop-zone { border: 2px dashed #cbd5e1; border-radius: .75rem; background: #f8fafc; cursor: pointer; text-align: center; }
+        .input-standard { width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid #e4e4e7; background-color: #fafafa; font-size: 0.75rem; outline: none; color: #27272a; transition: all 0.2s; }
+        .input-standard:focus { border-color: #09090b; background-color: #ffffff; ring: 1px solid #09090b; }
+        .input-label { font-size: 0.65rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; display: block; }
+        .panel-section { padding: 1rem; border-bottom: 1px solid #f4f4f5; }
+        
         #previewFrame, #codigoContainer { display: none; }
         #previewFrame.active, #codigoContainer.active { display: block; }
-        #loadingOverlay { position: fixed; inset:0; background: rgba(15,23,42,0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        #loadingSpinner { border: 4px solid rgba(79,70,229,0.2); border-top: 4px solid #4f46e5; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 2rem; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-      <div id="loadingOverlay" style={{ display: 'none' }}><div id="loadingSpinner"></div><p id="loadingText" className="text-white font-bold text-lg mt-4">Processando no Google Gemini...</p></div>
+      {/* OVERLAY DE CARREGAMENTO */}
+      {statusApis.processing && (
+          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
+              <div className="w-10 h-10 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-4"></div>
+              <p className="text-zinc-900 font-bold tracking-tight">{statusApis.texto}</p>
+          </div>
+      )}
 
-      <div className="w-full md:w-[420px] bg-white shadow-[4px_0_24px_rgba(0,0,0,0.04)] flex flex-col h-full border-r border-slate-200 z-10">
-          <div className="p-5 border-b border-slate-100 bg-white">
-              <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mr-3 shadow-md"><i className="fas fa-layer-group text-white text-sm"></i></div>
-                  Builder<span className="text-indigo-600">Pro</span>
+      {/* PAINEL LATERAL DE CONTROLE (O "WEBFLOW") */}
+      <div className="w-[340px] bg-white border-r border-zinc-200 flex flex-col h-full z-10 flex-shrink-0 shadow-sm">
+          
+          {/* HEADER DO PAINEL */}
+          <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-zinc-50/50">
+              <h1 className="text-lg font-black tracking-tight text-zinc-900 flex items-center">
+                  <div className="w-6 h-6 rounded bg-zinc-900 flex items-center justify-center mr-2 text-white"><i className="fas fa-layer-group text-xs"></i></div>
+                  System<span className="text-zinc-400 font-medium">Pro</span>
               </h1>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
-                  <button id="btnTabVisual" onClick={() => (window as any).mudarModoApp('visual')} className="flex-1 py-1.5 text-xs font-bold rounded bg-white shadow-sm text-indigo-700">Visão & Clonagem</button>
-                  <button id="btnTabCopy" onClick={() => (window as any).mudarModoApp('copy')} className="flex-1 py-1.5 text-xs font-bold rounded text-slate-500">Gerar via Texto</button>
-              </div>
+              
+              {/* BOTÃO TOGGLE DO INSPETOR (AGORA É UM SWITCH MODERNO) */}
+              <button onClick={toggleInspetor} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${modoInspetor ? 'bg-zinc-900 text-white shadow-md' : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
+                  <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse' : ''}`}></i> {modoInspetor ? 'Inspecionando' : 'Inspetor'}
+              </button>
           </div>
 
-          <div className="overflow-y-auto p-5 flex-grow custom-scrollbar flex flex-col bg-slate-50/50">
-              <button onClick={toggleModoEdicao} className={`w-full py-3.5 px-4 rounded-xl text-sm font-black shadow-sm flex items-center justify-center mb-5 transition-all ${modoEdicaoVisual ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}>
-                  <i className={`fas ${modoEdicaoVisual ? 'fa-check-circle text-green-400' : 'fa-mouse-pointer'} mr-2 text-lg`}></i> 
-                  {modoEdicaoVisual ? 'Edição Mágica Ativada!' : 'Ativar Edição Visual por Clique'}
-              </button>
+          <div className="flex-1 overflow-y-auto bg-white">
+              
+              {/* SE O INSPETOR ESTIVER ATIVO, SUBSTITUI TUDO PELAS PROPRIEDADES DO ELEMENTO */}
+              {modoInspetor ? (
+                  <div className="animate-[fadeIn_0.2s_ease]">
+                      <div className="bg-zinc-900 text-white p-3 text-[10px] font-mono tracking-widest uppercase flex justify-between items-center">
+                          <span>Inspetor Estrutural</span>
+                          <i className="fas fa-code text-zinc-500"></i>
+                      </div>
 
-              <div id="containerModoVisual" className="flex-1 flex flex-col">
-                  {modoEdicaoVisual ? (
-                      <div className="bg-white border-2 border-indigo-500 rounded-xl p-5 shadow-lg relative">
-                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Painel do Elemento</div>
-                          
-                          {!elementoSelecionado ? (
-                              <div className="text-center py-10 text-slate-400">
-                                  <i className="fas fa-crosshairs text-3xl mb-3 text-indigo-400"></i>
-                                  <p className="text-[11px] font-bold uppercase text-slate-500">Selecione um elemento<br/>no site ao lado</p>
+                      {!elementoSelecionado ? (
+                          <div className="flex flex-col items-center justify-center p-12 text-center text-zinc-400">
+                              <div className="w-12 h-12 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center mb-3">
+                                  <i className="fas fa-mouse-pointer text-lg"></i>
                               </div>
-                          ) : (
-                              <div className="space-y-4 pt-3">
-                                  <div className="flex items-center gap-2 mb-2 pb-3 border-b border-slate-100">
-                                      <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-[10px] font-mono font-black uppercase"><i className="fas fa-code mr-1"></i> {elementoSelecionado.tagName}</span>
+                              <p className="text-xs font-medium">Selecione um elemento no canvas<br/>para acessar as propriedades.</p>
+                          </div>
+                      ) : (
+                          <div className="pb-10">
+                              {/* IDENTIFICAÇÃO DO NÓ */}
+                              <div className="panel-section bg-zinc-50/50">
+                                  <div className="flex justify-between items-center">
+                                      <div>
+                                          <span className="text-[10px] font-black uppercase text-zinc-800 bg-white border border-zinc-200 px-2 py-0.5 rounded shadow-sm">{elementoSelecionado.tagName}</span>
+                                      </div>
+                                      <span className="text-[9px] font-mono text-zinc-400">ID: {elementoSelecionado.id.substring(0,6)}</span>
                                   </div>
-                                  
-                                  {elementoSelecionado.tagName === 'img' ? (
-                                      <>
-                                          <div>
-                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-link text-indigo-400 mr-1.5"></i> Link da Imagem</label>
-                                              <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElementoManual('src', e.target.value)} className="w-full text-xs p-2.5 border rounded-lg bg-slate-50 outline-none font-mono mb-2" />
-                                              <div className="flex gap-2">
-                                                  <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 shadow-sm"><i className="fas fa-wand-magic-sparkles mr-1"></i> Buscar IA</button>
-                                                  <label className="flex-1 bg-white text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 text-center cursor-pointer shadow-sm"><i className="fas fa-upload mr-1"></i> Upload PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadImgElem} /></label>
-                                              </div>
-                                          </div>
-                                          <div className="grid grid-cols-2 gap-3 pt-2">
-                                              <div>
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2">Formato</label>
-                                                  <select onChange={(e) => atualizarElementoManual('imgFormat', e.target.value)} className="input-style bg-slate-50 p-2 text-[10px]">
-                                                      <option value="">Livre (Original)</option>
-                                                      <option value="aspect-video">Horizontal (16:9)</option>
-                                                      <option value="aspect-[3/4]">Vertical (Retrato)</option>
-                                                      <option value="aspect-square">Quadrado (1:1)</option>
-                                                  </select>
-                                              </div>
-                                              <div>
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2">Cantos</label>
-                                                  <select onChange={(e) => atualizarElementoManual('imgRounded', e.target.value)} className="input-style bg-slate-50 p-2 text-[10px]">
-                                                      <option value="rounded-none">Retos</option>
-                                                      <option value="rounded-md">Suaves</option>
-                                                      <option value="rounded-xl">Arredondados</option>
-                                                      <option value="rounded-full">Círculo</option>
-                                                  </select>
-                                              </div>
-                                          </div>
-                                          <div className="pt-2 bg-slate-50 p-2.5 rounded-lg border">
-                                              <label className="flex items-center gap-2 cursor-pointer mb-2">
-                                                  <input type="checkbox" onChange={(e) => atualizarElementoManual('imgBorder', e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                  <span className="text-[10px] font-bold text-slate-700 uppercase">Ativar Borda Espessa</span>
-                                              </label>
-                                              <div className="flex items-center justify-between">
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase">Cor da Borda</label>
-                                                  <input type="color" value={elementoSelecionado.borderColor || '#ffffff'} onChange={(e) => atualizarElementoManual('borderColor', e.target.value)} className="w-7 h-7 rounded cursor-pointer border p-0" />
-                                              </div>
-                                          </div>
-                                      </>
-                                  ) : (
-                                      <>
-                                          {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button') && (
-                                              <div className="mb-4 bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                                                  <label className="text-[10px] font-black text-emerald-700 uppercase mb-1.5 flex items-center"><i className="fas fa-link mr-1"></i> Link do Botão</label>
-                                                  <input type="text" placeholder="https://... ou #secao" value={elementoSelecionado.href} onChange={(e) => atualizarElementoManual('href', e.target.value)} className="w-full text-[10px] p-2 border rounded bg-white font-mono" />
-                                              </div>
-                                          )}
+                              </div>
 
+                              {/* PROPRIEDADES DE IMAGEM */}
+                              {elementoSelecionado.tagName === 'img' ? (
+                                  <>
+                                      <div className="panel-section">
+                                          <label className="input-label">Source URL (Origem)</label>
+                                          <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-2" />
+                                          <div className="flex gap-2">
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-magic mr-1"></i> Auto Generate</button>
+                                              <label className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-upload mr-1"></i> Upload Asset<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
+                                          </div>
+                                      </div>
+                                      <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
-                                              <div className="flex items-center justify-between mb-1.5">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Texto</label>
-                                                <div className="flex bg-slate-100 rounded border">
-                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-left')} className="p-1 px-2 hover:bg-slate-200 text-slate-600"><i className="fas fa-align-left text-[10px]"></i></button>
-                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-center')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 border-x"><i className="fas fa-align-center text-[10px]"></i></button>
-                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-right')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 border-r"><i className="fas fa-align-right text-[10px]"></i></button>
-                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-justify')} className="p-1 px-2 hover:bg-slate-200 text-slate-600"><i className="fas fa-align-justify text-[10px]"></i></button>
-                                                </div>
-                                              </div>
-                                              <textarea rows={3} value={elementoSelecionado.text} onChange={(e) => atualizarElementoManual('text', e.target.value)} className="w-full text-xs p-2.5 border rounded-lg bg-slate-50 resize-none shadow-inner"></textarea>
-                                          </div>
-                                          
-                                          <div className="grid grid-cols-2 gap-3">
-                                              <div className="bg-slate-50 p-2.5 rounded-lg border">
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex justify-between"><span>Tamanho</span><span className="text-indigo-600 font-bold">{elementoSelecionado.fontSize}px</span></label>
-                                                  <input type="range" min="10" max="100" value={elementoSelecionado.fontSize || 16} onChange={(e) => atualizarElementoManual('fontSize', parseInt(e.target.value))} className="w-full h-1.5 accent-indigo-600" />
-                                              </div>
-                                              <div className="bg-slate-50 p-2.5 rounded-lg border flex flex-col justify-between">
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase flex justify-between items-center"><span>Fundo</span><input type="color" value={elementoSelecionado.bgColor} onChange={(e) => atualizarElementoManual('bgColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer" /></label>
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase flex justify-between items-center pt-1 border-t"><span>Letra</span><input type="color" value={elementoSelecionado.textColor} onChange={(e) => atualizarElementoManual('textColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer" /></label>
-                                              </div>
-                                          </div>
-
-                                          <div className="bg-slate-50 p-3 rounded-lg border space-y-2">
-                                              <label className="text-[9px] font-bold text-slate-500 uppercase flex items-center"><i className="fas fa-image text-indigo-400 mr-1"></i> Imagem de Fundo (Background)</label>
-                                              <input type="text" placeholder="https://..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElementoManual('bgImage', e.target.value)} className="w-full text-[10px] p-2 border rounded bg-white outline-none font-mono" />
-                                              <div className="flex gap-2 pt-1">
-                                                  <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-white text-indigo-600 text-[9px] font-bold py-1.5 rounded border border-indigo-200 shadow-sm"><i className="fas fa-wand-magic-sparkles mr-1"></i> Buscar IA</button>
-                                                  <label className="flex-1 bg-white text-indigo-600 text-[9px] font-bold py-1.5 rounded border border-indigo-200 text-center cursor-pointer shadow-sm"><i className="fas fa-upload mr-1"></i> Upload PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadBgElem} /></label>
-                                              </div>
-                                          </div>
-
-                                          <div>
-                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5">Efeito Animado</label>
-                                              <select onChange={(e) => atualizarElementoManual('animationClass', e.target.value)} className="w-full text-[10px] p-2 border rounded-lg bg-slate-50 font-bold">
-                                                  <option value="">Nenhum</option>
-                                                  <option value="animate-pulse">Pulsar Suavemente</option>
-                                                  <option value="animate-bounce">Pular Continuamente</option>
-                                                  <option value="hover:scale-110 transition-transform duration-300">Zoom ao Passar o Mouse</option>
+                                              <label className="input-label">Aspect Ratio</label>
+                                              <select onChange={(e) => atualizarElemento('imgFormat', e.target.value)} className="input-standard">
+                                                  <option value="">Livre / Auto</option>
+                                                  <option value="aspect-video">16:9 (Landscape)</option>
+                                                  <option value="aspect-[3/4]">3:4 (Portrait)</option>
+                                                  <option value="aspect-square">1:1 (Square)</option>
                                               </select>
                                           </div>
-
                                           <div>
-                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5">Tailwind Custom (Degradê)</label>
-                                              <input type="text" placeholder="Ex: bg-gradient-to-r from-blue-500 to-purple-500" value={elementoSelecionado.customClasses} onChange={(e) => atualizarElementoManual('customClasses', e.target.value)} className="w-full text-[10px] p-2 border rounded-lg bg-slate-800 text-emerald-400 font-mono" />
+                                              <label className="input-label">Border Radius</label>
+                                              <select onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
+                                                  <option value="rounded-none">0px (Sharp)</option>
+                                                  <option value="rounded-md">6px (Soft)</option>
+                                                  <option value="rounded-xl">12px (Smooth)</option>
+                                                  <option value="rounded-full">100% (Circle)</option>
+                                              </select>
                                           </div>
-                                      </>
-                                  )}
-
-                                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mt-4">
-                                      <label className="text-[10px] font-black text-indigo-800 uppercase mb-2 flex items-center gap-1"><i className="fas fa-robot text-indigo-600"></i> Groq Copywriter IA</label>
-                                      {elementoSelecionado.tagName !== 'img' && (
-                                          <div className="grid grid-cols-2 gap-2 mb-2">
-                                              <button onClick={() => refinarElementoComIA("Reescreva com copy persuasiva de conversão")} className="bg-white border text-indigo-700 text-[9px] font-bold py-1.5 rounded"><i className="fas fa-sync-alt mr-1"></i> Melhorar</button>
-                                              <button onClick={() => refinarElementoComIA("Reescreva com forte urgência e escassez")} className="bg-white border text-indigo-700 text-[9px] font-bold py-1.5 rounded"><i className="fas fa-fire mr-1 text-orange-500"></i> Urgência</button>
+                                      </div>
+                                      <div className="panel-section flex justify-between items-center">
+                                          <label className="flex items-center gap-2 cursor-pointer">
+                                              <input type="checkbox" onChange={(e) => atualizarElemento('imgBorder', e.target.checked)} className="w-3.5 h-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
+                                              <span className="text-xs font-semibold text-zinc-700">Ativar Traçado (Stroke)</span>
+                                          </label>
+                                          <input type="color" value={elementoSelecionado.borderColor || '#000000'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer border border-zinc-200 p-0" />
+                                      </div>
+                                  </>
+                              ) : (
+                                  <>
+                                      {/* PROPRIEDADES DE TEXTOS / BOTÕES / CONTAINERS */}
+                                      {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button') && (
+                                          <div className="panel-section bg-blue-50/30">
+                                              <label className="input-label text-blue-700">Link Destino (HREF)</label>
+                                              <input type="text" placeholder="/url ou #ancora" value={elementoSelecionado.href} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard font-mono border-blue-200 focus:border-blue-500" />
                                           </div>
                                       )}
-                                      <div className="flex gap-2">
-                                          <input type="text" id="ai_prompt_element" placeholder="Comando livre para o Groq..." className="input-style flex-1 bg-white text-[10px]" />
-                                          <button onClick={() => refinarElementoComIA()} className="bg-indigo-600 text-white w-9 rounded-lg flex items-center justify-center"><i className="fas fa-paper-plane"></i></button>
+
+                                      <div className="panel-section">
+                                          <div className="flex justify-between items-end mb-2">
+                                              <label className="input-label mb-0">Conteúdo do Nó</label>
+                                              <div className="flex bg-zinc-100 rounded border border-zinc-200 p-0.5">
+                                                  <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-6 h-5 flex items-center justify-center hover:bg-white rounded text-zinc-500"><i className="fas fa-align-left text-[9px]"></i></button>
+                                                  <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-6 h-5 flex items-center justify-center hover:bg-white rounded text-zinc-500"><i className="fas fa-align-center text-[9px]"></i></button>
+                                                  <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-6 h-5 flex items-center justify-center hover:bg-white rounded text-zinc-500"><i className="fas fa-align-right text-[9px]"></i></button>
+                                              </div>
+                                          </div>
+                                          <textarea rows={3} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value)} className="input-standard resize-y"></textarea>
                                       </div>
+                                      
+                                      <div className="panel-section grid grid-cols-2 gap-4">
+                                          <div>
+                                              <label className="input-label flex justify-between">Typography <span>{elementoSelecionado.fontSize}px</span></label>
+                                              <input type="range" min="10" max="120" value={elementoSelecionado.fontSize || 16} onChange={(e) => atualizarElemento('fontSize', parseInt(e.target.value))} className="w-full h-1 bg-zinc-200 rounded appearance-none cursor-pointer accent-zinc-900 mt-2" />
+                                          </div>
+                                          <div className="flex flex-col gap-2">
+                                              <div className="flex justify-between items-center">
+                                                  <label className="text-[10px] font-semibold text-zinc-600">Fill (Fundo)</label>
+                                                  <input type="color" value={elementoSelecionado.bgColor || '#ffffff'} onChange={(e) => atualizarElemento('bgColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer border border-zinc-200 p-0" />
+                                              </div>
+                                              <div className="flex justify-between items-center">
+                                                  <label className="text-[10px] font-semibold text-zinc-600">Color (Letra)</label>
+                                                  <input type="color" value={elementoSelecionado.textColor || '#000000'} onChange={(e) => atualizarElemento('textColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer border border-zinc-200 p-0" />
+                                              </div>
+                                          </div>
+                                      </div>
+
+                                      <div className="panel-section">
+                                          <label className="input-label">Background Image</label>
+                                          <div className="flex gap-2">
+                                              <input type="text" placeholder="URL direta" value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 font-mono" />
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="w-8 h-8 flex items-center justify-center bg-zinc-100 border border-zinc-200 rounded text-zinc-600 hover:bg-zinc-200 transition"><i className="fas fa-magic"></i></button>
+                                          </div>
+                                      </div>
+
+                                      <div className="panel-section grid grid-cols-2 gap-4">
+                                          <div className="col-span-2">
+                                              <label className="input-label">Transições e Hover</label>
+                                              <select onChange={(e) => atualizarElemento('animationClass', e.target.value)} className="input-standard">
+                                                  <option value="">Desativado</option>
+                                                  <option value="hover:scale-105 transition-transform duration-300">Scale +5% (Hover)</option>
+                                                  <option value="hover:-translate-y-2 transition-transform duration-300">Lift UP (Hover)</option>
+                                                  <option value="animate-pulse">Pulse (Atenção contínua)</option>
+                                              </select>
+                                          </div>
+                                          <div className="col-span-2">
+                                              <label className="input-label">Custom Classes (Tailwind)</label>
+                                              <input type="text" placeholder="ex: bg-gradient-to-r opacity-90" value={elementoSelecionado.customClasses} onChange={(e) => atualizarElemento('customClasses', e.target.value)} className="input-standard font-mono text-[10px]" />
+                                          </div>
+                                      </div>
+                                  </>
+                              )}
+
+                              {/* O MOTOR DE INFERÊNCIA SEMÂNTICA (IA) */}
+                              <div className="m-4 bg-zinc-900 rounded-lg p-4 shadow-md text-white">
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-300 mb-3 flex items-center"><i className="fas fa-bolt mr-2 text-yellow-400"></i> Otimização Semântica IA</label>
+                                  
+                                  {elementoSelecionado.tagName !== 'img' && (
+                                      <div className="grid grid-cols-2 gap-2 mb-3">
+                                          <button onClick={() => otimizarComIA("Reescreva com copy persuasiva de alta conversão B2B, tom profissional e conciso")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Copy Persuasiva</button>
+                                          <button onClick={() => otimizarComIA("Reescreva gerando forte urgência, escassez e call to action incisivo")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Gerar Urgência</button>
+                                      </div>
+                                  )}
+                                  <div className="flex gap-2 relative">
+                                      <input type="text" id="ai_prompt_element" placeholder="Prompt livre..." className="w-full bg-zinc-800 border border-zinc-700 text-white text-[11px] rounded-md px-3 py-2 outline-none focus:border-zinc-500 placeholder-zinc-500" />
+                                      <button onClick={() => otimizarComIA()} className="absolute right-1 top-1 bottom-1 w-8 bg-zinc-700 hover:bg-zinc-600 rounded flex items-center justify-center transition"><i className="fas fa-arrow-right text-xs"></i></button>
                                   </div>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              ) : (
+                  
+                  /* SE O INSPETOR ESTIVER DESATIVADO, MOSTRA O PAINEL DE GERAÇÃO (O BUILDER MESTRE) */
+                  <div className="animate-[fadeIn_0.2s_ease] pb-10">
+                      
+                      {/* TABS DE MODO DE CRIAÇÃO */}
+                      <div className="flex p-2 bg-zinc-100/50 border-b border-zinc-200">
+                          <button onClick={() => setAbaAtiva('visual')} className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${abaAtiva === 'visual' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>Design Visual</button>
+                          <button onClick={() => setAbaAtiva('copy')} className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${abaAtiva === 'copy' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>Briefing (Texto)</button>
+                      </div>
+
+                      <div className="p-4 space-y-5">
+                          {/* SESSÃO 1: DIRETRIZES GLOBAIS */}
+                          <div>
+                              <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mr-2"></span>1. Diretrizes Globais</h3>
+                              <div className="space-y-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg">
+                                  <div>
+                                      <label htmlFor="nichoEstilo" className="input-label">Tema Base UI</label>
+                                      <select id="nichoEstilo" className="input-standard">
+                                          <option value="minimalista">Minimalista (Clean / Moderno)</option>
+                                          <option value="premium">Premium (Elegante / B2B)</option>
+                                          <option value="agressivo">Agressivo (Lançamentos / Dark)</option>
+                                          <option value="corporativo">Corporativo (Institucional)</option>
+                                          <option value="terapia">Acolhedor (Saúde / Terapia)</option>
+                                      </select>
+                                  </div>
+                                  <div>
+                                      <label htmlFor="paletaCores" className="input-label">Design System (Cores)</label>
+                                      <select id="paletaCores" value={corSelecionada} onChange={(e) => setCorSelecionada(e.target.value)} className="input-standard">
+                                          <option value="auto">Inferir Fielmente da Referência (Auto)</option>
+                                          <option value="dark">Dark Mode (Preto & High Contrast)</option>
+                                          <option value="azul">Corporate Blue (Confiança/Tech)</option>
+                                          <option value="verde">Emerald Green (Finanças/Saúde)</option>
+                                          <option value="cinza">Zinc / Monocromático</option>
+                                          <option value="personalizada">Definir Cores Customizadas...</option>
+                                      </select>
+                                      {corSelecionada === 'personalizada' && (
+                                          <div className="flex gap-3 mt-3 p-3 bg-white rounded border border-zinc-200">
+                                              <div className="flex-1"><label className="input-label">Background</label><input type="color" id="corFundo" className="w-full h-8 rounded cursor-pointer p-0 border border-zinc-200" defaultValue="#ffffff" /></div>
+                                              <div className="flex-1"><label className="input-label">Accent / Call-to-action</label><input type="color" id="corPrimaria" className="w-full h-8 rounded cursor-pointer p-0 border border-zinc-200" defaultValue="#09090b" /></div>
+                                          </div>
+                                      )}
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* SESSÃO 2: ESTRUTURA */}
+                          <div>
+                              <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mr-2"></span>2. Estrutura Base</h3>
+                              <div className="space-y-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg">
+                                  <div>
+                                      <label htmlFor="heroLayout" className="input-label">Hero Section (Primeira Dobra)</label>
+                                      <select id="heroLayout" className="input-standard">
+                                          <option value="auto">Inteligente (Análise da Imagem)</option>
+                                          <option value="center">Centralizado (Foco em Copy)</option>
+                                          <option value="split">Split Layout (Copy Left, Asset Right)</option>
+                                      </select>
+                                  </div>
+                                  <label className="flex items-center gap-2 cursor-pointer mt-1">
+                                      <input type="checkbox" id="checkComMenu" defaultChecked={true} className="w-3.5 h-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
+                                      <span className="text-xs font-semibold text-zinc-700">Incluir Navigation Bar Fixa</span>
+                                  </label>
+                              </div>
+                          </div>
+
+                          {/* SESSÃO 3: O MOTOR DE GERAÇÃO */}
+                          {abaAtiva === 'visual' ? (
+                              <div>
+                                  <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>3. Input Visual (Clonagem)</h3>
+                                  <div className="bg-white border-2 border-dashed border-zinc-200 hover:border-blue-400 hover:bg-blue-50/20 transition-colors rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer" onClick={() => document.getElementById('imageUploadInput')?.click()}>
+                                      <i className="fas fa-image text-2xl text-zinc-300 mb-2"></i>
+                                      <p className="text-xs font-bold text-zinc-700">Forneça o Asset Visual</p>
+                                      <p className="text-[10px] font-medium text-zinc-400 mt-1">Arraste ou Ctrl+V para injetar.</p>
+                                  </div>
+                                  <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
+                                  
+                                  {uploadedImages.length > 0 && (
+                                      <div className="flex gap-2 mt-3 overflow-x-auto pb-2 custom-scrollbar">
+                                          {uploadedImages.map((imgObj, idx) => (
+                                              <div key={idx} className="relative w-16 h-12 flex-shrink-0 rounded-md overflow-hidden border border-zinc-200 group">
+                                                  <img src={`data:${imgObj.mimeType};base64,${imgObj.data}`} className="w-full h-full object-cover" />
+                                                  <button className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-xs" onClick={(e) => { e.stopPropagation(); removerImagem(idx); }}><i className="fas fa-trash"></i></button>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  )}
+                                  
+                                  <button onClick={executarGeracaoSiteVisual} className="w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 rounded-lg transition-colors text-xs flex items-center justify-center gap-2">
+                                      <i className="fas fa-code"></i> Gerar Interface HTML
+                                  </button>
+                              </div>
+                          ) : (
+                              <div>
+                                  <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-2"></span>3. Input Textual (Briefing)</h3>
+                                  <textarea id="productContent" className="input-standard h-32 resize-none leading-relaxed" placeholder="Descreva o objetivo da Landing Page, público-alvo e principais benefícios que o motor deve estruturar..."></textarea>
+                                  
+                                  <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 rounded-lg transition-colors text-xs flex items-center justify-center gap-2">
+                                      <i className="fas fa-code"></i> Construir do Zero
+                                  </button>
                               </div>
                           )}
                       </div>
-                  ) : (
-                      <div className="space-y-4">
-                          <details className="group bg-white border rounded-xl shadow-sm overflow-hidden" open>
-                              <summary className="font-black text-xs text-slate-700 uppercase cursor-pointer px-4 py-3 flex justify-between bg-slate-50">
-                                  <span><i className="fas fa-paint-roller text-blue-500 mr-2"></i> 1. Estilo & Cores</span>
-                                  <i className="fas fa-chevron-down text-slate-400"></i>
-                              </summary>
-                              <div className="p-4 space-y-3">
-                                  <div>
-                                      <label htmlFor="nichoEstilo" className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Estilo Visual:</label>
-                                      <select id="nichoEstilo" className="input-style bg-slate-50">
-                                          <option value="nenhum">Padrão Limpo</option>
-                                          <option value="minimalista">Minimalista (Apple)</option>
-                                          <option value="premium">Infoproduto Premium</option>
-                                          <option value="agressivo">Lançamento / Dark Mode</option>
-                                          <option value="feminino">Nicho Feminino / Luxo</option>
-                                          <option value="consultor">Mentor / Consultor</option>
-                                          <option value="terapia">Saúde / Terapia</option>
-                                          <option value="corporativo">Corporativo B2B</option>
-                                      </select>
-                                  </div>
-                                  <div>
-                                      <label htmlFor="paletaCores" className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Paleta de Cores:</label>
-                                      <select id="paletaCores" value={corSelecionada} onChange={(e) => setCorSelecionada(e.target.value)} className="input-style bg-slate-50">
-                                          <option value="auto">Extrair Cores da Imagem (Clone)</option>
-                                          <option value="dark">Dark Mode Total</option>
-                                          <option value="azul">Azul Profundo</option>
-                                          <option value="verde">Verde Esmeralda</option>
-                                          <option value="terracota">Terracota & Nude</option>
-                                          <option value="roxo">Roxo Real</option>
-                                          <option value="vermelho">Vermelho Rubi</option>
-                                          <option value="personalizada">Personalizada Manual...</option>
-                                      </select>
-                                      {corSelecionada === 'personalizada' && (
-                                          <div className="flex gap-3 mt-2 p-3 bg-indigo-50 rounded-lg border">
-                                              <div className="flex-1"><label className="text-[9px] block font-bold">Fundo</label><input type="color" id="corFundo" className="w-full h-7 rounded border p-0 cursor-pointer" defaultValue="#ffffff" /></div>
-                                              <div className="flex-1"><label className="text-[9px] block font-bold">Destaque</label><input type="color" id="corPrimaria" className="w-full h-7 rounded border p-0 cursor-pointer" defaultValue="#2563eb" /></div>
-                                          </div>
-                                      )}
-                                  </div>
-                              </div>
-                          </details>
-
-                          <details className="group bg-white border rounded-xl shadow-sm overflow-hidden">
-                              <summary className="font-black text-xs text-slate-700 uppercase cursor-pointer px-4 py-3 flex justify-between bg-slate-50">
-                                  <span><i className="fas fa-cubes text-emerald-500 mr-2"></i> 2. Estrutura & Efeitos</span>
-                                  <i className="fas fa-chevron-down text-slate-400"></i>
-                              </summary>
-                              <div className="p-4 space-y-3">
-                                  <div>
-                                      <label htmlFor="heroLayout" className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Formato do Topo (Hero):</label>
-                                      <select id="heroLayout" className="input-style bg-slate-50">
-                                          <option value="auto">Automático / Seguir Imagem</option>
-                                          <option value="center">Centralizado</option>
-                                          <option value="split">Dividido (Texto e Imagem)</option>
-                                      </select>
-                                  </div>
-                                  <div>
-                                      <label htmlFor="dinamicaSite" className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Animação:</label>
-                                      <select id="dinamicaSite" className="input-style bg-slate-50">
-                                          <option value="estatico">Estático (Rápido)</option>
-                                          <option value="suave">Suave (Scroll)</option>
-                                          <option value="impacto">Máximo Impacto (3D)</option>
-                                      </select>
-                                  </div>
-                                  <div className="flex items-center gap-3 pt-2">
-                                      <input type="checkbox" id="checkComMenu" className="w-4 h-4 text-emerald-600 rounded cursor-pointer" />
-                                      <label htmlFor="checkComMenu" className="text-xs font-bold text-slate-700 cursor-pointer">Criar Menu Superior Fixo</label>
-                                  </div>
-                              </div>
-                          </details>
-
-                          <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-sm mt-4">
-                              <h3 className="font-black text-xs text-blue-800 uppercase mb-3 flex items-center"><i className="fas fa-crop-alt mr-2"></i>Clonar Site por Imagem (Gemini)</h3>
-                              <div className="drop-zone py-6 border-dashed border-2 border-blue-200 bg-blue-50/30 rounded-xl flex flex-col items-center justify-center gap-2" onClick={() => document.getElementById('imageUploadInput')?.click()}>
-                                  <i className="fas fa-cloud-upload-alt text-2xl text-blue-400"></i>
-                                  <p className="text-xs font-bold text-slate-600 uppercase">Cole a Foto Aqui <span className="text-[9px] block text-slate-400">(Ctrl+V ou Clique)</span></p>
-                              </div>
-                              <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
-                              {uploadedImages.length > 0 && (
-                                <div className="grid grid-cols-4 gap-2 mt-3">
-                                  {uploadedImages.map((imgObj, idx) => (
-                                    <div key={idx} className="relative h-14 rounded-lg overflow-hidden border">
-                                      <img src={`data:${imgObj.mimeType};base64,${imgObj.data}`} className="w-full h-full object-cover" />
-                                      <button className="absolute top-1 right-1 bg-red-500 text-white w-4 h-4 rounded-full text-[8px]" onClick={() => removerImagem(idx)}><i className="fas fa-times"></i></button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              <button onClick={() => (window as any).executarGeracaoSite(uploadedImages)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-md mt-4 text-xs uppercase tracking-wide">
-                                  <i className="fas fa-bolt text-yellow-300 mr-1.5"></i> Construir Site (Gemini)
-                              </button>
-                          </div>
-                      </div>
-                  )}
-              </div>
-
-              <div id="containerModoCopy" style={{ display: 'none' }} className="flex-1 flex flex-col">
-                  <div className="bg-white border rounded-xl p-4 flex-1 flex flex-col shadow-sm">
-                      <label className="text-xs font-black text-slate-700 uppercase mb-2 flex items-center"><i className="fas fa-keyboard text-indigo-500 mr-2"></i>Gerar Site via Texto (Gemini)</label>
-                      <textarea id="productContent" className="w-full border rounded-xl resize-none flex-1 mb-3 bg-slate-50 text-xs p-3 outline-none" placeholder="Descreva o site que você quer criar..."></textarea>
-                      <button onClick={() => (window as any).gerarSiteComCopy()} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase py-3 rounded-xl text-xs">
-                          <i className="fas fa-pen-nib mr-1.5"></i> Criar Site Completo (Gemini)
-                      </button>
                   </div>
-              </div>
+              )}
           </div>
       </div>
 
-      <div className="flex-grow flex flex-col bg-slate-200 relative">
-          <div className="bg-white border-b flex justify-between items-center px-6 h-16 shadow-sm z-10">
-              <div className="flex h-full items-center gap-5">
-                  <div className="flex bg-slate-100 rounded-lg p-1 border h-10">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 rounded font-black text-xs bg-white text-blue-600 shadow-sm border flex items-center">Visualização</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 rounded font-bold text-xs text-slate-500 flex items-center">Código Fonte</button>
+      {/* ÁREA PRINCIPAL DA DIREITA (PREVIEW / CÓDIGO) */}
+      <div className="flex-grow flex flex-col bg-zinc-100 relative min-w-0">
+          
+          {/* HEADER DO WORKSPACE */}
+          <div className="bg-white border-b border-zinc-200 flex justify-between items-center px-4 md:px-6 h-14 shadow-sm z-10">
+              <div className="flex items-center gap-3">
+                  <div className="flex bg-zinc-100 p-0.5 rounded-md border border-zinc-200">
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-4 py-1.5 rounded-md font-semibold text-[11px] bg-white text-zinc-900 shadow-sm transition">Preview</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-4 py-1.5 rounded-md font-medium text-[11px] text-zinc-500 hover:text-zinc-900 transition">Markup</button>
                   </div>
-                  <button onClick={desfazerCodigo} className="bg-white text-slate-600 text-xs font-bold py-2 px-3 rounded-lg border shadow-sm"><i className="fas fa-undo mr-1"></i> Desfazer</button>
-                  <div className="flex items-center border border-indigo-200 bg-indigo-50 rounded-lg px-3 py-1.5 shadow-sm">
-                      <i className="fas fa-brain text-indigo-600 mr-2"></i>
-                      <span className="text-[10px] font-black text-indigo-900 uppercase">Motor Principal: Google Gemini</span>
-                  </div>
+                  <div className="w-px h-4 bg-zinc-200 mx-1 hidden md:block"></div>
+                  <button onClick={desfazerCodigo} className="hidden md:flex items-center gap-1.5 text-zinc-500 hover:text-zinc-900 text-[11px] font-semibold transition"><i className="fas fa-undo"></i> Undo</button>
               </div>
 
               <div className="flex items-center gap-3">
-                  <button onClick={carregarMeusSites} className="bg-slate-800 text-white text-[11px] font-bold py-2.5 px-4 rounded-lg"><i className="fas fa-th-large mr-1.5"></i> Meus Projetos</button>
+                  <button onClick={carregarMeusSites} className="text-zinc-600 hover:text-zinc-900 font-semibold text-[11px] px-3 py-1.5 transition">Projects</button>
+                  <div className="w-px h-4 bg-zinc-200"></div>
+                  <button onClick={() => (window as any).baixarHtmlGerado()} className="text-zinc-600 hover:text-zinc-900 text-[11px] px-2 py-1.5 transition" title="Export HTML"><i className="fas fa-download"></i></button>
+                  <button onClick={() => (window as any).copiarCodigo()} className="text-zinc-600 hover:text-zinc-900 text-[11px] px-2 py-1.5 transition mr-2" title="Copy Markup"><i className="fas fa-copy"></i></button>
+                  
                   {siteEditando ? (
-                      <>
-                          <button onClick={() => setSiteEditando(null)} className="bg-slate-200 text-slate-700 text-[11px] font-bold py-2.5 px-3 rounded-lg">Cancelar</button>
-                          <button onClick={() => (window as any).handlePublicarSite()} className="bg-blue-600 text-white text-[11px] font-bold py-2.5 px-4 rounded-lg"><i className="fas fa-save mr-1"></i> Salvar</button>
-                      </>
+                      <div className="flex gap-2">
+                          <button onClick={() => setSiteEditando(null)} className="px-4 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-[11px] rounded-md transition">Cancel</button>
+                          <button onClick={() => (window as any).handlePublicarSite()} className="px-4 py-1.5 bg-zinc-900 hover:bg-black text-white font-bold text-[11px] rounded-md transition">Update Deploy</button>
+                      </div>
                   ) : (
-                      <button onClick={() => (window as any).handlePublicarSite()} className="bg-emerald-600 text-white text-[11px] font-bold py-2.5 px-4 rounded-lg shadow-sm uppercase"><i className="fas fa-globe mr-1.5"></i> Publicar</button>
+                      <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-1.5 bg-zinc-900 hover:bg-black text-white font-bold text-[11px] rounded-md shadow-sm transition">Publish</button>
                   )}
-                  <button onClick={() => (window as any).baixarHtmlGerado()} className="bg-white text-blue-600 border border-blue-200 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm"><i className="fas fa-download mr-1"></i> Baixar</button>
               </div>
           </div>
           
-          <div className="flex-grow relative bg-slate-800">
-              {modoEdicaoVisual && (
-                  <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400">
-                      <i className="fas fa-magic text-yellow-300"></i> Clique num elemento do site para editá-lo!
+          {/* O CANVAS (ONDE O SITE FICA) */}
+          <div className="flex-grow relative bg-zinc-100 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center">
+              {modoInspetor && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 text-white px-6 py-2 rounded-full shadow-lg font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 border border-zinc-700 animate-pulse pointer-events-none">
+                      <i className="fas fa-crosshairs text-blue-400"></i> Selecione um nó no Canvas para Inspecionar
                   </div>
               )}
-              <iframe id="previewFrame" className="w-full h-full active border-none bg-white shadow-inner" sandbox="allow-scripts allow-same-origin" title="Preview"></iframe>
-              <div id="codigoContainer" className="w-full h-full bg-[#0d1117] p-6">
-                  <textarea id="codigoGerado" className="w-full h-full font-mono text-sm bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar rounded-xl p-4"></textarea>
+              
+              {/* O Container simula uma tela de navegador/viewport */}
+              <div className={`w-full h-full max-w-[1440px] bg-white mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-300 ${modoInspetor ? 'ring-4 ring-blue-500/20 rounded-lg' : 'rounded-none md:rounded-xl border border-zinc-200'}`}>
+                  {modoInspetor && (
+                      <div className="h-6 w-full bg-zinc-100 border-b border-zinc-200 flex items-center px-4 gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                          <div className="mx-auto bg-white border border-zinc-200 text-[9px] text-zinc-400 px-12 py-0.5 rounded font-mono">Viewport: Desktop 1440px</div>
+                      </div>
+                  )}
+                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Preview Canvas"></iframe>
+                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
+                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-6 leading-relaxed"></textarea>
+                  </div>
               </div>
           </div>
       </div>
       
+      {/* MODAL DE PROJETOS (DEPLOY MANAGER) */}
       {modalMeusSitesAberto && (
-        <div className="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-5 border-b flex justify-between items-center bg-slate-50">
-              <h2 className="text-xl font-black text-slate-800"><i className="fas fa-server text-blue-500 mr-2"></i>Meus Projetos</h2>
-              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-200 font-bold">✕</button>
+        <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-zinc-200">
+            <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+              <h2 className="text-sm font-black text-zinc-800 uppercase tracking-wider flex items-center"><i className="fas fa-server text-zinc-400 mr-2"></i> Deploy Manager</h2>
+              <button onClick={() => setModalMeusSitesAberto(false)} className="w-7 h-7 rounded bg-white border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition"><i className="fas fa-times"></i></button>
             </div>
-            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-              {renderConteudoModal()}
+            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar bg-white">
+              {carregandoSites ? <p className="text-center text-sm font-medium text-zinc-400 py-12">Fetching deploys...</p> : listaSites.length === 0 ? <p className="text-center text-sm font-medium text-zinc-400 py-12">Nenhum projeto encontrado no servidor.</p> : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {sitesAtuais.map((site) => {
+                        const linkUrl = `${window.location.origin}/${site.slug}`;
+                        return (
+                          <div key={site.id} className="border border-zinc-200 rounded-lg p-4 hover:border-zinc-300 hover:shadow-md transition bg-white flex flex-col">
+                            <h3 className="font-bold text-sm text-zinc-900 mb-3 truncate">{site.titulo}</h3>
+                            <div className="flex bg-zinc-50 border border-zinc-200 rounded text-[10px] overflow-hidden mb-4">
+                                <span className="bg-zinc-100 text-zinc-400 px-2 py-1.5 border-r border-zinc-200 flex items-center"><i className="fas fa-link"></i></span>
+                                <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-1.5 outline-none font-mono text-zinc-600" />
+                            </div>
+                            <div className="flex justify-between items-center mt-auto pt-4 border-t border-zinc-100">
+                              <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-[10px] font-bold uppercase text-zinc-500 hover:text-zinc-900 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Visit</a>
+                              <div className="flex gap-2">
+                                <button onClick={() => editarSite(site)} className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-[10px] font-bold rounded transition">Open in Editor</button>
+                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-3 py-1.5 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded transition"><i className="fas fa-trash"></i></button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalPaginas > 1 && (
+                      <div className="flex justify-center items-center gap-4 mt-8 pt-6 border-t border-zinc-100">
+                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-600 text-xs font-bold rounded disabled:opacity-50 hover:bg-zinc-50 transition"><i className="fas fa-chevron-left"></i></button>
+                        <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">Page {paginaAtual} of {totalPaginas}</span>
+                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-600 text-xs font-bold rounded disabled:opacity-50 hover:bg-zinc-50 transition"><i className="fas fa-chevron-right"></i></button>
+                      </div>
+                    )}
+                  </>
+              )}
             </div>
           </div>
         </div>
