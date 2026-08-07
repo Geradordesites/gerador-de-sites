@@ -22,10 +22,7 @@ export async function POST(req: Request) {
     if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags principais.";
     else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO usar data-aos=\"fade-up\". Use Glassmorphism e hover:scale-105 nos botões.";
 
-    let regrasObrigatorias = "";
-    
-    if (!isBlockRefinement && !isElementRefinement) {
-        regrasObrigatorias = `
+    const regrasObrigatorias = `
 === REGRA DE OURO: ALTA PERFORMANCE E FIDELIDADE ===
 1. Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ALERTA CRÍTICO: O valor DEVE CONTER O SITE INTEIRO (do <!DOCTYPE html> até o </html>). É PROIBIDO cortar ou resumir com "<!-- resto do código -->".
@@ -35,7 +32,7 @@ export async function POST(req: Request) {
 3. ARQUITETURA DE BLOCOS: Em TODOS os textos, mantenha espaço exato de UMA LINHA entre títulos (h2, h3) e parágrafos (p). Use 'mb-4' ou 'mb-6' no Tailwind.
 
 4. IMAGENS: Use as classes "w-full mx-auto h-auto object-cover rounded-xl shadow-lg".
-src: [https://images.unsplash.com/random/1200x800/?keyword](https://images.unsplash.com/random/1200x800/?keyword) (humanos reais).
+src: https://images.unsplash.com/random/1200x800/?keyword (humanos reais).
 ${regraImagens}
 ${instrucaoDinamica}
 
@@ -70,28 +67,21 @@ ${instrucaoDinamica}
     </script>
 </footer>
 `;
-    } else {
-        regrasObrigatorias = `
-=== REGRA DE OURO DA MICRO-EDIÇÃO E COPYWRITING ===
-Você DEVE retornar EXCLUSIVAMENTE um objeto JSON com o formato: { "codigo_html": "<seu html modificado>" }
-🚨 ATENÇÃO MÁXIMA: 
-1. Devolva APENAS o HTML do elemento modificado dentro do JSON. Não inclua markdown na resposta.
-2. CRIATIVIDADE DE COPY: Você é um Copywriter de Elite. Se o usuário pedir para reescrever, melhorar ou gerar texto, você DEVE SEMPRE criar uma versão NOVA, com vocabulário diferente, mais agressivo ou persuasivo. NUNCA repita o texto exato.
-3. É PROIBIDO descrever o que está fazendo (Ex: Nunca diga "Aqui está o texto" ou "Refazendo..."). Entregue apenas o HTML pronto.
-        `;
-    }
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     let htmlCode = '';
     let provedorTextoUsado = '';
 
-    // Temperatura em 0.4 para garantir variação nas respostas da IA, sem quebrar o código
-    const engineTemperature = isElementRefinement ? 0.4 : 0.1;
+    // ROTEAMENTO INTELIGENTE DE MOTORES:
+    // Se for gerador/clonador de site inteiro -> Usa GEMINI (Mestre em código estruturado)
+    // Se for micro-edição de texto/elemento -> Usa GROQ (Mestre em copywriting rápido)
+    const usarGroqParaTexto = isElementRefinement && !temImagem;
 
-    if (temImagem) {
-        provedorTextoUsado = 'Google Gemini (Visão)';
-        const rotasGemini = [{ key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Gemini" }].filter(r => r.key);
-        if (rotasGemini.length === 0) throw new Error("API Gemini não configurada.");
+    if (!usarGroqParaTexto) {
+        // [MOTOR MESTRE] GOOGLE GEMINI PARA ESTRUTURA DE SITES
+        provedorTextoUsado = 'Google Gemini';
+        const rotasGemini = [{ key: process.env.GEMINI_API_KEY, model: "gemini-2.5-flash", nome: "Google Gemini" }].filter(r => r.key);
+        if (rotasGemini.length === 0) throw new Error("Chave API do Google Gemini não configurada.");
 
         let sucessoGemini = false;
         let erroFinal = "";
@@ -100,48 +90,56 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON com o formato: { "codigo_html"
             try {
                 const genAI = new GoogleGenerativeAI(rota.key!);
                 const model = genAI.getGenerativeModel({ model: rota.model, systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] } });
-                
-                // Removido o responseMimeType que causava o erro "Cannot coerce..." no Google
                 const result = await model.generateContent({ 
                     contents: [{ role: "user", parts: promptParts }], 
-                    generationConfig: { temperature: engineTemperature } 
+                    generationConfig: { temperature: 0.2 } 
                 });
-                
                 htmlCode = extrairHtmlDeJson(result.response.text());
                 if (htmlCode) { sucessoGemini = true; provedorTextoUsado = rota.nome; break; }
             } catch (err: any) { erroFinal = err.message; }
         }
-        if (!sucessoGemini) throw new Error(erroFinal.includes('429') ? "RATE_LIMIT_EXCEEDED" : `Falha Gemini: ${erroFinal}`);
+        if (!sucessoGemini) throw new Error(erroFinal.includes('429') ? "RATE_LIMIT_EXCEEDED" : `Falha no Gemini: ${erroFinal}`);
 
     } else {
-        provedorTextoUsado = 'Groq Engine (LLaMA 3)';
-        if (!process.env.GROQ_API_KEY) throw new Error("Chave do GROQ não configurada.");
+        // [MOTOR DE APOIO] GROQ EXCLUSIVO PARA TEXTOS / COPYWRITING
+        provedorTextoUsado = 'Groq Engine (Copy)';
+        if (!process.env.GROQ_API_KEY) throw new Error("Chave do GROQ (GROQ_API_KEY) não configurada.");
 
-        const groqResponse = await fetch("[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)", {
-            method: "POST", headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST", 
+            headers: { 
+                "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, 
+                "Content-Type": "application/json" 
+            },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [ { role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt } ],
-                response_format: { type: "json_object" }, // O Groq aceita isso muito bem
-                max_tokens: (isBlockRefinement || isElementRefinement) ? 2000 : 8000, 
-                temperature: engineTemperature
+                messages: [ 
+                    { role: "system", content: systemInstructionFinal }, 
+                    { role: "user", content: textoDoPrompt } 
+                ],
+                response_format: { type: "json_object" },
+                max_tokens: 2000, 
+                temperature: 0.7
             })
         });
 
-        if (!groqResponse.ok) { const errData = await groqResponse.json(); throw new Error(`Falha Groq: ${errData.error?.message}`); }
+        if (!groqResponse.ok) { 
+            const errData = await groqResponse.json(); 
+            throw new Error(`Falha no Groq: ${errData.error?.message || 'Erro desconhecido'}`); 
+        }
+        
         const groqData = await groqResponse.json();
         htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
-        if (!htmlCode) throw new Error("Falha ao retornar HTML. Tente novamente.");
+        if (!htmlCode) throw new Error("O Groq não retornou um formato válido.");
     }
 
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement) {
-        const aosCss = '<link href="[https://unpkg.com/aos@2.3.1/dist/aos.css](https://unpkg.com/aos@2.3.1/dist/aos.css)" rel="stylesheet">';
-        const aosJs = '<script src="[https://unpkg.com/aos@2.3.1/dist/aos.js](https://unpkg.com/aos@2.3.1/dist/aos.js)"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
+        const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
+        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
         if (htmlCode.includes('</head>')) htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
         if (htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // FILTRO DE IMAGENS (Unsplash / Flickr)
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/(\d+x\d+)\/\?([^"&<>\s]+)/g;
     let match; const urlsToReplace = [];
@@ -155,7 +153,7 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON com o formato: { "codigo_html"
         let orient = item.dimensao === '800x1200' ? 'portrait' : 'landscape';
         if (process.env.UNSPLASH_API_KEY) {
           try {
-            const uRes = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){kw}&per_page=15&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+            const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kw}&per_page=15&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
             if (uRes.ok) {
               const uData = await uRes.json();
               if (uData.results?.length > 0) {
@@ -167,7 +165,7 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON com o formato: { "codigo_html"
         }
         if (!imagemEncontrada) {
           const w = item.dimensao === '800x1200' ? '800' : '1200', h = item.dimensao === '800x1200' ? '1200' : '800';
-          htmlCode = htmlCode.replace(item.fullMatch, `[https://loremflickr.com/$](https://loremflickr.com/$){w}/${h}/${kw}?lock=${Math.floor(Math.random() * 9999)}`);
+          htmlCode = htmlCode.replace(item.fullMatch, `https://loremflickr.com/${w}/${h}/${kw}?lock=${Math.floor(Math.random() * 9999)}`);
           flickrUsado = true;
         }
       }
@@ -181,17 +179,14 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON com o formato: { "codigo_html"
   }
 }
 
-// O EXTRATOR BLINDADO (Isso impede que \n\n ou erros de formatação sujem o painel)
 function extrairHtmlDeJson(responseText: string): string {
   let htmlCode = '';
   let cleanText = responseText.trim();
 
-  // Limpeza profunda de markdown
   if (cleanText.startsWith('```')) {
       cleanText = cleanText.replace(/^```(?:json|html)?\n/i, '').replace(/\n```$/i, '');
   }
 
-  // Tenta caçar apenas o bloco JSON caso a IA tenha falado algo antes ou depois
   const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
       cleanText = jsonMatch[0];
@@ -201,13 +196,11 @@ function extrairHtmlDeJson(responseText: string): string {
       const json = JSON.parse(cleanText); 
       htmlCode = json.codigo_html || json.html || Object.values(json)[0]; 
   } catch (e) { 
-      // Se ainda falhar, assume que a IA mandou o código puro e limpa formatações
       htmlCode = cleanText; 
   }
   
   if (typeof htmlCode !== 'string') htmlCode = JSON.stringify(htmlCode);
   
-  // A correção definitiva para o problema da Imagem 1 (Remove todos os escapes de quebra de linha textuais)
   htmlCode = htmlCode.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
   
   const doctypeIndex = htmlCode.toLowerCase().indexOf('<!doctype html>');
