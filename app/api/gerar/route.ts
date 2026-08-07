@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 3. ARQUITETURA DE BLOCOS: Em TODOS os textos, mantenha espaço exato de UMA LINHA entre títulos (h2, h3) e parágrafos (p). Use 'mb-4' ou 'mb-6' no Tailwind.
 
 4. IMAGENS: Use as classes "w-full mx-auto h-auto object-cover rounded-xl shadow-lg".
-src: https://images.unsplash.com/random/1200x800/?keyword (humanos reais).
+src: [https://images.unsplash.com/random/1200x800/?keyword](https://images.unsplash.com/random/1200x800/?keyword) (humanos reais).
 ${regraImagens}
 ${instrucaoDinamica}
 
@@ -72,10 +72,12 @@ ${instrucaoDinamica}
 `;
     } else {
         regrasObrigatorias = `
-=== REGRA DE OURO DA MICRO-EDIÇÃO ===
-Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 ATENÇÃO: Devolva APENAS o HTML do elemento modificado. 
-🚨 REGRA COPYWRITER: Se o usuário pedir para "refazer", "escrever" ou "melhorar" um texto, ESCREVA O TEXTO FINAL DIRETAMENTE. É ESTRITAMENTE PROIBIDO descrever o que está fazendo (Ex: NUNCA escreva "Aqui está o texto" ou "Refazendo o texto..."). Apenas entregue a copy final pronta.
+=== REGRA DE OURO DA MICRO-EDIÇÃO E COPYWRITING ===
+Você DEVE retornar EXCLUSIVAMENTE um objeto JSON com o formato: { "codigo_html": "<seu html modificado>" }
+🚨 ATENÇÃO MÁXIMA: 
+1. Devolva APENAS o HTML do elemento modificado dentro do JSON. Não inclua markdown na resposta.
+2. CRIATIVIDADE DE COPY: Você é um Copywriter de Elite. Se o usuário pedir para reescrever, melhorar ou gerar texto, você DEVE SEMPRE criar uma versão NOVA, com vocabulário diferente, mais agressivo ou persuasivo. NUNCA repita o texto exato.
+3. É PROIBIDO descrever o que está fazendo (Ex: Nunca diga "Aqui está o texto" ou "Refazendo..."). Entregue apenas o HTML pronto.
         `;
     }
 
@@ -83,8 +85,8 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
     let htmlCode = '';
     let provedorTextoUsado = '';
 
-    // A mágica: Temperatura 0.7 para Elementos (Criatividade Alta), e 0.1 para Sites Inteiros (Exatidão Alta)
-    const engineTemperature = isElementRefinement ? 0.7 : 0.1;
+    // Temperatura em 0.4 para garantir variação nas respostas da IA, sem quebrar o código
+    const engineTemperature = isElementRefinement ? 0.4 : 0.1;
 
     if (temImagem) {
         provedorTextoUsado = 'Google Gemini (Visão)';
@@ -98,10 +100,13 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
             try {
                 const genAI = new GoogleGenerativeAI(rota.key!);
                 const model = genAI.getGenerativeModel({ model: rota.model, systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] } });
+                
+                // Removido o responseMimeType que causava o erro "Cannot coerce..." no Google
                 const result = await model.generateContent({ 
                     contents: [{ role: "user", parts: promptParts }], 
-                    generationConfig: { responseMimeType: "application/json", temperature: engineTemperature } 
+                    generationConfig: { temperature: engineTemperature } 
                 });
+                
                 htmlCode = extrairHtmlDeJson(result.response.text());
                 if (htmlCode) { sucessoGemini = true; provedorTextoUsado = rota.nome; break; }
             } catch (err: any) { erroFinal = err.message; }
@@ -112,12 +117,12 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
         provedorTextoUsado = 'Groq Engine (LLaMA 3)';
         if (!process.env.GROQ_API_KEY) throw new Error("Chave do GROQ não configurada.");
 
-        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const groqResponse = await fetch("[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)", {
             method: "POST", headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [ { role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt } ],
-                response_format: { type: "json_object" },
+                response_format: { type: "json_object" }, // O Groq aceita isso muito bem
                 max_tokens: (isBlockRefinement || isElementRefinement) ? 2000 : 8000, 
                 temperature: engineTemperature
             })
@@ -130,12 +135,13 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
     }
 
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement) {
-        const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
-        const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
+        const aosCss = '<link href="[https://unpkg.com/aos@2.3.1/dist/aos.css](https://unpkg.com/aos@2.3.1/dist/aos.css)" rel="stylesheet">';
+        const aosJs = '<script src="[https://unpkg.com/aos@2.3.1/dist/aos.js](https://unpkg.com/aos@2.3.1/dist/aos.js)"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
         if (htmlCode.includes('</head>')) htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
         if (htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
+    // FILTRO DE IMAGENS (Unsplash / Flickr)
     let provedorImagemUsado = 'Sem imagens';
     const regexUnsplash = /https:\/\/images\.unsplash\.com\/random\/(\d+x\d+)\/\?([^"&<>\s]+)/g;
     let match; const urlsToReplace = [];
@@ -149,7 +155,7 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
         let orient = item.dimensao === '800x1200' ? 'portrait' : 'landscape';
         if (process.env.UNSPLASH_API_KEY) {
           try {
-            const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kw}&per_page=15&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+            const uRes = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){kw}&per_page=15&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
             if (uRes.ok) {
               const uData = await uRes.json();
               if (uData.results?.length > 0) {
@@ -161,7 +167,7 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
         }
         if (!imagemEncontrada) {
           const w = item.dimensao === '800x1200' ? '800' : '1200', h = item.dimensao === '800x1200' ? '1200' : '800';
-          htmlCode = htmlCode.replace(item.fullMatch, `https://loremflickr.com/${w}/${h}/${kw}?lock=${Math.floor(Math.random() * 9999)}`);
+          htmlCode = htmlCode.replace(item.fullMatch, `[https://loremflickr.com/$](https://loremflickr.com/$){w}/${h}/${kw}?lock=${Math.floor(Math.random() * 9999)}`);
           flickrUsado = true;
         }
       }
@@ -175,12 +181,37 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
   }
 }
 
+// O EXTRATOR BLINDADO (Isso impede que \n\n ou erros de formatação sujem o painel)
 function extrairHtmlDeJson(responseText: string): string {
   let htmlCode = '';
-  try { const json = JSON.parse(responseText); htmlCode = json.codigo_html || json.html || Object.values(json)[0]; } 
-  catch (e) { htmlCode = responseText; }
+  let cleanText = responseText.trim();
+
+  // Limpeza profunda de markdown
+  if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:json|html)?\n/i, '').replace(/\n```$/i, '');
+  }
+
+  // Tenta caçar apenas o bloco JSON caso a IA tenha falado algo antes ou depois
+  const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+      cleanText = jsonMatch[0];
+  }
+
+  try { 
+      const json = JSON.parse(cleanText); 
+      htmlCode = json.codigo_html || json.html || Object.values(json)[0]; 
+  } catch (e) { 
+      // Se ainda falhar, assume que a IA mandou o código puro e limpa formatações
+      htmlCode = cleanText; 
+  }
+  
   if (typeof htmlCode !== 'string') htmlCode = JSON.stringify(htmlCode);
+  
+  // A correção definitiva para o problema da Imagem 1 (Remove todos os escapes de quebra de linha textuais)
+  htmlCode = htmlCode.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
+  
   const doctypeIndex = htmlCode.toLowerCase().indexOf('<!doctype html>');
   if (doctypeIndex !== -1) htmlCode = htmlCode.substring(doctypeIndex);
+  
   return htmlCode.replace(/```html/gi, '').replace(/```/g, '').trim();
 }
