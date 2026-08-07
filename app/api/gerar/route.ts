@@ -75,13 +75,16 @@ ${instrucaoDinamica}
 === REGRA DE OURO DA MICRO-EDIÇÃO ===
 Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ATENÇÃO: Devolva APENAS o HTML do elemento modificado. 
-🚨 REGRA COPYWRITER: Se o usuário pedir para "refazer", "escrever" ou "melhorar" um texto, ESCREVA O TEXTO FINAL DIRETAMENTE. É ESTRITAMENTE PROIBIDO escrever frases como "Refazendo o texto..." ou "Aqui está o texto melhorado". Apenas devolva o elemento com o texto final.
+🚨 REGRA COPYWRITER: Se o usuário pedir para "refazer", "escrever" ou "melhorar" um texto, ESCREVA O TEXTO FINAL DIRETAMENTE. É ESTRITAMENTE PROIBIDO descrever o que está fazendo (Ex: NUNCA escreva "Aqui está o texto" ou "Refazendo o texto..."). Apenas entregue a copy final pronta.
         `;
     }
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     let htmlCode = '';
     let provedorTextoUsado = '';
+
+    // A mágica: Temperatura 0.7 para Elementos (Criatividade Alta), e 0.1 para Sites Inteiros (Exatidão Alta)
+    const engineTemperature = isElementRefinement ? 0.7 : 0.1;
 
     if (temImagem) {
         provedorTextoUsado = 'Google Gemini (Visão)';
@@ -95,7 +98,10 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
             try {
                 const genAI = new GoogleGenerativeAI(rota.key!);
                 const model = genAI.getGenerativeModel({ model: rota.model, systemInstruction: { role: "system", parts: [{ text: systemInstructionFinal }] } });
-                const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { responseMimeType: "application/json" } });
+                const result = await model.generateContent({ 
+                    contents: [{ role: "user", parts: promptParts }], 
+                    generationConfig: { responseMimeType: "application/json", temperature: engineTemperature } 
+                });
                 htmlCode = extrairHtmlDeJson(result.response.text());
                 if (htmlCode) { sucessoGemini = true; provedorTextoUsado = rota.nome; break; }
             } catch (err: any) { erroFinal = err.message; }
@@ -113,7 +119,7 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
                 messages: [ { role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt } ],
                 response_format: { type: "json_object" },
                 max_tokens: (isBlockRefinement || isElementRefinement) ? 2000 : 8000, 
-                temperature: 0.1
+                temperature: engineTemperature
             })
         });
 

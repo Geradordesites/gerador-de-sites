@@ -4,8 +4,8 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT INJETADO NO IFRAME (BLINDAGEM ANTI-INCEPTION E NOVO MOTOR VISUAL)
-const SCRIPT_PREVIEW = `<script>
+// SCRIPT INJETADO NO IFRAME (AGORA COM ID PARA SER DELETADO NA HORA DE SALVAR)
+const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
 
@@ -13,6 +13,17 @@ const SCRIPT_PREVIEW = `<script>
         let res = rgb.match(/\\d+/g);
         if(!res) return '#000000';
         return "#" + res.map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+    }
+
+    function sendCleanHtml() {
+        // Tira o outline do elemento temporariamente pra não sujar o HTML exportado
+        let outlineAntigo = '';
+        if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
+        
+        let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+        
+        if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
+        window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
     }
 
     window.addEventListener('message', (event) => {
@@ -23,54 +34,36 @@ const SCRIPT_PREVIEW = `<script>
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                // Textos e Mídias
                 if(event.data.text !== undefined) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.href !== undefined) el.setAttribute('href', event.data.href);
-                
-                // Cores e Tamanhos
                 if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
                 
-                // Imagem de Fundo Avançada
                 if(event.data.bgImage !== undefined) {
                     if(event.data.bgImage) {
                         el.style.backgroundImage = "url('" + event.data.bgImage + "')";
-                        el.style.backgroundSize = "cover";
-                        el.style.backgroundPosition = "center";
-                    } else {
-                        el.style.backgroundImage = "none";
-                    }
+                        el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center";
+                    } else { el.style.backgroundImage = "none"; }
                 }
 
-                // Alinhamento
                 if(event.data.textAlign !== undefined) {
                     el.classList.remove('text-left', 'text-center', 'text-right', 'text-justify');
                     if(event.data.textAlign) el.classList.add(event.data.textAlign);
                 }
 
-                // Efeitos e Animações Rápidas
                 if(event.data.animationClass !== undefined) {
                     el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300');
-                    if(event.data.animationClass) {
-                        event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
-                    }
+                    if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
-                // Classes Tailwind Livres (Degradês, Opacidade, etc)
                 if(event.data.customClasses !== undefined) {
-                    // Aqui substituímos as classes antigas do usuário pelas novas, sem perder a base
-                    if(el.dataset.customClasses) {
-                        el.dataset.customClasses.split(' ').forEach(cls => { if(cls) el.classList.remove(cls); });
-                    }
-                    if(event.data.customClasses) {
-                        event.data.customClasses.split(' ').forEach(cls => { if(cls) el.classList.add(cls); });
-                    }
-                    el.dataset.customClasses = event.data.customClasses; // salva o estado
+                    if(el.dataset.customClasses) el.dataset.customClasses.split(' ').forEach(cls => { if(cls) el.classList.remove(cls); });
+                    if(event.data.customClasses) event.data.customClasses.split(' ').forEach(cls => { if(cls) el.classList.add(cls); });
+                    el.dataset.customClasses = event.data.customClasses; 
                 }
 
-                // Efeitos Específicos para Tags IMG
                 if(event.data.imgFormat !== undefined) {
                     el.classList.remove('aspect-video', 'aspect-square', 'aspect-[3/4]', 'aspect-[4/3]');
                     if (event.data.imgFormat) { el.classList.add(event.data.imgFormat); el.classList.add('object-cover'); }
@@ -80,19 +73,19 @@ const SCRIPT_PREVIEW = `<script>
                     if (event.data.imgRounded) el.classList.add(event.data.imgRounded);
                 }
                 if(event.data.imgBorder !== undefined) {
-                    if (event.data.imgBorder) el.classList.add('border-4', 'border-white', 'shadow-2xl');
-                    else el.classList.remove('border-4', 'border-white', 'shadow-2xl');
+                    if (event.data.imgBorder) el.classList.add('border-4', 'shadow-2xl');
+                    else el.classList.remove('border-4', 'shadow-2xl');
+                }
+                if(event.data.borderColor !== undefined) {
+                    el.style.borderColor = event.data.borderColor;
                 }
 
-                window.parent.postMessage({ type: 'HTML_SYNC', html: '<!DOCTYPE html>\\n' + document.documentElement.outerHTML }, '*');
+                sendCleanHtml();
             }
         }
         if(event.data.type === 'REPLACE_ELEMENT_HTML') {
             let el = document.getElementById(event.data.id);
-            if(el) {
-                el.outerHTML = event.data.newHtml;
-                window.parent.postMessage({ type: 'HTML_SYNC', html: '<!DOCTYPE html>\\n' + document.documentElement.outerHTML }, '*');
-            }
+            if(el) { el.outerHTML = event.data.newHtml; sendCleanHtml(); }
         }
     });
 
@@ -110,28 +103,19 @@ const SCRIPT_PREVIEW = `<script>
 
     document.addEventListener('click', (e) => {
         var link = e.target.closest('a');
-        
-        // ---- A NOVA BLINDAGEM ANTI-INCEPTION ----
         if (link) {
-            e.preventDefault(); // Bloqueio agressivo nativo
-            e.stopPropagation();
-
+            e.preventDefault(); e.stopPropagation();
             if (!modoEdicao) {
                 var href = link.getAttribute('href') || '';
                 if(href.startsWith('#')) {
-                    // Menu Âncora suave
                     var hash = href.substring(href.indexOf('#'));
                     if (hash.length > 1) {
-                        try {
-                            var targetEl = document.querySelector(hash);
-                            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        } catch(err) {}
+                        try { var targetEl = document.querySelector(hash); if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
                     }
                 } else if (href && !href.startsWith('javascript:')) {
-                    // A MÁGICA: Abre links externos em NOVA ABA, nunca dentro do painel
                     window.open(href, '_blank');
                 }
-                return; // Encerra a ação do clique aqui se não estiver editando
+                return; 
             }
         }
 
@@ -145,10 +129,8 @@ const SCRIPT_PREVIEW = `<script>
         if(!elSelecionado.id) elSelecionado.id = 'el_' + Math.random().toString(36).substr(2,9);
 
         let compStyle = window.getComputedStyle(elSelecionado);
-        
-        // Puxando imagem de fundo se houver
         let bgImg = elSelecionado.style.backgroundImage || '';
-        if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2); 
+        if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
         else bgImg = '';
 
         window.parent.postMessage({
@@ -161,6 +143,7 @@ const SCRIPT_PREVIEW = `<script>
             className: elSelecionado.className,
             bgColor: rgbToHex(compStyle.backgroundColor),
             textColor: rgbToHex(compStyle.color),
+            borderColor: rgbToHex(compStyle.borderColor),
             fontSize: parseInt(compStyle.fontSize),
             bgImage: bgImg,
             customClasses: elSelecionado.dataset.customClasses || '',
@@ -181,7 +164,6 @@ export default function Home() {
   const [corSelecionada, setCorSelecionada] = useState('auto');
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
-  const [abaAtiva, setAbaAtiva] = useState<'preview' | 'code'>('preview');
   
   const [modoEdicaoVisual, setModoEdicaoVisual] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
@@ -200,7 +182,12 @@ export default function Home() {
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             if (codEl) {
                 setHistoricoCodigo(prev => [...prev, codEl.value]);
-                codEl.value = e.data.html;
+                
+                // PURIFICADOR: Arranca o script e o estilo de marcação do editor do HTML final
+                let cleanHtml = e.data.html.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
+                cleanHtml = cleanHtml.replace(/ outline: 3px solid rgb\(79, 70, 229\);/g, '');
+                
+                codEl.value = cleanHtml;
             }
         }
     };
@@ -225,14 +212,14 @@ export default function Home() {
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
 
-  const refinarElementoComIA = async () => {
+  const refinarElementoComIA = async (comandoOverride?: string) => {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
-      const comando = promptInput.value.trim();
+      const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Digite o que deseja mudar na IA.", "error"); return; }
 
       const systemInstruction = `Você é um Copywriter de Elite e Programador Cirúrgico.
       Receberá o HTML de UM único elemento. Modifique apenas o que for pedido: "${comando}". 
-      REGRA MÁXIMA: Se for pedido para reescrever, melhorar ou refazer o texto, APENAS DEVOLVA O TEXTO PERSUASIVO FINAL DENTRO DA TAG HTML. NUNCA escreva coisas literais como "Aqui está a reescrita" ou "Refazendo o texto". AJA COMO O COPYWRITER e entregue direto.
+      REGRA MÁXIMA: Se for pedido para reescrever, melhorar ou refazer o texto, APENAS DEVOLVA O TEXTO PERSUASIVO FINAL DENTRO DA TAG HTML. NUNCA escreva coisas literais como "Aqui está a reescrita" ou "Refazendo o texto".
       Preserve o atributo id="${elementoSelecionado.id}".`;
       
       const resData = await (window as any).chamarIABase(systemInstruction, [{text: `HTML ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
@@ -241,9 +228,28 @@ export default function Home() {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
-          promptInput.value = '';
+          if(promptInput) promptInput.value = '';
           (window as any).showNotification("Elemento alterado por IA!", "success");
       }
+  };
+
+  // NOVAS FUNÇÕES PARA IMAGEM NO EDITOR MÁGICO
+  const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev: any) => { atualizarElementoManual('src', ev.target.result); };
+      reader.readAsDataURL(file);
+      e.target.value = ''; 
+  };
+
+  const gerarNovaImagemElem = async () => {
+      const keyword = prompt("Digite o tema da imagem (ex: business, fitness, nature):") || "professional";
+      try {
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keyword)}`);
+          const data = await res.json();
+          if(data && data.url) { atualizarElementoManual('src', data.url); (window as any).showNotification("Nova imagem carregada!", "success"); }
+      } catch(err) { (window as any).showNotification("Erro ao buscar imagem.", "error"); }
   };
 
   const carregarMeusSites = async () => {
@@ -571,17 +577,23 @@ export default function Home() {
                                       <span className="text-[9px] text-slate-400 font-mono">ID: {elementoSelecionado.id.substring(0,8)}</span>
                                   </div>
                                   
-                                  {/* RENDERIZAÇÃO CONDICIONAL: IMAGEM VS TEXTO/BLOCO */}
+                                  {/* PAINEL DE IMAGEM */}
                                   {elementoSelecionado.tagName === 'img' ? (
                                       <>
                                           <div>
-                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-link text-indigo-400 mr-1.5"></i> Link da Imagem</label>
-                                              <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElementoManual('src', e.target.value)} className="w-full text-xs p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:border-indigo-500 outline-none" />
+                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-link text-indigo-400 mr-1.5"></i> Link / Origem da Imagem</label>
+                                              <div className="flex flex-col gap-2 mb-2">
+                                                  <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElementoManual('src', e.target.value)} className="w-full text-[10px] p-2 border border-slate-200 rounded-lg bg-slate-50 focus:border-indigo-500 outline-none font-mono" />
+                                              </div>
+                                              <div className="flex gap-2">
+                                                  <button onClick={gerarNovaImagemElem} className="flex-1 bg-white hover:bg-indigo-50 text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 transition shadow-sm flex items-center justify-center"><i className="fas fa-search mr-1.5"></i> Buscar IA</button>
+                                                  <label className="flex-1 bg-white hover:bg-indigo-50 text-indigo-600 text-[10px] font-bold py-2 rounded-lg border border-indigo-200 transition text-center cursor-pointer shadow-sm flex items-center justify-center"><i className="fas fa-upload mr-1.5"></i> Upload PC<input type="file" accept="image/*" className="hidden" onChange={handleUploadImgElem} /></label>
+                                              </div>
                                           </div>
                                           <div className="grid grid-cols-2 gap-3 pt-2">
                                               <div>
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2"><i className="fas fa-crop-alt text-indigo-400 mr-1"></i> Formato</label>
-                                                  <select onChange={(e) => atualizarElementoManual('imgFormat', e.target.value)} className="input-style bg-slate-50 p-2 text-xs">
+                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center"><i className="fas fa-crop-alt text-indigo-400 mr-1"></i> Formato</label>
+                                                  <select onChange={(e) => atualizarElementoManual('imgFormat', e.target.value)} className="input-style bg-slate-50 p-2 text-[10px]">
                                                       <option value="">Livre</option>
                                                       <option value="aspect-video">Horizontal (16:9)</option>
                                                       <option value="aspect-[3/4]">Vertical (Retrato)</option>
@@ -589,8 +601,8 @@ export default function Home() {
                                                   </select>
                                               </div>
                                               <div>
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2"><i className="fas fa-circle-notch text-indigo-400 mr-1"></i> Cantos</label>
-                                                  <select onChange={(e) => atualizarElementoManual('imgRounded', e.target.value)} className="input-style bg-slate-50 p-2 text-xs">
+                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center"><i className="fas fa-circle-notch text-indigo-400 mr-1"></i> Cantos</label>
+                                                  <select onChange={(e) => atualizarElementoManual('imgRounded', e.target.value)} className="input-style bg-slate-50 p-2 text-[10px]">
                                                       <option value="rounded-none">Retos</option>
                                                       <option value="rounded-md">Suaves</option>
                                                       <option value="rounded-xl">Arredondados</option>
@@ -598,20 +610,24 @@ export default function Home() {
                                                   </select>
                                               </div>
                                           </div>
-                                          <div className="pt-2">
-                                              <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 p-2.5 rounded-lg hover:bg-slate-100 transition">
+                                          <div className="pt-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                              <label className="flex items-center gap-2 cursor-pointer mb-3">
                                                   <input type="checkbox" onChange={(e) => atualizarElementoManual('imgBorder', e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Adicionar Moldura Branca</span>
+                                                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ativar Borda Espessa</span>
                                               </label>
+                                              <div className="flex items-center justify-between">
+                                                  <label className="text-[9px] font-bold text-slate-500 uppercase"><i className="fas fa-palette text-indigo-400 mr-1"></i> Cor da Borda</label>
+                                                  <input type="color" value={elementoSelecionado.borderColor || '#ffffff'} onChange={(e) => atualizarElementoManual('borderColor', e.target.value)} className="w-8 h-8 rounded cursor-pointer border border-slate-200 p-0 shadow-sm" />
+                                              </div>
                                           </div>
                                       </>
                                   ) : (
                                       <>
-                                          {/* LINK DO BOTÃO / ÂNCORA */}
+                                          {/* PAINEL DE TEXTOS E BLOCOS GERAIS */}
                                           {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button') && (
-                                              <div className="mb-4">
-                                                  <label className="text-[10px] font-bold text-emerald-600 uppercase mb-1.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Link / Destino do Botão</label>
-                                                  <input type="text" placeholder="https://... ou #secao" value={elementoSelecionado.href} onChange={(e) => atualizarElementoManual('href', e.target.value)} className="w-full text-xs p-2.5 border border-emerald-200 rounded-lg bg-emerald-50 focus:border-emerald-500 outline-none font-mono" />
+                                              <div className="mb-4 bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                                  <label className="text-[10px] font-black text-emerald-700 uppercase mb-1.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Link / Destino</label>
+                                                  <input type="text" placeholder="https://... ou #secao" value={elementoSelecionado.href} onChange={(e) => atualizarElementoManual('href', e.target.value)} className="w-full text-[10px] p-2 border border-emerald-200 rounded-md bg-white focus:border-emerald-500 outline-none font-mono" />
                                               </div>
                                           )}
 
@@ -621,14 +637,14 @@ export default function Home() {
                                                 <div className="flex bg-slate-100 rounded border border-slate-200">
                                                     <button onClick={() => atualizarElementoManual('textAlign', 'text-left')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 transition" title="Alinhar Esquerda"><i className="fas fa-align-left text-[10px]"></i></button>
                                                     <button onClick={() => atualizarElementoManual('textAlign', 'text-center')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 transition border-x border-slate-200" title="Centralizar"><i className="fas fa-align-center text-[10px]"></i></button>
-                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-right')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 transition" title="Alinhar Direita"><i className="fas fa-align-right text-[10px]"></i></button>
+                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-right')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 transition border-r border-slate-200" title="Alinhar Direita"><i className="fas fa-align-right text-[10px]"></i></button>
+                                                    <button onClick={() => atualizarElementoManual('textAlign', 'text-justify')} className="p-1 px-2 hover:bg-slate-200 text-slate-600 transition" title="Justificar"><i className="fas fa-align-justify text-[10px]"></i></button>
                                                 </div>
                                               </div>
                                               <textarea rows={3} value={elementoSelecionado.text} onChange={(e) => atualizarElementoManual('text', e.target.value)} className="w-full text-xs p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all resize-none shadow-inner"></textarea>
                                           </div>
                                           
-                                          {/* TAMANHO E FUNDO */}
-                                          <div className="grid grid-cols-2 gap-4">
+                                          <div className="grid grid-cols-2 gap-3">
                                               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                                                   <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center justify-between">
                                                       <span><i className="fas fa-text-height text-indigo-400 mr-1"></i> Tamanho</span>
@@ -637,53 +653,53 @@ export default function Home() {
                                                   <input type="range" min="10" max="100" value={elementoSelecionado.fontSize || 16} onChange={(e) => atualizarElementoManual('fontSize', parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                               </div>
                                               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center"><i className="fas fa-fill-drip text-indigo-400 mr-1"></i> Fundo (Cor sólida)</label>
-                                                  <input type="color" value={elementoSelecionado.bgColor} onChange={(e) => atualizarElementoManual('bgColor', e.target.value)} className="w-full h-7 rounded border border-slate-200 cursor-pointer p-0" />
+                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center justify-between">
+                                                    <span><i className="fas fa-fill-drip text-indigo-400 mr-1"></i> Fundo</span>
+                                                    <input type="color" value={elementoSelecionado.bgColor} onChange={(e) => atualizarElementoManual('bgColor', e.target.value)} className="w-6 h-6 rounded border border-slate-200 cursor-pointer p-0" />
+                                                  </label>
+                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mt-2 pt-2 border-t border-slate-200 flex items-center justify-between">
+                                                    <span><i className="fas fa-paint-brush text-indigo-400 mr-1"></i> Letra</span>
+                                                    <input type="color" value={elementoSelecionado.textColor} onChange={(e) => atualizarElementoManual('textColor', e.target.value)} className="w-6 h-6 rounded border border-slate-200 cursor-pointer p-0" />
+                                                  </label>
                                               </div>
                                           </div>
                                           
-                                          {/* FUNDO AVANÇADO (IMAGEM) E COR DA FONTE */}
-                                          <div className="grid grid-cols-2 gap-4">
-                                              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center"><i className="fas fa-image text-indigo-400 mr-1"></i> Imagem Fundo (URL)</label>
-                                                  <input type="text" placeholder="https://..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElementoManual('bgImage', e.target.value)} className="w-full text-[10px] p-1.5 border border-slate-200 rounded bg-white outline-none" />
-                                              </div>
-                                              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                                  <label className="text-[9px] font-bold text-slate-500 uppercase mb-2 flex items-center"><i className="fas fa-paint-brush text-indigo-400 mr-1"></i> Cor da Fonte/Ícone</label>
-                                                  <input type="color" value={elementoSelecionado.textColor} onChange={(e) => atualizarElementoManual('textColor', e.target.value)} className="w-full h-7 rounded border border-slate-200 cursor-pointer p-0" />
-                                              </div>
+                                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                              <label className="text-[9px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-image text-indigo-400 mr-1"></i> Imagem de Fundo (URL)</label>
+                                              <input type="text" placeholder="https://..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElementoManual('bgImage', e.target.value)} className="w-full text-[10px] p-2 border border-slate-200 rounded bg-white outline-none" />
                                           </div>
 
-                                          {/* ANIMAÇÕES E EFEITOS ESPECIAIS */}
                                           <div>
-                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-magic text-indigo-400 mr-1.5"></i> Efeito Animado Rápido</label>
-                                              <select onChange={(e) => atualizarElementoManual('animationClass', e.target.value)} className="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 outline-none font-medium">
+                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-bolt text-yellow-400 mr-1.5"></i> Efeito Animado Rápido</label>
+                                              <select onChange={(e) => atualizarElementoManual('animationClass', e.target.value)} className="w-full text-[10px] p-2 border border-slate-200 rounded-lg bg-slate-50 outline-none font-bold">
                                                   <option value="">Nenhum / Remover Efeito</option>
-                                                  <option value="animate-pulse">Pulsar Suavemente (Chamar atenção)</option>
+                                                  <option value="animate-pulse">Pulsar Suavemente (Atenção)</option>
                                                   <option value="animate-bounce">Pular Continuamente</option>
-                                                  <option value="hover:scale-110 transition-transform duration-300">Crescer ao Passar o Mouse (Zoom)</option>
+                                                  <option value="hover:scale-110 transition-transform duration-300">Crescer ao Passar o Mouse</option>
                                                   <option value="hover:-translate-y-2 transition-transform duration-300">Levantar ao Passar o Mouse</option>
                                               </select>
                                           </div>
 
-                                          {/* DEGRADÊS E CLASSES EXTRAS */}
                                           <div>
-                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-code text-indigo-400 mr-1.5"></i> Classes Tailwind Livres (Degradês, etc)</label>
-                                              <input type="text" placeholder="Ex: bg-gradient-to-r from-blue-500 to-purple-500 opacity-90" value={elementoSelecionado.customClasses} onChange={(e) => atualizarElementoManual('customClasses', e.target.value)} className="w-full text-[10px] p-2 border border-slate-200 rounded-lg bg-slate-800 text-green-400 outline-none font-mono" />
+                                              <label className="text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center"><i className="fas fa-code text-indigo-400 mr-1.5"></i> Custom Tailwind (Degradês / Opacidade)</label>
+                                              <input type="text" placeholder="Ex: bg-gradient-to-r from-blue-500 to-purple-500 opacity-90" value={elementoSelecionado.customClasses} onChange={(e) => atualizarElementoManual('customClasses', e.target.value)} className="w-full text-[10px] p-2 border border-slate-700 rounded-lg bg-slate-800 text-emerald-400 outline-none font-mono shadow-inner" />
                                           </div>
                                       </>
                                   )}
 
-                                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mt-4">
-                                      <label className="text-[10px] font-black text-indigo-800 uppercase mb-2 flex items-center gap-1.5"><i className="fas fa-robot text-base text-indigo-600"></i> Magia com IA</label>
-                                      <p className="text-[9px] text-indigo-600 mb-2 leading-relaxed">
-                                          {elementoSelecionado.tagName === 'img' 
-                                            ? "Peça para a IA trocar a foto, focar em outra coisa ou mudar o formato." 
-                                            : "Peça para reescrever com tom agressivo, amigável ou formatar."}
-                                      </p>
+                                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mt-5 shadow-sm">
+                                      <label className="text-[10px] font-black text-indigo-800 uppercase mb-2 flex items-center gap-1.5"><i className="fas fa-robot text-base text-indigo-600"></i> O Copywriter IA</label>
+                                      
+                                      {elementoSelecionado.tagName !== 'img' && (
+                                          <div className="grid grid-cols-2 gap-2 mb-2">
+                                              <button onClick={() => refinarElementoComIA("Reescreva o texto deixando a copy incrivelmente persuasiva e focada em conversão")} className="bg-white border border-indigo-200 text-indigo-700 text-[9px] font-bold py-1.5 rounded hover:bg-indigo-100 transition"><i className="fas fa-sync-alt mr-1"></i> Melhorar Copy</button>
+                                              <button onClick={() => refinarElementoComIA("Reescreva com um fortíssimo senso de urgência, escassez e apelo à ação imediata")} className="bg-white border border-indigo-200 text-indigo-700 text-[9px] font-bold py-1.5 rounded hover:bg-indigo-100 transition"><i className="fas fa-fire mr-1 text-orange-500"></i> + Urgência</button>
+                                          </div>
+                                      )}
+
                                       <div className="flex gap-2">
-                                          <input type="text" id="ai_prompt_element" placeholder="Ex: Reescreva com senso de urgência..." className="input-style flex-1 border-white bg-white text-xs shadow-sm" />
-                                          <button onClick={refinarElementoComIA} className="bg-indigo-600 hover:bg-indigo-700 text-white w-10 rounded-lg shadow-md flex items-center justify-center transition-colors"><i className="fas fa-paper-plane"></i></button>
+                                          <input type="text" id="ai_prompt_element" placeholder={elementoSelecionado.tagName === 'img' ? "Ex: Troque a classe para arredondar..." : "Ou digite seu comando livre aqui..."} className="input-style flex-1 border-white bg-white text-[10px] shadow-sm" />
+                                          <button onClick={() => refinarElementoComIA()} className="bg-indigo-600 hover:bg-indigo-700 text-white w-10 rounded-lg shadow-md flex items-center justify-center transition-colors"><i className="fas fa-paper-plane"></i></button>
                                       </div>
                                   </div>
                               </div>
