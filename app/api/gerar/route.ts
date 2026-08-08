@@ -24,14 +24,18 @@ export async function POST(req: Request) {
     }
 
     const regraImagens = `
-=== SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO ===
-🚨 É ESTRITAMENTE PROIBIDO INVENTAR URLs DE IMAGENS OU USAR SERVIÇOS GENÉRICOS COMO LOREMFLICKR.
-Você DEVE utilizar a nossa tag de requisição interna para todas as imagens: src="[UNSPLASH: resolucao: keywords_em_ingles]"
+=== SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
+🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr ou inventar URLs.
+Você DEVE utilizar a nossa tag de requisição interna para TODAS as imagens geradas. O sistema backend fará a conversão.
+Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 
-- resolucao deve ser: "1280x720" (para paisagens/fundos), "800x1200" (para retratos/pessoas em pé) ou "800x800" (para quadrados).
-- keywords devem ser 2 a 3 palavras precisas em inglês sobre o contexto (ex: business meeting, happy therapist, minimalist office).
+Tamanhos Obrigatórios:
+- 1280x720 (Paisagem/Landscape): Para banners, fundos e seções largas.
+- 800x1200 (Retrato/Portrait): Para fotos de pessoas em pé, membros de equipe ou cards verticais.
+- 800x800 (Quadrado/Squarish): Para ícones, logos ou avatares.
 
-Exemplo: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Mulher de negócios" />
+Keywords: Use 2 ou 3 palavras super precisas em inglês (ex: business meeting, confident therapist, modern office).
+Exemplo Prático: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Mulher de negócios" />
 `;
     
     let instrucaoDinamica = "";
@@ -41,24 +45,24 @@ Exemplo: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full
     let regrasObrigatorias = "";
     
     if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva todo o HTML atualizado no JSON. NÃO CORTE O CÓDIGO.`;
+        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML estruturado no JSON. NÃO CORTE O CÓDIGO DO SITE.`;
     } else if (isElementRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido otimizado, dentro do JSON.`;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido perfeitamente otimizado, dentro do JSON. Sem explicações adicionais.`;
     } else {
         regrasObrigatorias = `
 === REGRA DE OURO 1: MOBILE-FIRST (OBRIGATÓRIO) ===
-O site DEVE ser perfeito no celular. Use espaçamentos menores no mobile (p-4, py-8) e empilhe tudo (flex-col). Use breakpoints apenas para telas maiores (md:flex-row, lg:py-16, md:p-8). 
-Menus devem usar flex-col no celular se não possuírem botão hambúrguer.
+O site DEVE ser perfeitamente responsivo. Use flex-col para empilhar no celular e md:flex-row para parear no PC. Espaçamentos menores no mobile (p-4) e maiores no desktop (md:p-8).
 
-=== REGRA DE OURO 2: ARQUITETURA ===
-Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html". O valor DEVE CONTER O SITE INTEIRO.
-Force o espaçamento de UMA LINHA entre títulos e parágrafos ('mb-4' ou 'mb-6').
+=== REGRA DE OURO 2: OBRIGAÇÃO DE ESTRUTURA E MENU ===
+Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html". O valor DEVE CONTER O SITE INTEIRO (Do doctype ao fechamento).
+🚨 ATENÇÃO CRÍTICA AO MENU: Se o prompt pedir 'INCLUIR BARRA DE NAVEGAÇÃO' ou 'MENU FIXO', você DEVE OBRIGATORIAMENTE iniciar o <body> com uma tag <nav> completa, com logotipo e links. Não pule esta regra sob nenhuma hipótese.
+Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
 
 ${regraImagens}
 ${instrucaoDinamica}
 
 === COMPLIANCE: RODAPÉ JURÍDICO FUNCIONAL ===
-Sempre finalize o </body> com este exato rodapé:
+Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
 <footer data-bloco="rodape" class="bg-slate-900 text-slate-300 py-12 text-center text-sm mt-12 border-t border-slate-800 w-full overflow-hidden">
     <div class="w-full max-w-5xl mx-auto px-6">
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-12 mb-8 font-medium">
@@ -106,7 +110,7 @@ Sempre finalize o </body> com este exato rodapé:
         if (htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // PROCESSADOR ABSOLUTO DO UNSPLASH API (Substitui as tags [UNSPLASH: ...] por links reais da API)
+    // O NOVO MOTOR DE IMAGENS TOTALMENTE DEPENDENTE DA UNSPLASH API (FIM DO LOREMFLICKR)
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+):\s*([^\]]+)\]/g;
     let match;
     let urlsToReplace = [];
@@ -120,22 +124,23 @@ Sempre finalize o </body> com este exato rodapé:
             if (item.dimensao === '800x800') orient = 'squarish';
             const kwFormatada = encodeURIComponent(item.keywords.trim());
             
+            let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; // Safe Fallback puro
+
             try {
-                const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=5&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+                const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
                 if (uRes.ok) {
                     const uData = await uRes.json();
                     if (uData.results && uData.results.length > 0) {
-                        const imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                        htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
-                        continue;
+                        imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
                     }
                 }
-            } catch (e) {}
-            // Se falhar de buscar na API, usa o source raw do unsplash (sem usar loremflickr)
-            htmlCode = htmlCode.replace(item.fullMatch, `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`);
+            } catch (e) {
+                console.log("Falha ao puxar da API do Unsplash. Usando Fallback de Segurança.");
+            }
+            htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     } else {
-        // Fallback de segurança limpando tags perdidas
+        // Limpa possíveis marcações que ficaram perdidas caso a API falhe por completo
         htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
     }
 
@@ -146,6 +151,7 @@ Sempre finalize o </body> com este exato rodapé:
   }
 }
 
+// EXTRATOR JSON BLINDADO
 function extrairHtmlDeJson(text: string): string {
   try {
       let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();

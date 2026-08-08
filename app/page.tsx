@@ -78,14 +78,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
+                // LIMPEZA AGRESSIVA DE CLASSES DE ALTURA PARA O FORMATO DA IMAGEM FUNCIONAR
                 if(event.data.imgFormat !== undefined) {
                     if (event.data.imgFormat === '') {
                         el.style.aspectRatio = '';
-                        el.classList.remove('object-cover', 'w-full');
+                        el.style.height = '';
+                        el.classList.remove('object-cover', 'w-full', 'h-auto');
                     } else {
-                        el.className = el.className.replace(/h-\[[^\]]+\]/g, '').replace(/h-\w+/g, '');
+                        // Arranca classes de altura do Tailwind que impedem o aspecto de funcionar
+                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
                         el.style.aspectRatio = event.data.imgFormat;
-                        el.style.height = 'auto';
+                        el.style.height = 'auto'; // Força altura automática inline
                         el.classList.add('object-cover', 'w-full');
                     }
                 }
@@ -154,7 +157,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
             if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
 
-            // Container Detector: Se tiver <br> soltos, ignora. Se tiver tags reais, bloqueia a edição direta de texto.
             let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
             let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE'].includes(elSelecionado.tagName);
             let bloqueiaTexto = isContainer && isNavOrSection;
@@ -221,11 +223,13 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
-  // FAXINA FINAL DO HTML
+  // FAXINA FINAL DO HTML OTIMIZADA PARA REMOVER CLASSES DE EDIÇÃO DO BODY
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
-      clean = clean.replace(/class="[^"]*builder-editing[^"]*"/gi, (match) => match.replace('builder-editing', '').trim());
+      // Extermina a classe de edição do body e de qualquer outro lugar
+      clean = clean.replace(/\bbuilder-editing\b/gi, '');
+      
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
@@ -413,7 +417,8 @@ export default function Home() {
     const content = textEl?.value?.trim();
     if (!content) { (window as any).showNotification('Por favor, preencha o campo de texto explicando como deve ser o site.', 'error'); return; }
     
-    const checkMenuEl = document.getElementById('checkComMenuTexto') as HTMLInputElement;
+    // Corrigido o ID do Checkbox para garantir a leitura correta do Menu
+    const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
     const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
     const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. Lembre-se: use espaçamentos precisos. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
@@ -440,7 +445,7 @@ export default function Home() {
       e.target.value = ''; 
   };
 
-  // IMAGEM INTELIGENTE QUE BUSCA DIRETAMENTE DA UNSPLASH VIA API (O FIM DO LOREMFLICKR)
+  // IMAGEM INTELIGENTE (EXCLUSIVA UNSPLASH E AJUSTADA A PROPORÇÃO)
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
@@ -457,7 +462,6 @@ export default function Home() {
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
       try {
-          // Passa o texto para a IA traduzir e resumir em 2 palavras-chave em inglês perfeitas
           const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
           const iaRes = await fetch('/api/gerar', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -473,7 +477,6 @@ export default function Home() {
               } catch(e) {}
           }
 
-          // CHAMA NOSSA PRÓPRIA ROTA DA API DO UNSPLASH
           const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
           const data = await res.json();
           
@@ -484,10 +487,10 @@ export default function Home() {
               throw new Error("API não retornou foto");
           }
       } catch(err) { 
-          // Backup extremo se a API da Unsplash falhar (Usando raw Unsplash invés de loremflickr)
-          const fallback = `[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=$](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=$){w}&q=80`;
+          // Backup extremo se a API da Unsplash falhar ou estourar cota 
+          const fallback = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=${w}&q=80`;
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
-          (window as any).showNotification("Usando imagem padrão. Verifique sua chave da API.", "error"); 
+          (window as any).showNotification("Usando imagem padrão. Verifique sua cota de requisições.", "error"); 
       }
   };
 
@@ -611,7 +614,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -629,6 +632,7 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
+      {/* OVERLAY DE CARREGAMENTO AMIGÁVEL */}
       {statusApis.processing && (
           <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
               <div className="w-14 h-14 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-5"></div>
