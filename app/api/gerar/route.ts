@@ -23,55 +23,42 @@ export async function POST(req: Request) {
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
-    // A MÁGICA PROFISSIONAL DE IMAGENS ESTÁ AQUI
     const regraImagens = `
-=== SISTEMA DE IMAGENS PROFISSIONAIS ===
-🚨 PROIBIDO usar links do unsplash, loremflickr ou qualquer URL real nas imagens.
-Você DEVE OBRIGATORIAMENTE usar o nosso formato de tag de requisição no atributo 'src' da seguinte forma:
-Para fundos largos: src="[IMG_REQ: 1280x720: palavras chaves em inglês separadas por virgula]"
-Para pessoas/retrato: src="[IMG_REQ: 800x1200: palavras chaves em inglês]"
-Para quadrados: src="[IMG_REQ: 800x800: palavras chaves em inglês]"
+=== SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO ===
+🚨 É ESTRITAMENTE PROIBIDO INVENTAR URLs DE IMAGENS OU USAR SERVIÇOS GENÉRICOS COMO LOREMFLICKR.
+Você DEVE utilizar a nossa tag de requisição interna para todas as imagens: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 
-Exemplo prático de como você deve gerar a tag img:
-<img src="[IMG_REQ: 800x1200: happy woman, therapy, clinic, portrait]" alt="Terapeuta sorrindo" class="w-full h-full object-cover rounded-xl shadow-lg" />
+- resolucao deve ser: "1280x720" (para paisagens/fundos), "800x1200" (para retratos/pessoas em pé) ou "800x800" (para quadrados).
+- keywords devem ser 2 a 3 palavras precisas em inglês sobre o contexto (ex: business meeting, happy therapist, minimalist office).
 
-Use palavras-chave (keywords) extremamente específicas, focadas em humanos, emoções e no nicho do site. NUNCA use palavras abstratas como 'background' ou '3d'. APENAS fotos realistas de pessoas e ambientes.`;
+Exemplo: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Mulher de negócios" />
+`;
     
     let instrucaoDinamica = "";
-    if (dinamica === 'suave') instrucaoDinamica = "- Adicione data-aos=\"fade-up\" nas tags estruturais principais (<section>, <div>).";
-    else if (dinamica === 'impacto') instrucaoDinamica = "- OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism e hover:scale-105 nos botões de CTA.";
+    if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais principais (<section>, <header>, <div> principais).";
+    else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e hover:scale-105 nos botões.";
 
     let regrasObrigatorias = "";
     
     if (isSiteRefinement) {
-        regrasObrigatorias = `
-=== REGRA DE REFATORAÇÃO GLOBAL DE ESTRUTURA ===
-Você receberá o código HTML completo. Modifique APENAS o que foi pedido.
-DEVOLVA O HTML COMPLETO DENTRO DE UM JSON: { "codigo_html": "..." }
-NÃO CORTE O CÓDIGO. Mantenha as imagens no formato [IMG_REQ: ...] que encontrar.
-        `;
+        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva todo o HTML atualizado no JSON. NÃO CORTE O CÓDIGO.`;
     } else if (isElementRefinement) {
-        regrasObrigatorias = `
-=== DIRETRIZ DE MICRO-OTIMIZAÇÃO E COPYWRITING ===
-Você DEVE retornar EXCLUSIVAMENTE um objeto JSON: { "codigo_html": "..." }.
-Devolva APENAS a Tag HTML do elemento modificado. Não narre a resposta.
-        `;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido otimizado, dentro do JSON.`;
     } else {
         regrasObrigatorias = `
-=== REGRA DE OURO 1: ARQUITETURA OBRIGATÓRIA ===
-Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 O valor DEVE CONTER O SITE INTEIRO. Se o usuário pedir um MENU (Navbar), é OBRIGATÓRIO que a primeira tag dentro do <body> seja uma <nav> fixa contendo links e um botão de CTA.
+=== REGRA DE OURO 1: MOBILE-FIRST (OBRIGATÓRIO) ===
+O site DEVE ser perfeito no celular. Use espaçamentos menores no mobile (p-4, py-8) e empilhe tudo (flex-col). Use breakpoints apenas para telas maiores (md:flex-row, lg:py-16, md:p-8). 
+Menus devem usar flex-col no celular se não possuírem botão hambúrguer.
 
-=== REGRA DE OURO 2: RESPONSIVIDADE MOBILE-FIRST ===
-O site DEVE usar classes como 'flex-col md:flex-row' para garantir que os elementos se empilhem perfeitamente no celular e fiquem lado a lado no PC. Menus devem quebrar adequadamente no celular.
+=== REGRA DE OURO 2: ARQUITETURA ===
+Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html". O valor DEVE CONTER O SITE INTEIRO.
+Force o espaçamento de UMA LINHA entre títulos e parágrafos ('mb-4' ou 'mb-6').
 
-=== REGRA DE OURO 3: ESPAÇAMENTOS E IMAGENS ===
-- Force o espaçamento de UMA LINHA entre títulos e parágrafos ('mb-4' ou 'mb-6').
 ${regraImagens}
 ${instrucaoDinamica}
 
 === COMPLIANCE: RODAPÉ JURÍDICO FUNCIONAL ===
-Sempre finalize o </body> com este rodapé exato:
+Sempre finalize o </body> com este exato rodapé:
 <footer data-bloco="rodape" class="bg-slate-900 text-slate-300 py-12 text-center text-sm mt-12 border-t border-slate-800 w-full overflow-hidden">
     <div class="w-full max-w-5xl mx-auto px-6">
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-12 mb-8 font-medium">
@@ -80,7 +67,7 @@ Sempre finalize o </body> com este rodapé exato:
         </div>
         <div id="legal-panels" class="text-left mb-10 text-slate-200 text-base leading-relaxed hidden bg-slate-800 p-6 md:p-8 rounded-2xl w-full max-w-4xl mx-auto border border-slate-700 shadow-xl transition-all duration-300">
             <div id="panel-privacidade" class="legal-panel hidden space-y-4"><h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Política de Privacidade</h4><p>Coleta de dados em conformidade com as normas vigentes para otimização de atendimento.</p></div>
-            <div id="panel-termos" class="legal-panel hidden space-y-4"><h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Termos de Uso</h4><p>Este portal não é afiliado ao Facebook. Resultados dependem do esforço individual.</p></div>
+            <div id="panel-termos" class="legal-panel hidden space-y-4"><h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Termos de Uso</h4><p>Este portal não é afiliado a nenhuma rede social de terceiros. Resultados dependem do esforço individual.</p></div>
         </div>
         <p class="text-slate-500 font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p>
     </div>
@@ -91,7 +78,7 @@ Sempre finalize o </body> com este rodapé exato:
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     let htmlCode = '';
-    let provedorTextoUsado = 'Google Gemini';
+    let provedorTextoUsado = 'Google Gemini (Pro)';
 
     const usarGroq = isElementRefinement && !body.isGeminiForced && !isSiteRefinement;
 
@@ -110,7 +97,7 @@ Sempre finalize o </body> com este rodapé exato:
         htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
     }
 
-    if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial retornou um escopo inválido ou vazio. Tente refazer a requisição.");
+    if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial falhou em gerar o código HTML. Tente refazer a requisição.");
 
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement && !isSiteRefinement) {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
@@ -119,36 +106,37 @@ Sempre finalize o </body> com este rodapé exato:
         if (htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // PROCESSAMENTO DE IMAGENS (Substituindo a Tag IMG_REQ por Fotos Reais do Unsplash)
-    const regexImgReq = /\[IMG_REQ:\s*(\d+x\d+):\s*([^\]]+)\]/g;
+    // PROCESSADOR ABSOLUTO DO UNSPLASH API (Substitui as tags [UNSPLASH: ...] por links reais da API)
+    const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+):\s*([^\]]+)\]/g;
     let match;
-    let matchesUnsplash = [];
+    let urlsToReplace = [];
     while ((match = regexImgReq.exec(htmlCode)) !== null) {
-        matchesUnsplash.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] });
+        urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] });
     }
 
-    if (matchesUnsplash.length > 0) {
-        for (const item of matchesUnsplash) {
+    if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
+        for (const item of urlsToReplace) {
             let orient = item.dimensao === '800x1200' ? 'portrait' : 'landscape';
             if (item.dimensao === '800x800') orient = 'squarish';
-            
             const kwFormatada = encodeURIComponent(item.keywords.trim());
-            let imagemFinal = `https://loremflickr.com/${item.dimensao.replace('x', '/')}/${kwFormatada}?lock=${Math.floor(Math.random() * 999)}`;
-
-            if (process.env.UNSPLASH_API_KEY) {
-                try {
-                    const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=5&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
-                    if (uRes.ok) {
-                        const uData = await uRes.json();
-                        if (uData.results && uData.results.length > 0) {
-                            imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                        }
+            
+            try {
+                const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=5&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+                if (uRes.ok) {
+                    const uData = await uRes.json();
+                    if (uData.results && uData.results.length > 0) {
+                        const imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
+                        htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
+                        continue;
                     }
-                } catch (e) {}
-            }
-            // Substitui no HTML final
-            htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
+                }
+            } catch (e) {}
+            // Se falhar de buscar na API, usa o source raw do unsplash (sem usar loremflickr)
+            htmlCode = htmlCode.replace(item.fullMatch, `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`);
         }
+    } else {
+        // Fallback de segurança limpando tags perdidas
+        htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
     }
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });

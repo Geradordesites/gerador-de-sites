@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME (AJUSTE FORÇADO DE IMAGENS E BLINDAGEM)
+// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL (SEM LIXO NO HTML)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -62,7 +62,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if(event.data.bgImage !== undefined) {
                     if(event.data.bgImage) {
                         el.style.backgroundImage = "url('" + event.data.bgImage + "')";
-                        el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center";
+                        el.style.backgroundSize = "cover"; 
+                        el.style.backgroundPosition = "center";
+                        el.style.backgroundRepeat = "no-repeat";
                     } else { el.style.backgroundImage = "none"; }
                 }
 
@@ -71,18 +73,19 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.textAlign) el.classList.add(event.data.textAlign);
                 }
 
-                // AJUSTE FORÇADO DE FORMATO DE IMAGEM
+                if(event.data.animationClass !== undefined) {
+                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300', 'hover:-translate-y-2');
+                    if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
+                }
+
                 if(event.data.imgFormat !== undefined) {
                     if (event.data.imgFormat === '') {
                         el.style.aspectRatio = '';
-                        el.style.height = ''; // Libera a altura inline
                         el.classList.remove('object-cover', 'w-full');
                     } else {
-                        // Arranca classes do Tailwind que travam a altura da imagem
                         el.className = el.className.replace(/h-\[[^\]]+\]/g, '').replace(/h-\w+/g, '');
-                        
                         el.style.aspectRatio = event.data.imgFormat;
-                        el.style.height = 'auto'; // Permite que o Aspect Ratio comande
+                        el.style.height = 'auto';
                         el.classList.add('object-cover', 'w-full');
                     }
                 }
@@ -92,14 +95,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         'rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full',
                         'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl',
                         'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500',
-                        'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50',
-                        'animate-pulse', 'animate-bounce', 'hover:scale-105', 'transition-transform', 'duration-300'
+                        'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'
                     ];
                     el.classList.remove(...allClassesToRemove);
-                    
-                    if (event.data.imgRounded) { 
-                        event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); });
-                    }
+                    if (event.data.imgRounded) { event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); }); }
                 }
 
                 if(event.data.imgBorder !== undefined) {
@@ -155,8 +154,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
             if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
 
+            // Container Detector: Se tiver <br> soltos, ignora. Se tiver tags reais, bloqueia a edição direta de texto.
             let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
-            let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV'].includes(elSelecionado.tagName);
+            let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE'].includes(elSelecionado.tagName);
             let bloqueiaTexto = isContainer && isNavOrSection;
 
             let compStyle = window.getComputedStyle(elSelecionado);
@@ -180,7 +180,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 fontSize: parseInt(compStyle.fontSize) || 16,
                 bgImage: bgImg,
                 imgFormat: aspect,
-                customClasses: elSelecionado.dataset.customClasses || '',
                 bloqueiaTexto: bloqueiaTexto,
                 outerHTML: elSelecionado.outerHTML
             }, '*');
@@ -222,6 +221,7 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
+  // FAXINA FINAL DO HTML
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
@@ -397,11 +397,10 @@ export default function Home() {
 
   const executarGeracaoSiteVisual = async () => {
     if (uploadedImages.length === 0) { (window as any).showNotification('Por favor, anexe uma Imagem Base para iniciar.', 'error'); return; }
-    
     const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
     const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    let promptParts: any[] = [{ text: "Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato." }];
+    let promptParts: any[] = [{ text: "Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema." }];
     uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     
     const instrucoesFinais = `Desenvolvedor Especialista. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
@@ -417,7 +416,7 @@ export default function Home() {
     const checkMenuEl = document.getElementById('checkComMenuTexto') as HTMLInputElement;
     const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. Lembre-se: use espaçamentos precisos. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     
     const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
     if (data) processarRespostaDOM(data);
@@ -441,29 +440,55 @@ export default function Home() {
       e.target.value = ''; 
   };
 
+  // IMAGEM INTELIGENTE QUE BUSCA DIRETAMENTE DA UNSPLASH VIA API (O FIM DO LOREMFLICKR)
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("A IA está buscando a melhor imagem...", "success");
+      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
-      let w = 1280, h = 720; // Padrão Horizontal
+      let orientation = 'landscape'; 
+      let w = 1280, h = 720;
       
-      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
-      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
+      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
+      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
 
-      let termoBusca = "professional business";
-      if (elementoSelecionado.text && elementoSelecionado.text.length < 50) {
-          termoBusca = elementoSelecionado.text;
-      } else {
-          const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
-          termoBusca = textEl?.value?.substring(0, 50) || "modern professional";
+      const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
+      let termoContexto = elementoSelecionado.text || textEl?.value || "business";
+      if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
+
+      try {
+          // Passa o texto para a IA traduzir e resumir em 2 palavras-chave em inglês perfeitas
+          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
+          const iaRes = await fetch('/api/gerar', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false })
+          });
+          const iaData = await iaRes.json();
+          let keywordFinal = "professional business";
+          
+          if(iaData && iaData.html) {
+              try {
+                  const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim());
+                  if (kwJson.keyword) keywordFinal = kwJson.keyword;
+              } catch(e) {}
+          }
+
+          // CHAMA NOSSA PRÓPRIA ROTA DA API DO UNSPLASH
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
+          const data = await res.json();
+          
+          if(data && data.url) { 
+              atualizarElemento(isBackground ? 'bgImage' : 'src', data.url);
+              (window as any).showNotification("Foto de alta qualidade aplicada!", "success"); 
+          } else {
+              throw new Error("API não retornou foto");
+          }
+      } catch(err) { 
+          // Backup extremo se a API da Unsplash falhar (Usando raw Unsplash invés de loremflickr)
+          const fallback = `[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=$](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=$){w}&q=80`;
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
+          (window as any).showNotification("Usando imagem padrão. Verifique sua chave da API.", "error"); 
       }
-
-      const kwFormatada = encodeURIComponent(termoBusca.trim().replace(/\s+/g, ','));
-      const fallbackUrl = `[https://loremflickr.com/$](https://loremflickr.com/$){w}/${h}/${kwFormatada}?lock=${Math.floor(Math.random() * 9999)}`;
-      
-      atualizarElemento(isBackground ? 'bgImage' : 'src', fallbackUrl);
-      (window as any).showNotification("Nova imagem encaixada no formato!", "success");
   };
 
   const carregarMeusSites = async () => {
@@ -538,7 +563,7 @@ export default function Home() {
       : `<i class="fas fa-check-circle text-emerald-400 text-lg shrink-0"></i> <span>${msg}</span>`;
       
       document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 400); }, 4000);
+      setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 4000); }, 4000);
     };
 
     (window as any).copiarCodigo = () => {
@@ -604,7 +629,6 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-      {/* OVERLAY DE CARREGAMENTO AMIGÁVEL */}
       {statusApis.processing && (
           <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
               <div className="w-14 h-14 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-5"></div>
@@ -642,7 +666,7 @@ export default function Home() {
                                   <i className="fas fa-mouse-pointer text-2xl text-indigo-300"></i>
                               </div>
                               <p className="text-sm font-bold text-slate-600 mb-1">Selecione para Editar</p>
-                              <p className="text-xs font-medium text-slate-400">Clique em qualquer texto, botão ou imagem no site ao lado.</p>
+                              <p className="text-xs font-medium text-slate-400">Clique em qualquer texto, botão, fundo ou imagem no site ao lado.</p>
                           </div>
                       ) : (
                           <div className="pb-10 bg-white">
@@ -692,13 +716,6 @@ export default function Home() {
                                               </select>
                                           </div>
                                       </div>
-                                      <div className="panel-section flex justify-between items-center bg-slate-50 rounded-lg m-3 p-3 border border-slate-100">
-                                          <label className="flex items-center gap-2 cursor-pointer">
-                                              <input type="checkbox" onChange={(e) => atualizarElemento('imgBorder', e.target.checked)} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
-                                              <span className="text-xs font-bold text-slate-700">Colocar Moldura Grossa</span>
-                                          </label>
-                                          <input type="color" value={elementoSelecionado.borderColor || '#000000'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 p-0 shadow-sm" />
-                                      </div>
                                   </>
                               ) : (
                                   <>
@@ -721,8 +738,8 @@ export default function Home() {
                                           
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
-                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Bloco Estrutural</p>
-                                                  <p className="text-[10px] leading-relaxed">Clique diretamente em uma palavra ou botão para alterar o texto sem quebrar o design.</p>
+                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container de Estrutura</p>
+                                                  <p className="text-[10px] leading-relaxed">Para evitar quebrar o layout, clique diretamente em uma palavra ou botão para alterar o texto interno.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
@@ -752,25 +769,19 @@ export default function Home() {
                                               <input type="text" placeholder="Link direto da imagem..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 text-[10px]" />
                                           </div>
                                           <div className="flex gap-2">
-                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-magic mr-1"></i> IA</button>
-                                              <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-desktop mr-1"></i> PC<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-robot mr-1"></i> Inteligência Artificial</button>
+                                              <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-desktop mr-1"></i> Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
                                           </div>
                                       </div>
 
-                                      <div className="panel-section grid grid-cols-2 gap-4 bg-slate-50/50">
-                                          <div className="col-span-2">
-                                              <label className="input-label">Efeitos Interativos (Mouse)</label>
-                                              <select onChange={(e) => atualizarElemento('animationClass', e.target.value)} className="input-standard font-medium">
-                                                  <option value="">Sem Efeito</option>
-                                                  <option value="hover:scale-105 transition-transform duration-300">Dar Zoom (Crescer)</option>
-                                                  <option value="hover:-translate-y-2 transition-transform duration-300">Levantar Levemente</option>
-                                                  <option value="animate-pulse">Pulsar sem parar (Atenção)</option>
-                                              </select>
-                                          </div>
-                                          <div className="col-span-2">
-                                              <label className="input-label text-slate-400">Ajustes Avançados (Opcional Tailwind)</label>
-                                              <input type="text" placeholder="ex: bg-gradient-to-r opacity-90" value={elementoSelecionado.customClasses} onChange={(e) => atualizarElemento('customClasses', e.target.value)} className="input-standard font-mono text-[10px] bg-white" />
-                                          </div>
+                                      <div className="panel-section bg-slate-50/50">
+                                          <label className="input-label">Efeitos Interativos (Ao passar o mouse)</label>
+                                          <select onChange={(e) => atualizarElemento('animationClass', e.target.value)} className="input-standard font-medium">
+                                              <option value="">Sem Efeito</option>
+                                              <option value="hover:scale-105 transition-transform duration-300">Dar Zoom (Crescer)</option>
+                                              <option value="hover:-translate-y-2 transition-transform duration-300">Levantar Levemente</option>
+                                              <option value="animate-pulse">Pulsar sem parar (Atenção)</option>
+                                          </select>
                                       </div>
                                   </>
                               )}
@@ -797,17 +808,17 @@ export default function Home() {
                   
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white">
                       
-                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar">
-                          <button onClick={() => setAbaAtiva('visual')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Clonagem</button>
-                          <button onClick={() => setAbaAtiva('copy')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Texto</button>
-                          <button onClick={() => setAbaAtiva('refinar')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1"></i> Modificar</button>
+                      <div className="flex p-3 bg-slate-50 border-b border-slate-200 gap-2">
+                          <button onClick={() => setAbaAtiva('visual')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Por Imagem</button>
+                          <button onClick={() => setAbaAtiva('copy')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Por Texto</button>
+                          <button onClick={() => setAbaAtiva('refinar')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1"></i> Modificar</button>
                       </div>
 
                       {abaAtiva === 'refinar' ? (
                           <div className="p-5 space-y-6">
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-magic"></i></span> Refatoração Global</h3>
-                                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">Adicione blocos, links no rodapé ou botões extras no site sem precisar recriar tudo do zero.</p>
+                                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">Adicione blocos inteiros, links no rodapé ou botões extras no site sem precisar recriar tudo do zero.</p>
                                   <textarea id="refineGlobalContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Adicione um link para 'Blog' no menu superior, ou crie um botão flutuante de WhatsApp no canto da tela..."></textarea>
                                   
                                   <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
@@ -911,7 +922,7 @@ export default function Home() {
                               ) : (
                                   <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                                       <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Descrever o Site</h3>
-                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança, com uma área mostrando os dentistas e botão pro WhatsApp."></textarea>
+                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança..."></textarea>
                                       
                                       <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                           <i className="fas fa-code text-yellow-300 text-lg"></i> Criar Meu Site Agora
@@ -968,7 +979,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site (Mobile-First)</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
