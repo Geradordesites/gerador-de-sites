@@ -190,7 +190,7 @@ export default function Home() {
   const [abaAtiva, setAbaAtiva] = useState<'visual' | 'copy'>('visual');
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
-  const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
+  const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Motor Standby', processing: false });
 
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
@@ -270,10 +270,18 @@ export default function Home() {
         body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle, dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
       });
       const data = await response.json();
-      if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de uso atingido. Aguarde 60s." : data.error);
+      if (!data.success) throw new Error(data.error);
       return data;
     } catch (err: any) {
-      (window as any).showNotification(err.message, 'error');
+      // O INTERCEPTADOR DE ERROS PREMIUM
+      let errorMsg = err.message;
+      if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
+          errorMsg = "Limite da API Gratuita atingido. Por favor, aguarde cerca de 60 segundos antes de tentar novamente.";
+      } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
+          errorMsg = "Falha de conexão. Verifique sua internet ou as chaves de API.";
+      }
+      
+      (window as any).showNotification(errorMsg, 'error');
       return null;
     } finally {
       setStatusApis({ texto: 'Aguardando Operação', processing: false });
@@ -420,10 +428,18 @@ export default function Home() {
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast'); if(exist) exist.remove();
       const div = document.createElement('div'); div.id = 'custom-toast';
-      div.className = type === 'error' ? `fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-5 py-3 rounded-lg shadow-xl z-[9999] flex items-center gap-3 text-sm font-medium` : `fixed bottom-6 right-6 bg-zinc-900 text-white px-5 py-3 rounded-lg shadow-xl z-[9999] flex items-center gap-3 text-sm font-medium`;
-      div.innerHTML = type === 'error' ? `<i class="fas fa-exclamation-triangle text-red-500"></i> <span>${msg}</span>` : `<i class="fas fa-check-circle text-emerald-400"></i> <span>${msg}</span>`;
+      
+      // Ajuste CSS da notificação para não quebrar com textos muito longos (como os do Google)
+      div.className = type === 'error' 
+      ? `fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-5 py-3 rounded-lg shadow-xl z-[9999] flex items-start gap-3 text-sm font-medium max-w-lg w-full break-words` 
+      : `fixed bottom-6 right-6 bg-zinc-900 text-white px-5 py-3 rounded-lg shadow-xl z-[9999] flex items-center gap-3 text-sm font-medium`;
+      
+      div.innerHTML = type === 'error' 
+      ? `<i class="fas fa-exclamation-triangle text-red-500 mt-0.5 shrink-0"></i> <span class="flex-1">${msg}</span>` 
+      : `<i class="fas fa-check-circle text-emerald-400 shrink-0"></i> <span>${msg}</span>`;
+      
       document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 400); }, 3000);
+      setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 400); }, 3500);
     };
 
     (window as any).copiarCodigo = () => {
@@ -810,6 +826,7 @@ export default function Home() {
           </div>
       </div>
       
+      {/* MODAL DE PROJETOS (DEPLOY MANAGER) */}
       {modalMeusSitesAberto && (
         <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-zinc-200">
