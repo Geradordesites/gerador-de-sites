@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: DETECÇÃO INTELIGENTE DE CONTAINERS VS ELEMENTOS DE TEXTO
+// SCRIPT DO IFRAME: BLINDAGEM ANTI-NAVEGAÇÃO E SELEÇÃO CIRÚRGICA
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -32,9 +32,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                // SÓ ATUALIZA TEXTO SE FOR PASSADO NO EVENTO (Para proteger blocos estruturais)
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
-                
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.href !== undefined) el.setAttribute('href', event.data.href);
                 if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
@@ -118,9 +116,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             e.stopPropagation();
 
             let targetEl = e.target;
-
-            // Antes: Bloqueava Section e Div grandes. 
-            // Agora: PERMITE selecionar a Section (Para poder trocar fundo), mas NÃO permite selecionar BODY/HTML.
             if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
 
             if(elSelecionado) {
@@ -134,8 +129,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
             if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
 
-            // DETECTOR INTELIGENTE DE ESTRUTURA (Para proteger o menu e containers)
-            // Se o elemento tiver outras tags HTML reais dentro dele (além de br ou textos soltos), ele é um "Container"
             let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
             let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV'].includes(elSelecionado.tagName);
             let bloqueiaTexto = isContainer && isNavOrSection;
@@ -159,7 +152,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 fontSize: parseInt(compStyle.fontSize) || 16,
                 bgImage: bgImg,
                 customClasses: elSelecionado.dataset.customClasses || '',
-                bloqueiaTexto: bloqueiaTexto, // Passa a informação pro React bloquear a caixa de texto
+                bloqueiaTexto: bloqueiaTexto,
                 outerHTML: elSelecionado.outerHTML
             }, '*');
             
@@ -200,7 +193,7 @@ export default function Home() {
   const [abaAtiva, setAbaAtiva] = useState<'visual' | 'copy'>('visual');
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
-  const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Motor Standby', processing: false });
+  const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
@@ -245,7 +238,6 @@ export default function Home() {
   const atualizarElemento = (field: string, value: string | number | boolean, forceTextUpdate = false) => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      // Envia flag forceTextUpdate para garantir que text update funcione quando explicitamente chamado
       iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
@@ -253,89 +245,101 @@ export default function Home() {
   const otimizarComIA = async (comandoOverride?: string) => {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
       const comando = comandoOverride || promptInput?.value.trim();
-      if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe o parâmetro de otimização.", "error"); return; }
+      if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe o comando de otimização.", "error"); return; }
 
-      const systemInstruction = `Atue como Engenheiro de UI/UX e Copywriter Sênior B2B. Receberá o HTML de UM nó. Aplique a modificação: "${comando}". 
-      REGRA MÁXIMA: DEVOLVA APENAS O NÓ (TAG HTML) FINAL E OTIMIZADO. Não inclua Markdown, não explique, não use jargões como "Aqui está o texto". Preserve o ID original id="${elementoSelecionado.id}".`;
+      const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
+      REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada, não inclua Markdown. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
       
-      const resData = await chamarMotorIA(systemInstruction, [{text: `NÓ ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
+      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
       
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
           if(promptInput) promptInput.value = '';
-          (window as any).showNotification("Nó otimizado com sucesso.", "success");
+          (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
       }
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'Inferência Groq...' : 'Sintetizando Arquitetura (IA)...', processing: true });
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está construindo a estrutura...', processing: true });
 
     try {
-      const imageStyle = (document.getElementById('estiloImagem') as HTMLSelectElement)?.value || 'real';
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
 
       const response = await fetch('/api/gerar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle, dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
+        body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
       });
       const data = await response.json();
-      if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Rate limit atingido. Aguarde 60s." : data.error);
+      if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
       return data;
     } catch (err: any) {
       let errorMsg = err.message;
       if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
-          errorMsg = "Limite da API atingido. Por favor, aguarde cerca de 60 segundos.";
+          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto.";
       } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
-          errorMsg = "Erro de conexão. Verifique sua rede ou chaves de API.";
+          errorMsg = "Verifique sua conexão de internet e tente novamente.";
       }
       (window as any).showNotification(errorMsg, 'error');
       return null;
     } finally {
-      setStatusApis({ texto: 'Motor Standby', processing: false });
+      setStatusApis({ texto: 'Aguardando Ação', processing: false });
     }
   };
 
   const getMegaPromptEstilo = () => {
     const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
-    if (estilo === 'premium') return "DIRETRIZ UI: Design sofisticado, premium SaaS. Tipografia elegante e espaçamentos precisos.";
-    if (estilo === 'terapia') return "DIRETRIZ UI: Layout minimalista, saúde/bem-estar. Muito negative space (respiro) e bordas suaves.";
-    if (estilo === 'agressivo') return "DIRETRIZ UI: Landing Page B2C agressiva, conversão direta. Alto contraste.";
-    return "DIRETRIZ UI: Interface moderna, enterprise-grade, clean e focada em conversão.";
+    if (estilo === 'premium') return "DIRETRIZ DE DESIGN: Crie uma aparência sofisticada e de alto padrão (Premium). Use fontes serifadas elegantes e simetria perfeita.";
+    if (estilo === 'terapia') return "DIRETRIZ DE DESIGN: Crie uma aparência calma, acolhedora e leve (Saúde mental). Use muito espaço em branco, bordas suaves e cores que transmitem paz.";
+    if (estilo === 'agressivo') return "DIRETRIZ DE DESIGN: Foco total em Conversão e Vendas (Lançamento). Use alto contraste, cores fortes de CTA e layout muito direto ao ponto.";
+    return "DIRETRIZ DE DESIGN: Interface limpa, moderna e altamente profissional.";
   };
 
   const getMegaPromptCores = () => {
     const cor = corSelecionada;
-    if (cor === 'personalizada') return `CORES: Fundo principal: ${(document.getElementById('corFundo') as HTMLInputElement)?.value}, Destaque/CTA: ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value}`;
-    if (cor === 'auto') return "CORES: Extraia fielmente o esquema de cores primárias, secundárias e acentos da imagem fornecida.";
-    return `CORES: Tema otimizado focado em tons de ${cor.toUpperCase()}.`;
+    if (cor === 'personalizada') return `CORES: Fundo do site principal: ${(document.getElementById('corFundo') as HTMLInputElement)?.value}, Cor de Destaques/Botões: ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value}`;
+    if (cor === 'auto') return "CORES: Identifique, extraia e aplique fielmente o esquema de cores original da imagem fornecida.";
+    
+    const mapaCores:any = {
+        'dark': 'Modo Escuro Profundo (Fundos em tons de Chumbo/Preto com textos claros e detalhes vibrantes)',
+        'azul': 'Azul Confiança (Tons que transmitem segurança corporativa, negócios e tecnologia)',
+        'verde': 'Verde Crescimento (Tons focados em finanças, saúde, vitalidade e aprovação)',
+        'roxo': 'Roxo Inovação (Tons de luxo, modernidade, futuro e tecnologia abstrata)',
+        'terracota': 'Terracota e Nude (Tons terrosos, quentes, elegantes e muito acolhedores)',
+        'rosa': 'Rosa e Blush (Tons suaves, delicados e convidativos)',
+        'vermelho': 'Vermelho Alerta (Tons de alto impacto, urgência e excitação)',
+        'amarelo': 'Amarelo Otimista (Fundo escuro contrastando com amarelo energia/sol)',
+        'laranja': 'Laranja Criativo (Tons quentes, amigáveis, com muita energia e estímulo)',
+        'cinza': 'Cinza Monocromático (Estilo limpo, prata, ultra minimalista e focado na estrutura)'
+    };
+    return `CORES DO SITE: Baseie todo o design system (Botões, fundos e títulos) em: ${mapaCores[cor] || 'Paleta Neutra'}.`;
   };
 
   const getMegaPromptHero = () => {
     const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
-    if (hero === 'center') return "LAYOUT HEADER: Text-center simétrico. Título, subtítulo e CTA perfeitamente alinhados ao centro.";
-    if (hero === 'split') return "LAYOUT HEADER: Split-screen. Copy persuasiva na esquerda, Hero Asset (Imagem) na direita.";
+    if (hero === 'center') return "PRIMEIRA SEÇÃO DO SITE: Todo o conteúdo (Título, texto e botão principal) deve estar estritamente alinhado ao centro da tela.";
+    if (hero === 'split') return "PRIMEIRA SEÇÃO DO SITE: Dividida em duas partes lado a lado. Os textos persuasivos na esquerda e a imagem principal na direita.";
     return "";
   };
 
   const executarGeracaoSiteVisual = async () => {
-    if (uploadedImages.length === 0) { (window as any).showNotification('Forneça um asset visual (imagem) de referência.', 'error'); return; }
-    const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "INCLUIR NAVIGATION BAR FIXA NO TOPO." : "SEM NAVIGATION BAR.";
+    if (uploadedImages.length === 0) { (window as any).showNotification('Por favor, anexe uma Imagem Base para iniciar.', 'error'); return; }
+    const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "O site deve conter um Menu Superior fixo no topo." : "O site NÃO deve ter um menu superior, vá direto ao conteúdo.";
     
-    let promptParts: any[] = [{ text: "Gere a interface HTML/Tailwind completa (Navbar, Hero, Features, Social Proof, FAQ, Footer) aplicando engenharia reversa nesta imagem estrutural:" }];
+    let promptParts: any[] = [{ text: "Gere o código HTML estruturado com Tailwind CSS fazendo engenharia reversa desta imagem base. Respeite rigidamente a regra de espaçamento de uma linha entre textos e use apenas fotografias reais:" }];
     uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     
-    const instrucoesFinais = `Senior Front-End Engineer. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `Desenvolvedor Front-End. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     if (data) processarRespostaDOM(data);
   };
 
   const executarGeracaoSiteTexto = async () => {
     const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
-    if (!content) { (window as any).showNotification('Forneça o escopo do projeto (Briefing).', 'error'); return; }
-    const isMenu = (document.getElementById('checkComMenuTexto') as HTMLInputElement)?.checked ? "INCLUIR NAVIGATION BAR FIXA NO TOPO." : "SEM NAVIGATION BAR.";
-    const instrucoesFinais = `Copywriter B2B e Senior Front-End Engineer. Desenvolva uma Landing Page completa do zero com base neste briefing: \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    if (!content) { (window as any).showNotification('Por favor, preencha o campo de texto explicando como deve ser o site.', 'error'); return; }
+    const isMenu = (document.getElementById('checkComMenuTexto') as HTMLInputElement)?.checked ? "O site deve conter um Menu Superior fixo no topo." : "O site NÃO deve ter um menu superior, vá direto ao conteúdo.";
+    const instrucoesFinais = `Copywriter de Elite e Criador de Sites. Desenvolva uma Landing Page profissional e altamente conversiva baseada nas instruções a seguir: \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     
     const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
     if (data) processarRespostaDOM(data);
@@ -346,8 +350,8 @@ export default function Home() {
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
       if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
       if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
-      (window as any).showNotification(`Interface renderizada via ${data.provedorTexto}`, 'success');
-      if (modoInspetor) setModoInspetor(false);
+      (window as any).showNotification(`Pronto! Site criado com sucesso.`, 'success');
+      if (modoInspetor) toggleInspetor(); // Desliga inspetor se estava ligado
   }
 
   const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
@@ -361,8 +365,8 @@ export default function Home() {
 
   const gerarNovaImagemIAAutomatica = async (isBackground = false) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("Sintetizando ativo visual...", "success");
-      let termoBusca = "professional business modern minimal";
+      (window as any).showNotification("Buscando a imagem ideal via IA...", "success");
+      let termoBusca = "professional business modern minimal background";
       if (elementoSelecionado.text && elementoSelecionado.text.length < 30) termoBusca = elementoSelecionado.text;
 
       try {
@@ -370,9 +374,9 @@ export default function Home() {
           const data = await res.json();
           if(data && data.url) { 
               atualizarElemento(isBackground ? 'bgImage' : 'src', data.url);
-              (window as any).showNotification("Ativo integrado com sucesso.", "success"); 
+              (window as any).showNotification("Imagem aplicada com sucesso.", "success"); 
           }
-      } catch(err) { (window as any).showNotification("Falha no pipeline de imagens.", "error"); }
+      } catch(err) { (window as any).showNotification("Erro ao buscar nova imagem.", "error"); }
   };
 
   const carregarMeusSites = async () => {
@@ -386,7 +390,7 @@ export default function Home() {
   };
 
   const deletarSite = async (id: string, slug: string) => {
-    if (!confirm(`Remover projeto permanentemente?`)) return;
+    if (!confirm(`Excluir permanentemente o site "${slug}"?`)) return;
     await supabase.from('sites_gerados').delete().eq('id', id);
     setListaSites(listaSites.filter(site => site.id !== id));
     if (siteEditando?.id === id) setSiteEditando(null);
@@ -445,30 +449,30 @@ export default function Home() {
 
     (window as any).copiarCodigo = () => {
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('Markup copiado para o clipboard.', 'success');
+      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('Código copiado com sucesso.', 'success');
     };
 
     (window as any).baixarHtmlGerado = () => {
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!txt) return;
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/html' }));
-      a.download = siteEditando ? `${siteEditando.slug}.html` : 'build-export.html'; a.click();
+      a.download = siteEditando ? `${siteEditando.slug}.html` : 'meu-site-criado.html'; a.click();
     };
 
     (window as any).handlePublicarSite = async () => {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!htmlContent) return;
+      if (!htmlContent) { (window as any).showNotification('Você precisa criar um site antes de publicar.', 'error'); return; }
       
       let cleanHtml = purificarHTML(htmlContent);
 
-      if (siteEditando) { await supabase.from('sites_gerados').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Deploy atualizado com sucesso.', 'success'); return; }
-      const nome = prompt('Nome do Deploy (URL Slug):'); if (!nome) return; 
+      if (siteEditando) { await supabase.from('sites_gerados').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Site atualizado na internet com sucesso!', 'success'); return; }
+      const nome = prompt('Qual será o link (nome) do seu site na internet?'); if (!nome) return; 
       let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { alert('Autenticação expirada.'); return; }
+      if (!session) { alert('Sessão expirada. Faça login novamente.'); return; }
       await supabase.from('sites_gerados').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
       navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
-      alert(`Deploy concluído!\nURL Copiada: ${window.location.origin}/${slug}`);
+      alert(`Parabéns, seu site foi publicado!\nO Link foi copiado: ${window.location.origin}/${slug}`);
     };
   }, [siteEditando]); 
 
@@ -491,7 +495,7 @@ export default function Home() {
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid #e4e4e7; background-color: #fafafa; font-size: 0.75rem; outline: none; color: #27272a; transition: all 0.2s; }
-        .input-standard:focus { border-color: #09090b; background-color: #ffffff; ring: 1px solid #09090b; }
+        .input-standard:focus { border-color: #09090b; background-color: #ffffff; box-shadow: 0 0 0 1px #09090b; }
         .input-label { font-size: 0.65rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; display: block; }
         .panel-section { padding: 1rem; border-bottom: 1px solid #f4f4f5; }
         
@@ -499,9 +503,9 @@ export default function Home() {
         #previewFrame.active, #codigoContainer.active { display: block; }
         
         /* Modern Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
@@ -515,28 +519,26 @@ export default function Home() {
           </div>
       )}
 
-      {/* PAINEL LATERAL DE CONTROLE (O "WEBFLOW") */}
+      {/* PAINEL LATERAL ESQUERDO (O CONSTRUTOR) */}
       <div className="w-[340px] bg-white border-r border-zinc-200 flex flex-col h-full z-10 flex-shrink-0 shadow-sm">
           
-          {/* HEADER DO PAINEL */}
           <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-zinc-50/50">
               <h1 className="text-lg font-black tracking-tight text-zinc-900 flex items-center">
                   <div className="w-6 h-6 rounded bg-zinc-900 flex items-center justify-center mr-2 text-white"><i className="fas fa-layer-group text-xs"></i></div>
-                  System<span className="text-zinc-400 font-medium">Pro</span>
+                  Sistema<span className="text-zinc-400 font-medium">Pro</span>
               </h1>
               
-              <button onClick={toggleInspetor} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${modoInspetor ? 'bg-zinc-900 text-white shadow-md' : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
-                  <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse' : ''}`}></i> {modoInspetor ? 'Inspecionando' : 'Inspetor'}
+              <button onClick={toggleInspetor} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${modoInspetor ? 'bg-zinc-900 text-white shadow-md' : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'}`}>
+                  <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse' : ''}`}></i> {modoInspetor ? 'Inspecionando' : 'Inspecionar Site'}
               </button>
           </div>
 
           <div className="flex-1 overflow-y-auto bg-white">
               
-              {/* SE O INSPETOR ESTIVER ATIVO */}
               {modoInspetor ? (
                   <div className="animate-[fadeIn_0.2s_ease]">
                       <div className="bg-zinc-900 text-white p-3 text-[10px] font-mono tracking-widest uppercase flex justify-between items-center">
-                          <span>Inspetor Estrutural</span>
+                          <span>Painel de Inspecão</span>
                           <i className="fas fa-code text-zinc-500"></i>
                       </div>
 
@@ -545,11 +547,10 @@ export default function Home() {
                               <div className="w-12 h-12 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center mb-3">
                                   <i className="fas fa-mouse-pointer text-lg"></i>
                               </div>
-                              <p className="text-xs font-medium">Selecione um elemento no canvas<br/>para acessar as propriedades.</p>
+                              <p className="text-xs font-medium">Clique em um elemento do site<br/>para editá-lo facilmente.</p>
                           </div>
                       ) : (
                           <div className="pb-10">
-                              {/* IDENTIFICAÇÃO DO NÓ */}
                               <div className="panel-section bg-zinc-50/50">
                                   <div className="flex justify-between items-center">
                                       <div>
@@ -559,58 +560,56 @@ export default function Home() {
                                   </div>
                               </div>
 
-                              {/* PROPRIEDADES DE IMAGEM */}
                               {elementoSelecionado.tagName === 'img' ? (
                                   <>
                                       <div className="panel-section">
-                                          <label className="input-label">Source URL (Origem)</label>
+                                          <label className="input-label">Link da Imagem (Origem)</label>
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-2" />
                                           <div className="flex gap-2">
-                                              <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-magic mr-1"></i> Auto Generate</button>
-                                              <label className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-upload mr-1"></i> Upload Asset<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-magic mr-1"></i> Gerar via IA</button>
+                                              <label className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-upload mr-1"></i> Upload Local<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
                                           </div>
                                       </div>
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
-                                              <label className="input-label">Aspect Ratio</label>
+                                              <label className="input-label">Proporção (Formato)</label>
                                               <select onChange={(e) => atualizarElemento('imgFormat', e.target.value)} className="input-standard">
-                                                  <option value="">Livre / Auto</option>
-                                                  <option value="aspect-video">16:9 (Landscape)</option>
-                                                  <option value="aspect-[3/4]">3:4 (Portrait)</option>
-                                                  <option value="aspect-square">1:1 (Square)</option>
+                                                  <option value="">Formato Original</option>
+                                                  <option value="aspect-video">Paisagem (Deitado)</option>
+                                                  <option value="aspect-[3/4]">Retrato (Em pé)</option>
+                                                  <option value="aspect-square">Quadrado (Redes Sociais)</option>
                                               </select>
                                           </div>
                                           <div>
-                                              <label className="input-label">Border Radius</label>
+                                              <label className="input-label">Arredondamento das Bordas</label>
                                               <select onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
-                                                  <option value="rounded-none">0px (Sharp)</option>
-                                                  <option value="rounded-md">6px (Soft)</option>
-                                                  <option value="rounded-xl">12px (Smooth)</option>
-                                                  <option value="rounded-full">100% (Circle)</option>
+                                                  <option value="rounded-none">Cantos Retos</option>
+                                                  <option value="rounded-md">Suave (Cantos)</option>
+                                                  <option value="rounded-xl">Bem Arredondado</option>
+                                                  <option value="rounded-full">Círculo Perfeito</option>
                                               </select>
                                           </div>
                                       </div>
                                       <div className="panel-section flex justify-between items-center">
                                           <label className="flex items-center gap-2 cursor-pointer">
                                               <input type="checkbox" onChange={(e) => atualizarElemento('imgBorder', e.target.checked)} className="w-3.5 h-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
-                                              <span className="text-xs font-semibold text-zinc-700">Ativar Traçado (Stroke)</span>
+                                              <span className="text-xs font-semibold text-zinc-700">Ativar Borda Externa</span>
                                           </label>
                                           <input type="color" value={elementoSelecionado.borderColor || '#000000'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer border border-zinc-200 p-0" />
                                       </div>
                                   </>
                               ) : (
                                   <>
-                                      {/* PROPRIEDADES DE TEXTOS / BOTÕES / CONTAINERS */}
                                       {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button') && (
-                                          <div className="panel-section bg-blue-50/30">
-                                              <label className="input-label text-blue-700">Link Destino (HREF)</label>
-                                              <input type="text" placeholder="/url ou #ancora" value={elementoSelecionado.href} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard font-mono border-blue-200 focus:border-blue-500" />
+                                          <div className="panel-section bg-zinc-50/50">
+                                              <label className="input-label text-zinc-800">Link de Destino</label>
+                                              <input type="text" placeholder="/url ou #ancora" value={elementoSelecionado.href} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard font-mono" />
                                           </div>
                                       )}
 
                                       <div className="panel-section">
                                           <div className="flex justify-between items-end mb-2">
-                                              <label className="input-label mb-0">Conteúdo do Nó</label>
+                                              <label className="input-label mb-0">Conteúdo do Elemento</label>
                                               <div className="flex bg-zinc-100 rounded border border-zinc-200 p-0.5">
                                                   <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-6 h-5 flex items-center justify-center hover:bg-white rounded text-zinc-500"><i className="fas fa-align-left text-[9px]"></i></button>
                                                   <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-6 h-5 flex items-center justify-center hover:bg-white rounded text-zinc-500"><i className="fas fa-align-center text-[9px]"></i></button>
@@ -618,11 +617,10 @@ export default function Home() {
                                               </div>
                                           </div>
                                           
-                                          {/* BLOQUEIO INTELIGENTE DE TEXTAREA SE FOR CONTAINER */}
                                           {elementoSelecionado.bloqueiaTexto ? (
-                                              <div className="bg-amber-50 p-3 rounded-md border border-amber-200 mt-1">
-                                                  <p className="text-[10px] text-amber-800 font-bold mb-1"><i className="fas fa-layer-group"></i> Container Estrutural</p>
-                                                  <p className="text-[9px] text-amber-700 leading-relaxed">Para alterar os textos internos sem quebrar a estrutura (como em menus), clique diretamente na palavra desejada. Aqui você pode alterar a <b>Cor</b> ou a <b>Imagem de Fundo</b> deste bloco.</p>
+                                              <div className="bg-orange-50 p-2.5 rounded border border-orange-200 mt-1 text-orange-800">
+                                                  <p className="text-[10px] font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Grupo Estrutural</p>
+                                                  <p className="text-[9px] leading-snug">Para não quebrar a estrutura, clique exatamente sobre o texto ou botão interno que deseja editar.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={3} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y"></textarea>
@@ -631,60 +629,58 @@ export default function Home() {
                                       
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
-                                              <label className="input-label flex justify-between">Typography <span>{elementoSelecionado.fontSize}px</span></label>
+                                              <label className="input-label flex justify-between">Tamanho da Fonte <span>{elementoSelecionado.fontSize}px</span></label>
                                               <input type="range" min="10" max="120" value={elementoSelecionado.fontSize || 16} onChange={(e) => atualizarElemento('fontSize', parseInt(e.target.value))} className="w-full h-1 bg-zinc-200 rounded appearance-none cursor-pointer accent-zinc-900 mt-2" />
                                           </div>
                                           <div className="flex flex-col gap-2">
                                               <div className="flex justify-between items-center">
-                                                  <label className="text-[10px] font-semibold text-zinc-600">Fill (Fundo)</label>
+                                                  <label className="text-[10px] font-semibold text-zinc-600">Cor do Fundo</label>
                                                   <input type="color" value={elementoSelecionado.bgColor || '#ffffff'} onChange={(e) => atualizarElemento('bgColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer border border-zinc-200 p-0" />
                                               </div>
                                               <div className="flex justify-between items-center">
-                                                  <label className="text-[10px] font-semibold text-zinc-600">Color (Letra)</label>
+                                                  <label className="text-[10px] font-semibold text-zinc-600">Cor do Texto</label>
                                                   <input type="color" value={elementoSelecionado.textColor || '#000000'} onChange={(e) => atualizarElemento('textColor', e.target.value)} className="w-5 h-5 rounded cursor-pointer border border-zinc-200 p-0" />
                                               </div>
                                           </div>
                                       </div>
 
                                       <div className="panel-section">
-                                          <label className="input-label">Background Image</label>
+                                          <label className="input-label">Imagem de Fundo</label>
                                           <div className="flex gap-2">
-                                              <input type="text" placeholder="URL direta" value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 font-mono" />
-                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="w-8 h-8 flex items-center justify-center bg-zinc-100 border border-zinc-200 rounded text-zinc-600 hover:bg-zinc-200 transition"><i className="fas fa-magic"></i></button>
-                                              <label className="w-8 h-8 flex items-center justify-center bg-zinc-100 border border-zinc-200 rounded text-zinc-600 hover:bg-zinc-200 transition cursor-pointer"><i className="fas fa-upload"></i><input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
+                                              <input type="text" placeholder="Cole o link direto da imagem" value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 font-mono" />
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="w-8 h-8 flex items-center justify-center bg-zinc-100 border border-zinc-200 rounded text-zinc-600 hover:bg-zinc-200 transition" title="Procurar com IA"><i className="fas fa-magic"></i></button>
                                           </div>
                                       </div>
 
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div className="col-span-2">
-                                              <label className="input-label">Transições e Hover</label>
+                                              <label className="input-label">Animações e Efeitos (Ao passar o mouse)</label>
                                               <select onChange={(e) => atualizarElemento('animationClass', e.target.value)} className="input-standard">
-                                                  <option value="">Desativado</option>
-                                                  <option value="hover:scale-105 transition-transform duration-300">Scale +5% (Hover)</option>
-                                                  <option value="hover:-translate-y-2 transition-transform duration-300">Lift UP (Hover)</option>
-                                                  <option value="animate-pulse">Pulse (Atenção contínua)</option>
+                                                  <option value="">Sem Animação</option>
+                                                  <option value="hover:scale-105 transition-transform duration-300">Dar Zoom Leve (Chamar Atenção)</option>
+                                                  <option value="hover:-translate-y-2 transition-transform duration-300">Levantar (Efeito Flutuar)</option>
+                                                  <option value="animate-pulse">Efeito Pulsante Contínuo</option>
                                               </select>
                                           </div>
                                           <div className="col-span-2">
-                                              <label className="input-label">Custom Classes (Tailwind)</label>
+                                              <label className="input-label">Classes Tailwind Extras (Avançado)</label>
                                               <input type="text" placeholder="ex: bg-gradient-to-r opacity-90" value={elementoSelecionado.customClasses} onChange={(e) => atualizarElemento('customClasses', e.target.value)} className="input-standard font-mono text-[10px]" />
                                           </div>
                                       </div>
                                   </>
                               )}
 
-                              {/* O MOTOR DE INFERÊNCIA SEMÂNTICA (IA) */}
                               <div className="m-4 bg-zinc-900 rounded-lg p-4 shadow-md text-white">
-                                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-300 mb-3 flex items-center"><i className="fas fa-bolt mr-2 text-yellow-400"></i> Otimização Semântica IA</label>
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-300 mb-3 flex items-center"><i className="fas fa-bolt mr-2 text-yellow-400"></i> Otimização com IA</label>
                                   
                                   {elementoSelecionado.tagName !== 'img' && !elementoSelecionado.bloqueiaTexto && (
                                       <div className="grid grid-cols-2 gap-2 mb-3">
-                                          <button onClick={() => otimizarComIA("Reescreva com copy persuasiva de alta conversão B2B, tom profissional e conciso")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Copy Persuasiva</button>
-                                          <button onClick={() => otimizarComIA("Reescreva gerando forte urgência, escassez e call to action incisivo")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Gerar Urgência</button>
+                                          <button onClick={() => otimizarComIA("Reescreva com copy persuasiva focada em conversão, num tom altamente profissional e que gere desejo de compra.")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Tornar Persuasivo</button>
+                                          <button onClick={() => otimizarComIA("Reescreva incutindo forte urgência, escassez e apelo imperativo para clicar e tomar uma ação imediata agora.")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Adicionar Urgência</button>
                                       </div>
                                   )}
                                   <div className="flex gap-2 relative">
-                                      <input type="text" id="ai_prompt_element" placeholder="Prompt livre..." className="w-full bg-zinc-800 border border-zinc-700 text-white text-[11px] rounded-md px-3 py-2 outline-none focus:border-zinc-500 placeholder-zinc-500" />
+                                      <input type="text" id="ai_prompt_element" placeholder="Instrução livre para a IA..." className="w-full bg-zinc-800 border border-zinc-700 text-white text-[11px] rounded-md px-3 py-2 outline-none focus:border-zinc-500 placeholder-zinc-500" />
                                       <button onClick={() => otimizarComIA()} className="absolute right-1 top-1 bottom-1 w-8 bg-zinc-700 hover:bg-zinc-600 rounded flex items-center justify-center transition"><i className="fas fa-arrow-right text-xs"></i></button>
                                   </div>
                               </div>
@@ -693,7 +689,6 @@ export default function Home() {
                   </div>
               ) : (
                   
-                  /* PAINEL DE GERAÇÃO BASE */
                   <div className="animate-[fadeIn_0.2s_ease] pb-10">
                       
                       <div className="flex p-2 bg-zinc-100/50 border-b border-zinc-200">
@@ -704,33 +699,50 @@ export default function Home() {
                       <div className="p-4 space-y-5">
                           <div>
                               <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mr-2"></span>1. Diretrizes Globais</h3>
-                              <div className="space-y-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg">
+                              <div className="space-y-4 bg-zinc-50 border border-zinc-200 p-3.5 rounded-lg">
+                                  
                                   <div>
-                                      <label htmlFor="nichoEstilo" className="input-label">Tema Base UI</label>
-                                      <select id="nichoEstilo" className="input-standard">
-                                          <option value="minimalista">Minimalista (Clean / Moderno)</option>
-                                          <option value="premium">Premium (Elegante / B2B)</option>
-                                          <option value="agressivo">Agressivo (Lançamentos / Dark)</option>
-                                          <option value="corporativo">Corporativo (Institucional)</option>
-                                          <option value="terapia">Acolhedor (Saúde / Terapia)</option>
-                                      </select>
-                                  </div>
-                                  <div>
-                                      <label htmlFor="paletaCores" className="input-label">Design System (Cores)</label>
-                                      <select id="paletaCores" value={corSelecionada} onChange={(e) => setCorSelecionada(e.target.value)} className="input-standard">
-                                          <option value="auto">Inferir Fielmente da Referência (Auto)</option>
-                                          <option value="dark">Dark Mode (Preto & High Contrast)</option>
-                                          <option value="azul">Corporate Blue (Confiança/Tech)</option>
-                                          <option value="verde">Emerald Green (Finanças/Saúde)</option>
-                                          <option value="cinza">Zinc / Monocromático</option>
-                                          <option value="personalizada">Definir Cores Customizadas...</option>
-                                      </select>
+                                      <label className="input-label mb-2">Paleta de Cores</label>
+                                      
+                                      <div className="flex flex-wrap gap-2.5">
+                                          {[
+                                              {id: 'auto', cor: 'bg-gradient-to-r from-zinc-400 to-zinc-600', title: 'Extrair da Imagem Original'},
+                                              {id: 'dark', cor: 'bg-zinc-900', title: 'Modo Escuro Elegante'},
+                                              {id: 'azul', cor: 'bg-blue-600', title: 'Azul Corporativo (Confiança)'},
+                                              {id: 'verde', cor: 'bg-emerald-500', title: 'Verde (Crescimento/Saúde)'},
+                                              {id: 'roxo', cor: 'bg-purple-600', title: 'Roxo Royal (Inovação)'},
+                                              {id: 'rosa', cor: 'bg-pink-500', title: 'Rosa Soft (Delicadeza)'},
+                                              {id: 'vermelho', cor: 'bg-red-500', title: 'Vermelho (Ação/Urgência)'},
+                                              {id: 'amarelo', cor: 'bg-yellow-400', title: 'Amarelo (Otimismo/Energia)'},
+                                              {id: 'laranja', cor: 'bg-orange-500', title: 'Laranja (Criatividade/Ação)'},
+                                              {id: 'terracota', cor: 'bg-amber-700', title: 'Terracota (Conforto/Elegância)'},
+                                              {id: 'cinza', cor: 'bg-zinc-500', title: 'Cinza (Tech/Minimalismo)'},
+                                              {id: 'personalizada', cor: 'bg-white border border-zinc-300', title: 'Escolher Cores Manualmente'}
+                                          ].map(c => (
+                                              <button key={c.id} onClick={() => setCorSelecionada(c.id)} className={`w-7 h-7 rounded-full shadow-sm transition-transform duration-200 ${corSelecionada === c.id ? 'ring-2 ring-zinc-800 ring-offset-2 scale-110' : 'hover:scale-110'} ${c.cor} flex items-center justify-center`} title={c.title}>
+                                                  {c.id === 'auto' && <i className="fas fa-wand-magic-sparkles text-white text-[10px]"></i>}
+                                                  {c.id === 'personalizada' && <i className="fas fa-sliders-h text-zinc-500 text-[10px]"></i>}
+                                              </button>
+                                          ))}
+                                      </div>
+                                      
                                       {corSelecionada === 'personalizada' && (
                                           <div className="flex gap-3 mt-3 p-3 bg-white rounded border border-zinc-200">
-                                              <div className="flex-1"><label className="input-label">Background</label><input type="color" id="corFundo" className="w-full h-8 rounded cursor-pointer p-0 border border-zinc-200" defaultValue="#ffffff" /></div>
-                                              <div className="flex-1"><label className="input-label">Accent / Call-to-action</label><input type="color" id="corPrimaria" className="w-full h-8 rounded cursor-pointer p-0 border border-zinc-200" defaultValue="#09090b" /></div>
+                                              <div className="flex-1"><label className="input-label">Cor de Fundo Principal</label><input type="color" id="corFundo" className="w-full h-8 rounded cursor-pointer p-0 border border-zinc-200" defaultValue="#ffffff" /></div>
+                                              <div className="flex-1"><label className="input-label">Cor dos Botões (Destaque)</label><input type="color" id="corPrimaria" className="w-full h-8 rounded cursor-pointer p-0 border border-zinc-200" defaultValue="#09090b" /></div>
                                           </div>
                                       )}
+                                  </div>
+
+                                  <div>
+                                      <label htmlFor="nichoEstilo" className="input-label">Tema Visual</label>
+                                      <select id="nichoEstilo" className="input-standard">
+                                          <option value="minimalista">Layout Minimalista Moderno (Clean)</option>
+                                          <option value="premium">Layout Premium (Alto Padrão / Elegante)</option>
+                                          <option value="agressivo">Layout Focado em Alta Conversão</option>
+                                          <option value="corporativo">Layout Corporativo (Empresarial)</option>
+                                          <option value="terapia">Layout Acolhedor (Foco em Saúde)</option>
+                                      </select>
                                   </div>
                               </div>
                           </div>
@@ -739,27 +751,27 @@ export default function Home() {
                               <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mr-2"></span>2. Estrutura Base</h3>
                               <div className="space-y-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg">
                                   <div>
-                                      <label htmlFor="heroLayout" className="input-label">Hero Section (Primeira Dobra)</label>
+                                      <label htmlFor="heroLayout" className="input-label">Estrutura do Topo (Hero)</label>
                                       <select id="heroLayout" className="input-standard">
-                                          <option value="auto">Inteligente (Análise da Imagem)</option>
-                                          <option value="center">Centralizado (Foco em Copy)</option>
-                                          <option value="split">Split Layout (Copy Left, Asset Right)</option>
+                                          <option value="auto">Inferir da Referência Visual</option>
+                                          <option value="center">Centralizar Texto e Botões</option>
+                                          <option value="split">Separar Tela (Texto de um lado, Imagem do outro)</option>
                                       </select>
                                   </div>
                                   <label className="flex items-center gap-2 cursor-pointer mt-1">
                                       <input type="checkbox" id="checkComMenu" defaultChecked={true} className="w-3.5 h-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900" />
-                                      <span className="text-xs font-semibold text-zinc-700">Incluir Navigation Bar Fixa</span>
+                                      <span className="text-xs font-semibold text-zinc-700">Incluir Menu Fixo no Topo do Site</span>
                                   </label>
                               </div>
                           </div>
 
                           {abaAtiva === 'visual' ? (
                               <div>
-                                  <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>3. Input Visual (Clonagem)</h3>
+                                  <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>3. Interface Base (Imagem)</h3>
                                   <div className="bg-white border-2 border-dashed border-zinc-200 hover:border-blue-400 hover:bg-blue-50/20 transition-colors rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer" onClick={() => document.getElementById('imageUploadInput')?.click()}>
                                       <i className="fas fa-image text-2xl text-zinc-300 mb-2"></i>
-                                      <p className="text-xs font-bold text-zinc-700">Forneça o Asset Visual</p>
-                                      <p className="text-[10px] font-medium text-zinc-400 mt-1">Arraste ou Ctrl+V para injetar.</p>
+                                      <p className="text-xs font-bold text-zinc-700">Anexe a Imagem de Referência</p>
+                                      <p className="text-[10px] font-medium text-zinc-400 mt-1">Arraste ou cole (Ctrl+V) aqui.</p>
                                   </div>
                                   <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
                                   
@@ -775,16 +787,16 @@ export default function Home() {
                                   )}
                                   
                                   <button onClick={executarGeracaoSiteVisual} className="w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 rounded-lg transition-colors text-xs flex items-center justify-center gap-2">
-                                      <i className="fas fa-code"></i> Gerar Interface HTML
+                                      <i className="fas fa-code"></i> Criar Site Profissional
                                   </button>
                               </div>
                           ) : (
                               <div>
-                                  <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-2"></span>3. Input Textual (Briefing)</h3>
-                                  <textarea id="productContent" className="input-standard h-32 resize-none leading-relaxed" placeholder="Descreva o objetivo da Landing Page, público-alvo e principais benefícios que o motor deve estruturar..."></textarea>
+                                  <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-2"></span>3. Escopo Textual (Briefing)</h3>
+                                  <textarea id="productContent" className="input-standard h-32 resize-none leading-relaxed" placeholder="Descreva aqui o seu produto, para quem ele é, quais são as dores do seu cliente e os benefícios do que você vende..."></textarea>
                                   
                                   <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 rounded-lg transition-colors text-xs flex items-center justify-center gap-2">
-                                      <i className="fas fa-code"></i> Construir do Zero
+                                      <i className="fas fa-code"></i> Construir Site Baseado no Texto
                                   </button>
                               </div>
                           )}
@@ -799,26 +811,26 @@ export default function Home() {
           <div className="bg-white border-b border-zinc-200 flex justify-between items-center px-4 md:px-6 h-14 shadow-sm z-10">
               <div className="flex items-center gap-3">
                   <div className="flex bg-zinc-100 p-0.5 rounded-md border border-zinc-200">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-4 py-1.5 rounded-md font-semibold text-[11px] bg-white text-zinc-900 shadow-sm transition">Preview</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-4 py-1.5 rounded-md font-medium text-[11px] text-zinc-500 hover:text-zinc-900 transition">Markup</button>
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-4 py-1.5 rounded-md font-semibold text-[11px] bg-white text-zinc-900 shadow-sm transition">Ver o Site</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-4 py-1.5 rounded-md font-medium text-[11px] text-zinc-500 hover:text-zinc-900 transition">Código Fonte</button>
                   </div>
                   <div className="w-px h-4 bg-zinc-200 mx-1 hidden md:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden md:flex items-center gap-1.5 text-zinc-500 hover:text-zinc-900 text-[11px] font-semibold transition"><i className="fas fa-undo"></i> Undo</button>
+                  <button onClick={desfazerCodigo} className="hidden md:flex items-center gap-1.5 text-zinc-500 hover:text-zinc-900 text-[11px] font-semibold transition"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
 
               <div className="flex items-center gap-3">
-                  <button onClick={carregarMeusSites} className="text-zinc-600 hover:text-zinc-900 font-semibold text-[11px] px-3 py-1.5 transition">Projects</button>
+                  <button onClick={carregarMeusSites} className="text-zinc-600 hover:text-zinc-900 font-semibold text-[11px] px-3 py-1.5 transition">Meus Projetos</button>
                   <div className="w-px h-4 bg-zinc-200"></div>
-                  <button onClick={() => (window as any).baixarHtmlGerado()} className="text-zinc-600 hover:text-zinc-900 text-[11px] px-2 py-1.5 transition" title="Export HTML"><i className="fas fa-download"></i></button>
-                  <button onClick={() => (window as any).copiarCodigo()} className="text-zinc-600 hover:text-zinc-900 text-[11px] px-2 py-1.5 transition mr-2" title="Copy Markup"><i className="fas fa-copy"></i></button>
+                  <button onClick={() => (window as any).baixarHtmlGerado()} className="text-zinc-600 hover:text-zinc-900 text-[11px] px-2 py-1.5 transition" title="Baixar Arquivo HTML"><i className="fas fa-download"></i></button>
+                  <button onClick={() => (window as any).copiarCodigo()} className="text-zinc-600 hover:text-zinc-900 text-[11px] px-2 py-1.5 transition mr-2" title="Copiar todo o Código"><i className="fas fa-copy"></i></button>
                   
                   {siteEditando ? (
                       <div className="flex gap-2">
-                          <button onClick={() => setSiteEditando(null)} className="px-4 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-[11px] rounded-md transition">Cancel</button>
-                          <button onClick={() => (window as any).handlePublicarSite()} className="px-4 py-1.5 bg-zinc-900 hover:bg-black text-white font-bold text-[11px] rounded-md transition">Update Deploy</button>
+                          <button onClick={() => setSiteEditando(null)} className="px-4 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-[11px] rounded-md transition">Cancelar</button>
+                          <button onClick={() => (window as any).handlePublicarSite()} className="px-4 py-1.5 bg-zinc-900 hover:bg-black text-white font-bold text-[11px] rounded-md transition">Salvar Alterações</button>
                       </div>
                   ) : (
-                      <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-1.5 bg-zinc-900 hover:bg-black text-white font-bold text-[11px] rounded-md shadow-sm transition">Publish</button>
+                      <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-1.5 bg-zinc-900 hover:bg-black text-white font-bold text-[11px] rounded-md shadow-sm transition">Publicar Online</button>
                   )}
               </div>
           </div>
@@ -826,7 +838,7 @@ export default function Home() {
           <div className="flex-grow relative bg-zinc-100 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center">
               {modoInspetor && (
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 text-white px-6 py-2 rounded-full shadow-lg font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 border border-zinc-700 animate-pulse pointer-events-none">
-                      <i className="fas fa-crosshairs text-blue-400"></i> Selecione um nó no Canvas para Inspecionar
+                      <i className="fas fa-mouse-pointer text-blue-400"></i> Selecione algo na tela para editar
                   </div>
               )}
               
@@ -834,10 +846,10 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-6 w-full bg-zinc-100 border-b border-zinc-200 flex items-center px-4 gap-1.5">
                           <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-                          <div className="mx-auto bg-white border border-zinc-200 text-[9px] text-zinc-400 px-12 py-0.5 rounded font-mono">Viewport: Desktop 1440px / Responsive Mobile Auto</div>
+                          <div className="mx-auto bg-white border border-zinc-200 text-[9px] text-zinc-400 px-12 py-0.5 rounded font-mono">Tela: Desktop 1440px / Responsivo</div>
                       </div>
                   )}
-                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Preview Canvas"></iframe>
+                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador Integrado"></iframe>
                   <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
                       <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-6 leading-relaxed"></textarea>
                   </div>
@@ -845,16 +857,15 @@ export default function Home() {
           </div>
       </div>
       
-      {/* MODAL DE PROJETOS */}
       {modalMeusSitesAberto && (
         <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-zinc-200">
             <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-              <h2 className="text-sm font-black text-zinc-800 uppercase tracking-wider flex items-center"><i className="fas fa-server text-zinc-400 mr-2"></i> Deploy Manager</h2>
+              <h2 className="text-sm font-black text-zinc-800 uppercase tracking-wider flex items-center"><i className="fas fa-server text-zinc-400 mr-2"></i> Gerenciador de Projetos</h2>
               <button onClick={() => setModalMeusSitesAberto(false)} className="w-7 h-7 rounded bg-white border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition"><i className="fas fa-times"></i></button>
             </div>
             <div className="p-6 flex-1 overflow-y-auto custom-scrollbar bg-white">
-              {carregandoSites ? <p className="text-center text-sm font-medium text-zinc-400 py-12">Fetching deploys...</p> : listaSites.length === 0 ? <p className="text-center text-sm font-medium text-zinc-400 py-12">Nenhum projeto encontrado no servidor.</p> : (
+              {carregandoSites ? <p className="text-center text-sm font-medium text-zinc-400 py-12">Buscando projetos...</p> : listaSites.length === 0 ? <p className="text-center text-sm font-medium text-zinc-400 py-12">Nenhum projeto encontrado no servidor.</p> : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {sitesAtuais.map((site) => {
@@ -867,10 +878,10 @@ export default function Home() {
                                 <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-1.5 outline-none font-mono text-zinc-600" />
                             </div>
                             <div className="flex justify-between items-center mt-auto pt-4 border-t border-zinc-100">
-                              <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-[10px] font-bold uppercase text-zinc-500 hover:text-zinc-900 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Visit</a>
+                              <a href={`/${site.slug}`} target="_blank" rel="noreferrer" className="text-[10px] font-bold uppercase text-zinc-500 hover:text-zinc-900 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Acessar</a>
                               <div className="flex gap-2">
-                                <button onClick={() => editarSite(site)} className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-[10px] font-bold rounded transition">Open in Editor</button>
-                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-3 py-1.5 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded transition"><i className="fas fa-trash"></i></button>
+                                <button onClick={() => editarSite(site)} className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-[10px] font-bold rounded transition">Editar Projeto</button>
+                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-3 py-1.5 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-[10px] font-bold rounded transition" title="Apagar"><i className="fas fa-trash"></i></button>
                               </div>
                             </div>
                           </div>
@@ -880,7 +891,7 @@ export default function Home() {
                     {totalPaginas > 1 && (
                       <div className="flex justify-center items-center gap-4 mt-8 pt-6 border-t border-zinc-100">
                         <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-600 text-xs font-bold rounded disabled:opacity-50 hover:bg-zinc-50 transition"><i className="fas fa-chevron-left"></i></button>
-                        <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">Page {paginaAtual} of {totalPaginas}</span>
+                        <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">Página {paginaAtual} de {totalPaginas}</span>
                         <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-600 text-xs font-bold rounded disabled:opacity-50 hover:bg-zinc-50 transition"><i className="fas fa-chevron-right"></i></button>
                       </div>
                     )}
