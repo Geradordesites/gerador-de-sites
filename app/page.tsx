@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL
+// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL (SEM LIXO NO HTML)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -300,6 +300,7 @@ export default function Home() {
       }
   };
 
+  // SISTEMA DE REFATORAÇÃO GLOBAL COM RETRY (Tratamento de timeout do servidor)
   const executarRefinamentoGlobal = async () => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
@@ -316,84 +317,120 @@ export default function Home() {
         return;
     }
 
-    setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
+    let success = false;
+    let data = null;
 
-    try {
-        const response = await fetch('/api/gerar', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
-                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
-                isSiteRefinement: true, 
-                isGeminiForced: true 
-            })
-        });
-        
-        // ESCUDO DE ERROS: Bloqueia JSONs corrompidos ou HTMLs de Erro 413 (Entity Too Large)
-        const responseText = await response.text();
-        let data;
+    // Loop de tentativas para o Refinar
+    for(let attempt = 0; attempt < 3; attempt++) {
         try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            if (responseText.includes('413') || responseText.includes('Too Large')) {
-                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
+            if (attempt === 0) setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
+            else setStatusApis({ texto: `Servidor ocupado. Tentando novamente (${attempt}/3)...`, processing: true });
+
+            const response = await fetch('/api/gerar', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
+                    promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
+                    isSiteRefinement: true, 
+                    isGeminiForced: true 
+                })
+            });
+            
+            const responseText = await response.text();
+            
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                if (response.status === 413 || response.status === 429 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
+                    throw new Error("RATE_LIMIT_OR_SIZE");
+                }
+                throw new Error("SERVER_ERROR");
             }
-            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
-        }
 
-        if (!data.success) throw new Error(data.error);
-        
-        if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data);
-            promptInput.value = '';
-            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else {
-            throw new Error("A IA falhou ao processar a modificação global.");
-        }
+            if (!data.success) {
+                if (data.error?.includes('429') || data.error?.toLowerCase().includes('quota') || data.error?.includes('ResourceExhausted')) {
+                     throw new Error("RATE_LIMIT");
+                }
+                throw new Error(data.error);
+            }
+            
+            success = true;
+            break; // Sai do loop de tentativa se deu certo
 
-    } catch (err: any) {
-        (window as any).showNotification(err.message || "Erro na modificação do site.", "error");
-    } finally {
-        setStatusApis({ texto: 'Aguardando Operação', processing: false });
+        } catch (err: any) {
+            if (attempt < 2 && (err.message.includes('RATE_LIMIT') || err.message.includes('SERVER_ERROR'))) {
+                await new Promise(r => setTimeout(r, (attempt + 1) * 4000)); // Espera 4s, depois 8s
+                continue;
+            }
+            
+            setStatusApis({ texto: 'Aguardando Operação', processing: false });
+            (window as any).showNotification("O servidor da IA está muito ocupado no momento. Aguarde um instante e tente novamente.", "error");
+            return;
+        }
     }
+
+    if (success && data && data.html && data.html.length > 50) {
+        processarRespostaDOM(data);
+        promptInput.value = '';
+        (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+    }
+    setStatusApis({ texto: 'Aguardando Operação', processing: false });
   };
 
-  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
+  // SISTEMA DE GERAÇÃO COM LOOP DE TENTATIVAS CLIENT-SIDE
+  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, maxRetries = 3) => {
+    const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
 
-    try {
-      const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            if (attempt === 0) setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
+            else setStatusApis({ texto: `Servidor ocupado. Re-tentando (${attempt}/${maxRetries})...`, processing: true });
 
-      const response = await fetch('/api/gerar', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
-      });
-      
-      // ESCUDO DE ERROS: Processa a resposta em texto bruto primeiro
-      const responseText = await response.text();
-      let data;
-      try {
-          data = JSON.parse(responseText);
-      } catch (err) {
-          if (responseText.includes('413') || responseText.includes('Too Large')) {
-              throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
-          }
-          throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
-      }
+            const response = await fetch('/api/gerar', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
+            });
+            
+            const responseText = await response.text();
+            let data;
+            
+            try {
+                data = JSON.parse(responseText);
+            } catch (err) {
+                if (response.status === 413 || responseText.includes('Too Large')) throw new Error("SIZE_ERROR");
+                if (response.status === 504 || response.status === 502) throw new Error("TIMEOUT_ERROR");
+                throw new Error("SERVER_ERROR");
+            }
 
-      if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
-      return data;
-    } catch (err: any) {
-      let errorMsg = err.message;
-      if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
-          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto e tente novamente.";
-      } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
-          errorMsg = "Verifique sua conexão de internet e tente novamente.";
-      }
-      (window as any).showNotification(errorMsg, 'error');
-      return null;
-    } finally {
-      setStatusApis({ texto: 'Aguardando Ação', processing: false });
+            if (!data.success) {
+                if (data.error?.includes('429') || data.error?.toLowerCase().includes('quota') || data.error?.includes('ResourceExhausted') || data.error === 'RATE_LIMIT_EXCEEDED') {
+                    throw new Error("RATE_LIMIT_ERROR");
+                }
+                throw new Error(data.error);
+            }
+            
+            setStatusApis({ texto: 'Aguardando Ação', processing: false });
+            return data;
+
+        } catch (err: any) {
+            let errorMsg = err.message;
+            const isRetryable = errorMsg.includes('RATE_LIMIT_ERROR') || errorMsg.includes('TIMEOUT_ERROR') || errorMsg.includes('SERVER_ERROR');
+            
+            if (isRetryable && attempt < maxRetries) {
+                // Exponential Backoff: Espera 3s, depois 6s, depois 9s.
+                await new Promise(r => setTimeout(r, (attempt + 1) * 3000));
+                continue; 
+            }
+
+            // Se esgotou as tentativas ou é erro de tamanho
+            setStatusApis({ texto: 'Aguardando Ação', processing: false });
+            if (errorMsg.includes('SIZE_ERROR')) {
+                (window as any).showNotification("Sua imagem de referência é muito pesada. Envie uma versão mais leve.", 'error');
+            } else {
+                (window as any).showNotification("O Servidor da IA está sobrecarregado no momento. Por favor, aguarde cerca de um minuto e tente novamente.", 'error');
+            }
+            return null;
+        }
     }
   };
 
@@ -551,7 +588,6 @@ export default function Home() {
     setModalMeusSitesAberto(false);
   };
 
-  // MOTOR DE COMPRESSÃO DE IMAGENS NO CLIENT-SIDE
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
         (window as any).showNotification('Por favor, envie apenas arquivos de imagem.', 'error');
@@ -562,28 +598,20 @@ export default function Home() {
     reader.onload = (e: any) => {
         const img = new Image();
         img.onload = () => {
-            // Cria um canvas para comprimir a imagem
             const canvas = document.createElement('canvas');
             let w = img.width;
             let h = img.height;
-            const maxDim = 1400; // Limite excelente para IA sem perder qualidade de layout
+            const maxDim = 1400; 
 
             if (w > maxDim || h > maxDim) {
-                if (w > h) {
-                    h = Math.round((h * maxDim) / w);
-                    w = maxDim;
-                } else {
-                    w = Math.round((w * maxDim) / h);
-                    h = maxDim;
-                }
+                if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
+                else { w = Math.round((w * maxDim) / h); h = maxDim; }
             }
 
-            canvas.width = w;
-            canvas.height = h;
+            canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 ctx.drawImage(img, 0, 0, w, h);
-                // Converte para JPEG com 80% de qualidade (Reduz de 5MB para ~150KB)
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 const base64Data = dataUrl.split(',')[1];
                 setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]);
@@ -804,19 +832,21 @@ export default function Home() {
                                       )}
 
                                       <div className="panel-section">
-                                          <div className="flex justify-between items-center mb-3">
-                                              <label className="input-label mb-0">Texto do Elemento</label>
-                                              <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                  <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
-                                                  <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
-                                                  <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
+                                          {!elementoSelecionado.bloqueiaTexto && (
+                                              <div className="flex justify-between items-center mb-3">
+                                                  <label className="input-label mb-0">Texto do Elemento</label>
+                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
+                                                  </div>
                                               </div>
-                                          </div>
+                                          )}
                                           
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
-                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container de Estrutura</p>
-                                                  <p className="text-[10px] leading-relaxed">Para evitar quebrar o layout, clique diretamente em uma palavra ou botão para alterar o texto interno. Aqui você pode alterar a cor e o fundo.</p>
+                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique diretamente em uma palavra ou botão específico para alterar o texto interno. Neste painel você ajusta apenas o Fundo e as Cores globais do bloco.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
@@ -841,7 +871,7 @@ export default function Home() {
                                       </div>
 
                                       <div className="panel-section">
-                                          <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
+                                          <label className="input-label flex justify-between">Transparência (Opacidade do Fundo) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
                                           <input type="range" min="10" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
 
@@ -1068,7 +1098,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site (Mobile-First)</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
