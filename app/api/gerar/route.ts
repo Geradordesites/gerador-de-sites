@@ -18,24 +18,34 @@ export async function POST(req: Request) {
     let temImagem = false;
     let textoDoPrompt = "";
     
+    // Junta todo o texto enviado para análise
     for (const part of promptParts) {
         if (part.inlineData) temImagem = true;
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
+    // 1. DETECTOR INFALÍVEL DE MENU
+    let regraMenu = "";
+    if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
+        regraMenu = "🚨 REGRA FATAL: O HTML DEVE OBRIGATORIAMENTE INICIAR COM UMA TAG <nav> CONTENDO UM MENU FIXO, LOGOTIPO, LINKS DE ÂNCORA E UM BOTÃO CTA. SE VOCÊ NÃO CRIAR O MENU, O SISTEMA IRÁ FALHAR.";
+    } else if (textoDoPrompt.includes("NÃO crie menu")) {
+        regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>. O site deve começar diretamente no conteúdo (Hero Section).";
+    }
+
+    // 2. DIRETRIZ DE MÍDIA PROFISSIONAL
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
-🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr ou inventar URLs.
-Você DEVE utilizar a nossa tag de requisição interna para TODAS as imagens geradas. O sistema backend fará a conversão.
+🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr, ou tags genéricas.
+Você DEVE utilizar a nossa tag de requisição para TODAS as imagens geradas.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 
-Tamanhos Obrigatórios:
-- 1280x720 (Paisagem/Landscape): Para banners, fundos e seções largas.
-- 800x1200 (Retrato/Portrait): Para fotos de pessoas em pé, membros de equipe ou cards verticais.
-- 800x800 (Quadrado/Squarish): Para ícones, logos ou avatares.
+Tamanhos Obrigatórios de Resolução:
+- 1280x720 (Paisagem/Landscape): Para fundos largos, Hero Section e Banners.
+- 800x1200 (Retrato/Portrait): Para fotos de pessoas, equipe, mentores ou cards verticais.
+- 800x800 (Quadrado/Squarish): Para ícones, logos, serviços ou avatares pequenos.
 
-Keywords: Use 2 ou 3 palavras super precisas em inglês (ex: business meeting, confident therapist, modern office).
-Exemplo Prático: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Mulher de negócios" />
+Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto (ex: business meeting, confident therapist, modern clinic).
+Exemplo: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Profissional" />
 `;
     
     let instrucaoDinamica = "";
@@ -50,13 +60,15 @@ Exemplo Prático: <img src="[UNSPLASH: 800x1200: confident business woman]" clas
         regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido perfeitamente otimizado, dentro do JSON. Sem explicações adicionais.`;
     } else {
         regrasObrigatorias = `
-=== REGRA DE OURO 1: MOBILE-FIRST (OBRIGATÓRIO) ===
-O site DEVE ser perfeitamente responsivo. Use flex-col para empilhar no celular e md:flex-row para parear no PC. Espaçamentos menores no mobile (p-4) e maiores no desktop (md:p-8).
-
-=== REGRA DE OURO 2: OBRIGAÇÃO DE ESTRUTURA E MENU ===
-Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html". O valor DEVE CONTER O SITE INTEIRO (Do doctype ao fechamento).
-🚨 ATENÇÃO CRÍTICA AO MENU: Se o prompt pedir 'INCLUIR BARRA DE NAVEGAÇÃO' ou 'MENU FIXO', você DEVE OBRIGATORIAMENTE iniciar o <body> com uma tag <nav> completa, com logotipo e links. Não pule esta regra sob nenhuma hipótese.
+=== REGRA DE OURO 1: ARQUITETURA LONGA E COMPLETA ===
+Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
+🚨 ATENÇÃO: GERE UMA LANDING PAGE EXTENSA E PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES (Ex: Hero, Dores/Problemas, Benefícios, Sobre o Especialista, Prova Social/Depoimentos, CTA Final, FAQ). NÃO faça um site curto. NÃO corte o código pela metade. O valor DEVE conter do <!DOCTYPE html> até o fechamento </html>.
 Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
+
+${regraMenu}
+
+=== REGRA DE OURO 2: MOBILE-FIRST RESPONSIVO ===
+O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:flex-row para parear no PC. Espaçamentos menores no mobile (p-4, py-10) e maiores no desktop (md:p-8, lg:py-20). Menus devem quebrar adequadamente.
 
 ${regraImagens}
 ${instrucaoDinamica}
@@ -88,14 +100,21 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
 
     if (!usarGroq) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+        // Aumentei levemente a temperatura (0.4) para o site não ficar genérico e forçar criatividade na copy B2B
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: systemInstructionFinal, safetySettings });
-        const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.2 } });
+        const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } });
         htmlCode = extrairHtmlDeJson(result.response.text());
     } else {
         provedorTextoUsado = 'Groq Engine (Copy)';
         const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST", headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt }], response_format: { type: "json_object" }, temperature: 0.7 })
+            body: JSON.stringify({ 
+                model: "llama-3.3-70b-versatile", 
+                messages: [{ role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt }], 
+                response_format: { type: "json_object" }, 
+                temperature: 0.7,
+                max_tokens: 7500 // Garante que o Groq não corte textos longos
+            })
         });
         const groqData = await groqResponse.json();
         htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
@@ -103,30 +122,37 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
 
     if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial falhou em gerar o código HTML. Tente refazer a requisição.");
 
+    // Injeta scripts de animação caso não existam
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement && !isSiteRefinement) {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
-        if (htmlCode.includes('</head>')) htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
-        if (htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
+        if (htmlCode.includes('</head>') && !htmlCode.includes('aos.css')) htmlCode = htmlCode.replace('</head>', `\n${aosCss}\n</head>`);
+        if (htmlCode.includes('</body>') && !htmlCode.includes('aos.js')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // O NOVO MOTOR DE IMAGENS TOTALMENTE DEPENDENTE DA UNSPLASH API (FIM DO LOREMFLICKR)
-    const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+):\s*([^\]]+)\]/g;
+    // 3. MOTOR DE IMAGENS BLINDADO (Garante busca e inserção via Unsplash)
+    // Regex melhorado para aceitar espaços extras que a IA possa inventar
+    const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
     let match;
     let urlsToReplace = [];
+    
     while ((match = regexImgReq.exec(htmlCode)) !== null) {
         urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] });
     }
 
     if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
         for (const item of urlsToReplace) {
-            let orient = item.dimensao === '800x1200' ? 'portrait' : 'landscape';
+            let orient = 'landscape';
+            if (item.dimensao === '800x1200') orient = 'portrait';
             if (item.dimensao === '800x800') orient = 'squarish';
+            
             const kwFormatada = encodeURIComponent(item.keywords.trim());
             
-            let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; // Safe Fallback puro
+            // Link genérico super profissional de segurança
+            let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
 
             try {
+                // Busca em alta definição na Unsplash
                 const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
                 if (uRes.ok) {
                     const uData = await uRes.json();
@@ -135,14 +161,20 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
                     }
                 }
             } catch (e) {
-                console.log("Falha ao puxar da API do Unsplash. Usando Fallback de Segurança.");
+                console.log("Falha ao comunicar com Unsplash API.");
             }
+            // Injeta a foto perfeita no código
             htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     } else {
-        // Limpa possíveis marcações que ficaram perdidas caso a API falhe por completo
+        // Fallback de limpeza caso a API key não exista
         htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
     }
+
+    // Corrige qualquer alucinação em que a IA tenta colocar um link fake da Unsplash diretamente
+    htmlCode = htmlCode.replace(/https:\/\/source\.unsplash\.com\/random\/\d+x\d+\/\?([^"&<>\s']+)/g, (match, keyword) => {
+        return `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`;
+    });
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
 
@@ -151,7 +183,7 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
   }
 }
 
-// EXTRATOR JSON BLINDADO
+// O NOVO EXTRATOR BLINDADO (Impede que a resposta da IA quebre a tela se tiver caracteres estranhos)
 function extrairHtmlDeJson(text: string): string {
   try {
       let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();

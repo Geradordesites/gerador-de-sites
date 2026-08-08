@@ -225,6 +225,11 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
+  const [nichoEstilo, setNichoEstilo] = useState('minimalista');
+  const [heroLayout, setHeroLayout] = useState('auto');
+  const [productContent, setProductContent] = useState('');
+  const [terMenuTexto, setTerMenuTexto] = useState(true);
+
   // FAXINA FINAL DO HTML PARA IMPEDIR VAZAMENTOS
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
@@ -317,7 +322,7 @@ export default function Home() {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                systemInstruction: "Engenheiro Sênior de Software.", 
+                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
                 promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
                 isSiteRefinement: true, 
                 isGeminiForced: true 
@@ -370,7 +375,7 @@ export default function Home() {
   };
 
   const getMegaPromptEstilo = () => {
-    const estilo = (document.getElementById('nichoEstilo') as HTMLSelectElement)?.value || 'nenhum';
+    const estilo = nichoEstilo;
     if (estilo === 'premium') return "DIRETRIZ DE DESIGN: Crie uma aparência sofisticada e de alto padrão (Premium). Use fontes serifadas elegantes e simetria perfeita.";
     if (estilo === 'terapia') return "DIRETRIZ DE DESIGN: Crie uma aparência calma, acolhedora e leve (Saúde mental). Use muito espaço em branco, bordas suaves e cores que transmitem paz.";
     if (estilo === 'agressivo') return "DIRETRIZ DE DESIGN: Foco total em Conversão e Vendas (Lançamento). Use alto contraste, cores fortes de CTA e layout muito direto ao ponto.";
@@ -398,7 +403,7 @@ export default function Home() {
   };
 
   const getMegaPromptHero = () => {
-    const hero = (document.getElementById('heroLayout') as HTMLSelectElement)?.value || 'auto';
+    const hero = heroLayout;
     if (hero === 'center') return "A PRIMEIRA SEÇÃO DO SITE (TOPO): Deve ter o texto centralizado na tela para focar na leitura.";
     if (hero === 'split') return "A PRIMEIRA SEÇÃO DO SITE (TOPO): Deve ser dividida ao meio (Texto persuasivo de um lado e Imagem forte do outro).";
     return "";
@@ -409,23 +414,25 @@ export default function Home() {
     const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
     const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    let promptParts: any[] = [{ text: "Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema." }];
+    let promptParts: any[] = [{ text: "Gere conteúdo completo para todas as seções e cubra todo o fluxo de conversão detalhado. Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema." }];
     uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     
-    const instrucoesFinais = `Desenvolvedor Especialista. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. O resultado deve ser uma página longa, não apenas uma única seção. Crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Baseie o design no layout da imagem fornecida, mas estenda-o para criar uma página inteira. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
+
+    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     if (data) processarRespostaDOM(data);
   };
 
   const executarGeracaoSiteTexto = async () => {
-    const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
-    const content = textEl?.value?.trim();
+    const content = productContent.trim();
     if (!content) { (window as any).showNotification('Por favor, preencha o campo de texto explicando como deve ser o site.', 'error'); return; }
     
-    const checkMenuEl = document.getElementById('checkComMenuTexto') as HTMLInputElement;
-    const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
+    const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. Lembre-se: use espaçamentos precisos. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e longa. O resultado deve ser uma página de página inteira com pelo menos 5 seções distintas (ex: Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, Chamada para Ação). Não se limite a apenas um topo e um botão; crie um fluxo de conversão detalhado. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
+
+    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     
     const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
     if (data) processarRespostaDOM(data);
@@ -460,8 +467,7 @@ export default function Home() {
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
 
-      const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
-      let termoContexto = elementoSelecionado.text || textEl?.value || "business";
+      let termoContexto = elementoSelecionado.text || productContent || "business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
       try {
@@ -883,7 +889,7 @@ export default function Home() {
 
                                       <div className="pt-2">
                                           <label htmlFor="nichoEstilo" className="input-label">Aparência do Site</label>
-                                          <select id="nichoEstilo" className="input-standard text-sm font-bold text-slate-700">
+                                          <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700">
                                               <option value="minimalista">Clean e Moderno</option>
                                               <option value="premium">Premium Elegante (Alto Padrão)</option>
                                               <option value="agressivo">Venda Agressiva (Lançamentos)</option>
@@ -898,7 +904,7 @@ export default function Home() {
                                   <div className="space-y-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
                                       <div>
                                           <label htmlFor="heroLayout" className="input-label">Como o topo vai aparecer?</label>
-                                          <select id="heroLayout" className="input-standard">
+                                          <select id="heroLayout" value={heroLayout} onChange={(e) => setHeroLayout(e.target.value)} className="input-standard">
                                               <option value="auto">Deixar a IA escolher</option>
                                               <option value="center">Texto no Centro (Melhor para leitura)</option>
                                               <option value="split">Texto de um lado, Imagem do outro</option>
@@ -939,8 +945,15 @@ export default function Home() {
                               ) : (
                                   <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                                       <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Descrever o Site</h3>
-                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança..."></textarea>
+                                      <textarea id="productContent" value={productContent} onChange={(e) => setProductContent(e.target.value)} className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança..."></textarea>
                                       
+                                      <div className="mt-4">
+                                          <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
+                                              <input type="checkbox" id="checkComMenuTexto" checked={terMenuTexto} onChange={(e) => setTerMenuTexto(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                                              <span className="text-xs font-bold text-slate-700">Ter um Menu no Topo do Site</span>
+                                          </label>
+                                      </div>
+
                                       <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                           <i className="fas fa-code text-yellow-300 text-lg"></i> Criar Meu Site Agora
                                       </button>
