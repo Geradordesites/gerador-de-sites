@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM VISUAL E CONTROLE TOTAL CONTRA INCEPTION
+// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -136,14 +136,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
     });
 
-    // INTERCEPTADOR ABSOLUTO DE NAVEGAÇÃO
     window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 
     document.addEventListener('click', (e) => {
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
         
-        // COMPORTAMENTO DURANTE A EDIÇÃO VISUAL
         if (modoEdicao) {
             e.preventDefault(); 
             e.stopPropagation();
@@ -193,33 +191,20 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             return;
         }
 
-        // COMPORTAMENTO DURANTE O MODO DE VISUALIZAÇÃO (Anti-Inception)
         if (link) {
-            // Se o link tiver um script nativo (ex: as sanfonas do rodapé), permite executar mas não recarregar
-            if (link.hasAttribute('onclick')) {
-                let href = link.getAttribute('href') || '';
-                if(href === '/' || href === '') e.preventDefault(); 
-                return; 
-            }
-            
-            e.preventDefault(); 
+            if (link.hasAttribute('onclick')) return; 
+            e.preventDefault();
             e.stopPropagation();
-            
-            let href = link.getAttribute('href') || '';
-            if(href.startsWith('#') && href.length > 1) {
-                try { 
-                    var tEl = document.querySelector(href); 
-                    if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
-                } catch(err) {}
-            } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
-                window.open(href, '_blank'); // Abre links reais em nova guia
+            var href = link.getAttribute('href') || '';
+            if(href.startsWith('#')) {
+                var hash = href.substring(href.indexOf('#'));
+                if (hash.length > 1) { try { var tEl = document.querySelector(hash); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {} }
+            } else if (href && !href.startsWith('javascript:')) {
+                window.open(href, '_blank');
             }
             return;
         }
-        
-        // Bloqueia qualquer botão de recarregar a tela
-        if (btn) { e.preventDefault(); e.stopPropagation(); return; }
-        
+        if (btn && btn.type === 'submit') { e.preventDefault(); return; }
     }, true); 
 </script>`;
 
@@ -245,7 +230,7 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-  // FAXINA FINAL DO HTML PARA IMPEDIR VAZAMENTOS
+  // FAXINA FINAL DO HTML
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
@@ -344,7 +329,18 @@ export default function Home() {
             })
         });
         
-        const data = await response.json();
+        // ESCUDO DE ERROS: Bloqueia JSONs corrompidos ou HTMLs de Erro 413 (Entity Too Large)
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            if (responseText.includes('413') || responseText.includes('Too Large')) {
+                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
+            }
+            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
+        }
+
         if (!data.success) throw new Error(data.error);
         
         if (data.html && data.html.length > 50) {
@@ -372,13 +368,25 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
       });
-      const data = await response.json();
+      
+      // ESCUDO DE ERROS: Processa a resposta em texto bruto primeiro
+      const responseText = await response.text();
+      let data;
+      try {
+          data = JSON.parse(responseText);
+      } catch (err) {
+          if (responseText.includes('413') || responseText.includes('Too Large')) {
+              throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
+          }
+          throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
+      }
+
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
       return data;
     } catch (err: any) {
       let errorMsg = err.message;
       if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
-          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto.";
+          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto e tente novamente.";
       } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
           errorMsg = "Verifique sua conexão de internet e tente novamente.";
       }
@@ -473,7 +481,7 @@ export default function Home() {
 
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal...", "success");
+      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let orientation = 'landscape'; 
@@ -543,10 +551,46 @@ export default function Home() {
     setModalMeusSitesAberto(false);
   };
 
+  // MOTOR DE COMPRESSÃO DE IMAGENS NO CLIENT-SIDE
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) {
+        (window as any).showNotification('Por favor, envie apenas arquivos de imagem.', 'error');
+        return;
+    }
+    
     const reader = new FileReader();
-    reader.onload = (e: any) => setUploadedImages(prev => [...prev, { mimeType: file.type, data: e.target.result.split(',')[1] }]);
+    reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+            // Cria um canvas para comprimir a imagem
+            const canvas = document.createElement('canvas');
+            let w = img.width;
+            let h = img.height;
+            const maxDim = 1400; // Limite excelente para IA sem perder qualidade de layout
+
+            if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                }
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, w, h);
+                // Converte para JPEG com 80% de qualidade (Reduz de 5MB para ~150KB)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                const base64Data = dataUrl.split(',')[1];
+                setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]);
+            }
+        };
+        img.src = e.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -847,8 +891,8 @@ export default function Home() {
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white">
                       
                       <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar">
-                          <button onClick={() => setAbaAtiva('visual')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Por Imagem</button>
-                          <button onClick={() => setAbaAtiva('copy')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Por Texto</button>
+                          <button onClick={() => setAbaAtiva('visual')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Clonagem</button>
+                          <button onClick={() => setAbaAtiva('copy')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Texto</button>
                           <button onClick={() => setAbaAtiva('refinar')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1"></i> Modificar</button>
                       </div>
 
@@ -1024,7 +1068,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site (Mobile-First)</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
