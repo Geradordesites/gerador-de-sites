@@ -4,6 +4,23 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 export const maxDuration = 60;
 export const bodySizeLimit = '10mb';
 
+// Função auxiliar para tentar a requisição novamente se o servidor estiver ocupado
+async function callGeminiWithRetry(model: any, promptParts: any, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await model.generateContent({ contents: [{ role: "user", parts: promptParts }] });
+        } catch (err: any) {
+            // Se for erro de Rate Limit (429) e ainda tivermos tentativas, aguarda e tenta de novo
+            if ((err.status === 429 || err.message?.includes("429")) && i < retries - 1) {
+                const waitTime = (i + 1) * 3000; // Espera 3s, depois 6s...
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -19,40 +36,39 @@ export async function POST(req: Request) {
     ];
 
     let textoDoPrompt = "";
-    for (const part of promptParts) {
-        if (part.text) textoDoPrompt += part.text + "\n";
-    }
+    for (const part of promptParts) { if (part.text) textoDoPrompt += part.text + "\n"; }
 
     let regraMenu = "";
     if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
         regraMenu = "🚨 REGRA FATAL: O HTML DEVE OBRIGATORIAMENTE INICIAR COM UMA TAG <nav> CONTENDO UM MENU FIXO, LOGOTIPO E LINKS.";
     } else if (textoDoPrompt.includes("NÃO crie menu")) {
-        regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>. O site deve começar diretamente no conteúdo.";
+        regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>.";
     }
 
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL (UNSPLASH API) ===
-🚨 PROIBIDO usar links reais de imagens ou loremflickr. Use estritamente:
-src="[UNSPLASH: resolucao: keywords_em_ingles]"
+Use EXCLUSIVAMENTE a tag: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 - 1280x720 (Paisagem) | 800x1200 (Retrato) | 800x800 (Quadrado)
-Exemplo: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Profissional" />
 `;
+    
+    let instrucaoDinamica = "";
+    if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais.";
+    else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism e hover:scale-105.";
 
     let regrasObrigatorias = isSiteRefinement 
-        ? `=== REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva o HTML completo no JSON.` 
-        : isElementRefinement 
-        ? `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML otimizada no JSON.`
-        : `=== LANDING PAGE COMPLETA ===\nRetorne EXCLUSIVAMENTE um objeto JSON com a chave "codigo_html" contendo o site completo (mínimo 6 seções). Espaçe títulos e parágrafos com 'mb-4'.\n${regraMenu}\n${regraImagens}`;
+        ? `=== REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva todo o HTML no JSON. NÃO CORTE O CÓDIGO.` 
+        : `=== LANDING PAGE COMPLETA ===\nRetorne EXCLUSIVAMENTE objeto JSON com chave "codigo_html". GERE PÁGINA LONGA E COMPLETA (mínimo 6 seções). Espaçe títulos e parágrafos com 'mb-4'.\n${regraMenu}\n${regraImagens}\n${instrucaoDinamica}`;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: systemInstructionFinal, safetySettings });
-    const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: 0.3 } });
     
+    // CHAMADA COM RETRY AUTOMÁTICO
+    const result = await callGeminiWithRetry(model, promptParts);
     let htmlCode = extrairHtmlDeJson(result.response.text());
 
-    if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial retornou um escopo inválido.");
+    if (!htmlCode || htmlCode.length < 50) throw new Error("A IA falhou em gerar o código.");
 
     // Processamento de imagens via Unsplash API
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
@@ -105,6 +121,7 @@ function extrairHtmlDeJson(text: string): string {
       }
       return clean;
   } catch (e) {
-      return text.replace(/```(html|json)?/gi, '').replace(/```/g, '').trim();
+      let fallback = text.replace(/```(html|json)?/gi, '').replace(/```/g, '').trim();
+      return fallback;
   }
 }
