@@ -18,16 +18,29 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
     function sendCleanHtml() {
         let outlineAntigo = '';
-        if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
+        let cursorAntigo = '';
+        if(elSelecionado) { 
+            outlineAntigo = elSelecionado.style.outline; 
+            cursorAntigo = elSelecionado.style.cursor;
+            elSelecionado.style.outline = ''; 
+            elSelecionado.style.cursor = '';
+        }
         let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
-        if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
+        if(elSelecionado) { 
+            elSelecionado.style.outline = outlineAntigo; 
+            elSelecionado.style.cursor = cursorAntigo;
+        }
         window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
     }
 
     window.addEventListener('message', (event) => {
         if(event.data.type === 'TOGGLE_EDIT_MODE') {
             modoEdicao = event.data.value;
-            if(!modoEdicao && elSelecionado) { elSelecionado.style.outline = ''; elSelecionado = null; }
+            if(!modoEdicao && elSelecionado) { 
+                elSelecionado.style.outline = ''; 
+                elSelecionado.style.cursor = '';
+                elSelecionado = null; 
+            }
         }
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
@@ -91,9 +104,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     document.addEventListener('mouseover', (e) => {
         if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
         e.target.dataset.oldOutline = e.target.style.outline;
-        e.target.style.outline = '2px solid #0ea5e9'; // Azul elegante do inspetor
+        e.target.style.outline = '2px solid #0ea5e9'; 
         e.target.style.outlineOffset = '-2px';
-        e.target.style.cursor = 'crosshair';
+        e.target.style.cursor = 'crosshair'; // Injeta a cruzinha visual
     });
     
     document.addEventListener('mouseout', (e) => {
@@ -101,6 +114,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(e.target !== elSelecionado) { 
             e.target.style.outline = e.target.dataset.oldOutline || ''; 
             e.target.style.outlineOffset = '';
+            e.target.style.cursor = ''; // REMOVE A CRUZINHA PARA NÃO VAZAR
         }
     });
 
@@ -185,11 +199,23 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
-  // STATUS DE UI PREMIUM
   const [abaAtiva, setAbaAtiva] = useState<'visual' | 'copy'>('visual');
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Motor Standby', processing: false });
+
+  // ====== A FUNÇÃO PURIFICADORA DE CÓDIGO ======
+  const purificarHTML = (rawHtml: string) => {
+      let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
+      // Varre e destrói qualquer classe ou estilo injetado pelo inspetor
+      clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
+                   .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
+                   .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
+                   .replace(/outline-offset:\s*-[23]px;?/gi, '')
+                   .replace(/data-old-outline="[^"]*"/gi, '')
+                   .replace(/\s*style="\s*"/gi, ''); // Remove styles vazios que sobrarem
+      return clean;
+  };
 
   useEffect(() => {
     const verificarSessao = async () => {
@@ -204,9 +230,7 @@ export default function Home() {
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             if (codEl) {
                 setHistoricoCodigo(prev => [...prev, codEl.value]);
-                let cleanHtml = e.data.html.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
-                cleanHtml = cleanHtml.replace(/ outline: 3px solid rgb\(79, 70, 229\); outline-offset: -3px;/g, '');
-                codEl.value = cleanHtml;
+                codEl.value = purificarHTML(e.data.html); // Salva a versão PURA
             }
         }
     };
@@ -319,13 +343,12 @@ export default function Home() {
   function processarRespostaDOM(data: any) {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = data.html; }
-      if (prevEl) prevEl.srcdoc = data.html + SCRIPT_PREVIEW; 
+      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
+      if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
       (window as any).showNotification(`Interface renderizada via ${data.provedorTexto}`, 'success');
       if (modoInspetor) setModoInspetor(false);
   }
 
-  // UPLOAD E INTEGRAÇÃO DE IMAGENS NOS ELEMENTOS
   const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -435,7 +458,7 @@ export default function Home() {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) return;
       
-      let cleanHtml = htmlContent.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '').replace(/ outline: 3px solid rgb\(79, 70, 229\);/g, '');
+      let cleanHtml = purificarHTML(htmlContent); // PURIFICADOR EM AÇÃO ANTES DE SALVAR
 
       if (siteEditando) { await supabase.from('sites_gerados').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Deploy atualizado com sucesso.', 'success'); return; }
       const nome = prompt('Nome do Deploy (URL Slug):'); if (!nome) return; 
@@ -474,7 +497,6 @@ export default function Home() {
         #previewFrame, #codigoContainer { display: none; }
         #previewFrame.active, #codigoContainer.active { display: block; }
         
-        /* Modern Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 4px; }
@@ -483,7 +505,6 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-      {/* OVERLAY DE CARREGAMENTO */}
       {statusApis.processing && (
           <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
               <div className="w-10 h-10 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-4"></div>
@@ -491,25 +512,18 @@ export default function Home() {
           </div>
       )}
 
-      {/* PAINEL LATERAL DE CONTROLE (O "WEBFLOW") */}
       <div className="w-[340px] bg-white border-r border-zinc-200 flex flex-col h-full z-10 flex-shrink-0 shadow-sm">
-          
-          {/* HEADER DO PAINEL */}
           <div className="p-4 border-b border-zinc-200 flex items-center justify-between bg-zinc-50/50">
               <h1 className="text-lg font-black tracking-tight text-zinc-900 flex items-center">
                   <div className="w-6 h-6 rounded bg-zinc-900 flex items-center justify-center mr-2 text-white"><i className="fas fa-layer-group text-xs"></i></div>
                   System<span className="text-zinc-400 font-medium">Pro</span>
               </h1>
-              
-              {/* BOTÃO TOGGLE DO INSPETOR (AGORA É UM SWITCH MODERNO) */}
               <button onClick={toggleInspetor} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${modoInspetor ? 'bg-zinc-900 text-white shadow-md' : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}>
                   <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse' : ''}`}></i> {modoInspetor ? 'Inspecionando' : 'Inspetor'}
               </button>
           </div>
 
           <div className="flex-1 overflow-y-auto bg-white">
-              
-              {/* SE O INSPETOR ESTIVER ATIVO, SUBSTITUI TUDO PELAS PROPRIEDADES DO ELEMENTO */}
               {modoInspetor ? (
                   <div className="animate-[fadeIn_0.2s_ease]">
                       <div className="bg-zinc-900 text-white p-3 text-[10px] font-mono tracking-widest uppercase flex justify-between items-center">
@@ -526,17 +540,13 @@ export default function Home() {
                           </div>
                       ) : (
                           <div className="pb-10">
-                              {/* IDENTIFICAÇÃO DO NÓ */}
                               <div className="panel-section bg-zinc-50/50">
                                   <div className="flex justify-between items-center">
-                                      <div>
-                                          <span className="text-[10px] font-black uppercase text-zinc-800 bg-white border border-zinc-200 px-2 py-0.5 rounded shadow-sm">{elementoSelecionado.tagName}</span>
-                                      </div>
+                                      <div><span className="text-[10px] font-black uppercase text-zinc-800 bg-white border border-zinc-200 px-2 py-0.5 rounded shadow-sm">{elementoSelecionado.tagName}</span></div>
                                       <span className="text-[9px] font-mono text-zinc-400">ID: {elementoSelecionado.id.substring(0,6)}</span>
                                   </div>
                               </div>
 
-                              {/* PROPRIEDADES DE IMAGEM */}
                               {elementoSelecionado.tagName === 'img' ? (
                                   <>
                                       <div className="panel-section">
@@ -577,7 +587,6 @@ export default function Home() {
                                   </>
                               ) : (
                                   <>
-                                      {/* PROPRIEDADES DE TEXTOS / BOTÕES / CONTAINERS */}
                                       {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button') && (
                                           <div className="panel-section bg-blue-50/30">
                                               <label className="input-label text-blue-700">Link Destino (HREF)</label>
@@ -640,10 +649,8 @@ export default function Home() {
                                   </>
                               )}
 
-                              {/* O MOTOR DE INFERÊNCIA SEMÂNTICA (IA) */}
                               <div className="m-4 bg-zinc-900 rounded-lg p-4 shadow-md text-white">
                                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-300 mb-3 flex items-center"><i className="fas fa-bolt mr-2 text-yellow-400"></i> Otimização Semântica IA</label>
-                                  
                                   {elementoSelecionado.tagName !== 'img' && (
                                       <div className="grid grid-cols-2 gap-2 mb-3">
                                           <button onClick={() => otimizarComIA("Reescreva com copy persuasiva de alta conversão B2B, tom profissional e conciso")} className="bg-zinc-800 hover:bg-zinc-700 text-[9px] font-semibold py-2 rounded text-zinc-300 transition">Copy Persuasiva</button>
@@ -659,18 +666,13 @@ export default function Home() {
                       )}
                   </div>
               ) : (
-                  
-                  /* SE O INSPETOR ESTIVER DESATIVADO, MOSTRA O PAINEL DE GERAÇÃO (O BUILDER MESTRE) */
                   <div className="animate-[fadeIn_0.2s_ease] pb-10">
-                      
-                      {/* TABS DE MODO DE CRIAÇÃO */}
                       <div className="flex p-2 bg-zinc-100/50 border-b border-zinc-200">
                           <button onClick={() => setAbaAtiva('visual')} className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${abaAtiva === 'visual' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>Design Visual</button>
                           <button onClick={() => setAbaAtiva('copy')} className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition ${abaAtiva === 'copy' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}>Briefing (Texto)</button>
                       </div>
 
                       <div className="p-4 space-y-5">
-                          {/* SESSÃO 1: DIRETRIZES GLOBAIS */}
                           <div>
                               <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mr-2"></span>1. Diretrizes Globais</h3>
                               <div className="space-y-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg">
@@ -704,7 +706,6 @@ export default function Home() {
                               </div>
                           </div>
 
-                          {/* SESSÃO 2: ESTRUTURA */}
                           <div>
                               <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mr-2"></span>2. Estrutura Base</h3>
                               <div className="space-y-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg">
@@ -723,7 +724,6 @@ export default function Home() {
                               </div>
                           </div>
 
-                          {/* SESSÃO 3: O MOTOR DE GERAÇÃO */}
                           {abaAtiva === 'visual' ? (
                               <div>
                                   <h3 className="text-[11px] font-black uppercase text-zinc-800 mb-3 tracking-wide flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>3. Input Visual (Clonagem)</h3>
@@ -765,10 +765,7 @@ export default function Home() {
           </div>
       </div>
 
-      {/* ÁREA PRINCIPAL DA DIREITA (PREVIEW / CÓDIGO) */}
       <div className="flex-grow flex flex-col bg-zinc-100 relative min-w-0">
-          
-          {/* HEADER DO WORKSPACE */}
           <div className="bg-white border-b border-zinc-200 flex justify-between items-center px-4 md:px-6 h-14 shadow-sm z-10">
               <div className="flex items-center gap-3">
                   <div className="flex bg-zinc-100 p-0.5 rounded-md border border-zinc-200">
@@ -796,7 +793,6 @@ export default function Home() {
               </div>
           </div>
           
-          {/* O CANVAS (ONDE O SITE FICA) */}
           <div className="flex-grow relative bg-zinc-100 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center">
               {modoInspetor && (
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 text-white px-6 py-2 rounded-full shadow-lg font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 border border-zinc-700 animate-pulse pointer-events-none">
@@ -804,7 +800,6 @@ export default function Home() {
                   </div>
               )}
               
-              {/* O Container simula uma tela de navegador/viewport */}
               <div className={`w-full h-full max-w-[1440px] bg-white mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-300 ${modoInspetor ? 'ring-4 ring-blue-500/20 rounded-lg' : 'rounded-none md:rounded-xl border border-zinc-200'}`}>
                   {modoInspetor && (
                       <div className="h-6 w-full bg-zinc-100 border-b border-zinc-200 flex items-center px-4 gap-1.5">
@@ -820,7 +815,6 @@ export default function Home() {
           </div>
       </div>
       
-      {/* MODAL DE PROJETOS (DEPLOY MANAGER) */}
       {modalMeusSitesAberto && (
         <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-zinc-200">
