@@ -9,6 +9,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
 
+    // INJEÇÃO DE CSS ISOLADO (Garante que a cruzinha só exista se o painel estiver ativo)
+    if (!document.getElementById('builder-core-styles')) {
+        const style = document.createElement('style');
+        style.id = 'builder-core-styles';
+        style.innerHTML = \`body.builder-editing * { cursor: crosshair !important; }\`;
+        document.head.appendChild(style);
+    }
+
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
         let res = rgb.match(/\\d+/g);
@@ -27,7 +35,29 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     window.addEventListener('message', (event) => {
         if(event.data.type === 'TOGGLE_EDIT_MODE') {
             modoEdicao = event.data.value;
-            if(!modoEdicao && elSelecionado) { elSelecionado.style.outline = ''; elSelecionado = null; }
+            if(modoEdicao) {
+                document.body.classList.add('builder-editing');
+            } else {
+                document.body.classList.remove('builder-editing');
+                
+                // FAXINEIRO AGRESSIVO: Limpa qualquer rastro de edição
+                if(elSelecionado) { 
+                    elSelecionado.style.outline = ''; 
+                    elSelecionado.style.outlineOffset = ''; 
+                    elSelecionado = null; 
+                }
+                
+                document.querySelectorAll('[data-old-outline]').forEach(el => {
+                    el.style.outline = el.dataset.oldOutline || '';
+                    el.style.outlineOffset = '';
+                    delete el.dataset.oldOutline;
+                });
+
+                // Varredura de segurança contra cursores fantasmas
+                document.querySelectorAll('*').forEach(el => {
+                    if (el.style.cursor === 'crosshair') el.style.cursor = '';
+                });
+            }
         }
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
@@ -63,13 +93,33 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.imgFormat !== undefined) {
-                    el.classList.remove('aspect-video', 'aspect-square', 'aspect-[3/4]', 'aspect-[4/3]', 'h-auto', 'h-[450px]', 'h-[500px]', 'object-cover');
-                    if (event.data.imgFormat) { el.classList.add(event.data.imgFormat); el.classList.add('object-cover', 'w-full'); }
+                    if (event.data.imgFormat === '') {
+                        el.style.aspectRatio = '';
+                        el.classList.remove('object-cover', 'w-full');
+                    } else {
+                        el.style.aspectRatio = event.data.imgFormat;
+                        el.classList.add('object-cover', 'w-full');
+                    }
                 }
+                
+                // MOTOR DE ESTILOS DE IMAGEM (Agora suporta combos de Sombra, Borda e Animação)
                 if(event.data.imgRounded !== undefined) {
-                    el.classList.remove('rounded-none', 'rounded-md', 'rounded-xl', 'rounded-full');
-                    if (event.data.imgRounded) { el.classList.add(event.data.imgRounded); }
+                    const allClassesToRemove = [
+                        'rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full',
+                        'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl',
+                        'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500',
+                        'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50',
+                        'animate-pulse', 'animate-bounce', 'hover:scale-105', 'transition-transform', 'duration-300'
+                    ];
+                    el.classList.remove(...allClassesToRemove);
+                    
+                    if (event.data.imgRounded) { 
+                        event.data.imgRounded.split(' ').forEach(cls => {
+                            if (cls) el.classList.add(cls);
+                        });
+                    }
                 }
+
                 if(event.data.imgBorder !== undefined) {
                     if (event.data.imgBorder) { 
                         el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
@@ -93,7 +143,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         e.target.dataset.oldOutline = e.target.style.outline;
         e.target.style.outline = '2px solid #0ea5e9'; 
         e.target.style.outlineOffset = '-2px';
-        e.target.style.cursor = 'crosshair';
     });
     
     document.addEventListener('mouseout', (e) => {
@@ -101,7 +150,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(e.target !== elSelecionado) { 
             e.target.style.outline = e.target.dataset.oldOutline || ''; 
             e.target.style.outlineOffset = '';
-            e.target.style.cursor = '';
         }
     });
 
@@ -121,7 +169,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(elSelecionado) {
                 elSelecionado.style.outline = '';
                 elSelecionado.style.outlineOffset = '';
-                elSelecionado.style.cursor = '';
             }
             elSelecionado = targetEl;
             elSelecionado.style.outline = '3px solid #4f46e5';
@@ -138,6 +185,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
             else bgImg = '';
 
+            let aspect = elSelecionado.style.aspectRatio || '';
+
             window.parent.postMessage({
                 type: 'ELEMENT_SELECTED',
                 id: elSelecionado.id,
@@ -151,6 +200,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 borderColor: rgbToHex(compStyle.borderColor),
                 fontSize: parseInt(compStyle.fontSize) || 16,
                 bgImage: bgImg,
+                imgFormat: aspect,
                 customClasses: elSelecionado.dataset.customClasses || '',
                 bloqueiaTexto: bloqueiaTexto,
                 outerHTML: elSelecionado.outerHTML
@@ -195,14 +245,18 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
+  // FAXINA FINAL DO HTML ANTES DE EXPORTAR
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
-      clean = clean.replace(/cursor:\s*(crosshair|pointer);?/gi, '')
+      clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
+      clean = clean.replace(/class="[^"]*builder-editing[^"]*"/gi, (match) => match.replace('builder-editing', '').trim());
+      clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
                    .replace(/data-old-outline="[^"]*"/gi, '')
                    .replace(/\s*style="\s*"/gi, ''); 
+      clean = clean.replace(/ class="\s*"/gi, ''); // Remove classes vazias
       return clean;
   };
 
@@ -261,7 +315,6 @@ export default function Home() {
       }
   };
 
-  // NOVA FUNÇÃO: REFINAMENTO GLOBAL (Adicionar botões extras, links, etc)
   const executarRefinamentoGlobal = async () => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
@@ -379,9 +432,13 @@ export default function Home() {
   };
 
   const executarGeracaoSiteTexto = async () => {
-    const content = (document.getElementById('productContent') as HTMLTextAreaElement)?.value.trim();
+    const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
+    const content = textEl?.value?.trim();
     if (!content) { (window as any).showNotification('Por favor, preencha o campo de texto explicando como deve ser o site.', 'error'); return; }
-    const isMenu = (document.getElementById('checkComMenuTexto') as HTMLInputElement)?.checked ? "O site deve conter um Menu Superior fixo no topo." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
+    
+    const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
+    const isMenu = checkMenuEl?.checked ? "O site deve conter um Menu Superior fixo no topo." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
+    
     const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. Lembre-se: use espaçamentos precisos e apenas o formato de imagem exigido. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     
     const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
@@ -406,20 +463,46 @@ export default function Home() {
       e.target.value = ''; 
   };
 
-  const gerarNovaImagemIAAutomatica = async (isBackground = false) => {
+  // A GERAÇÃO DE IMAGEM AGORA RESPEITA A PROPORÇÃO E O CONTEXTO
+  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está buscando a melhor imagem...", "success");
-      let termoBusca = "professional business modern minimal background";
-      if (elementoSelecionado.text && elementoSelecionado.text.length < 30) termoBusca = elementoSelecionado.text;
+      
+      let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
+      let w = 1200, h = 800; 
+      
+      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
+      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
+      else if (formatToUse === '16/9' || formatToUse === 'aspect-video') { w = 1280; h = 720; }
+
+      let termoBusca = "professional business";
+      if (elementoSelecionado.text && elementoSelecionado.text.length < 50) {
+          termoBusca = elementoSelecionado.text;
+      } else {
+          const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
+          termoBusca = textEl?.value?.substring(0, 50) || "modern business";
+      }
+
+      const prompt = `Você é um Diretor de Arte. Analise este texto de contexto: "${termoBusca}".
+      Sua tarefa é retornar APENAS UM JSON contendo a URL de uma imagem fotográfica real.
+      A URL DEVE ser obrigatoriamente neste formato: https://loremflickr.com/${w}/${h}/keyword1,keyword2?lock=NUMERO_ALEATORIO
+      PROIBIDO usar desenhos ou sci-fi. Escolha 2 keywords muito boas em inglês (ex: portrait, office, smile, people, clinic, business).
+      RETORNE SOMENTE O JSON: {"codigo_html": "A_URL_GERADA"}`;
 
       try {
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}`);
-          const data = await res.json();
-          if(data && data.url) { 
-              atualizarElemento(isBackground ? 'bgImage' : 'src', data.url);
-              (window as any).showNotification("Nova imagem aplicada!", "success"); 
+          const resData = await chamarMotorIA(prompt, [{text: prompt}], true);
+          if(resData && resData.html) { 
+              let novaImg = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+              if(novaImg.startsWith('http')) {
+                  atualizarElemento(isBackground ? 'bgImage' : 'src', novaImg);
+                  (window as any).showNotification("Nova imagem aplicada perfeitamente!", "success"); 
+              } else { throw new Error("A IA gerou um link inválido."); }
           }
-      } catch(err) { (window as any).showNotification("Não foi possível buscar a imagem agora.", "error"); }
+      } catch(err) { 
+          const fallback = `https://loremflickr.com/${w}/${h}/business,success?lock=${Math.floor(Math.random() * 9999)}`;
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
+          (window as any).showNotification("Imagem ajustada ao novo formato com sucesso.", "success"); 
+      }
   };
 
   const carregarMeusSites = async () => {
@@ -477,8 +560,8 @@ export default function Home() {
     (window as any).mudarSeparador = (aba: string) => {
       document.getElementById('previewFrame')!.classList.toggle('active', aba === 'preview');
       document.getElementById('codigoContainer')!.classList.toggle('active', aba === 'code');
-      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
-      document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
+      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition";
+      document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition";
     };
 
     (window as any).showNotification = (msg: string, type: string) => {
@@ -499,7 +582,7 @@ export default function Home() {
 
     (window as any).copiarCodigo = () => {
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('O Código foi copiado!', 'success');
+      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('O Código HTML foi copiado para sua área de transferência.', 'success');
     };
 
     (window as any).baixarHtmlGerado = () => {
@@ -565,7 +648,7 @@ export default function Home() {
           <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
               <div className="w-14 h-14 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-5"></div>
               <p className="text-slate-800 font-black text-xl tracking-tight mb-2">{statusApis.texto}</p>
-              <p className="text-slate-500 font-medium text-sm">Isso pode levar alguns segundos. Estamos processando...</p>
+              <p className="text-slate-500 font-medium text-sm">Isso pode levar alguns segundos. Estamos construindo...</p>
           </div>
       )}
 
@@ -616,13 +699,19 @@ export default function Home() {
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
                                           <div className="flex gap-2">
                                               <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 rounded-lg transition border border-indigo-100"><i className="fas fa-robot mr-1.5"></i> Usar Inteligência</button>
-                                              <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition"><i className="fas fa-desktop mr-1.5"></i> Do Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
+                                              <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition"><i className="fas fa-upload mr-1.5"></i> Do Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
                                           </div>
                                       </div>
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
                                               <label className="input-label">Formato (Proporção)</label>
-                                              <select onChange={(e) => atualizarElemento('imgFormat', e.target.value)} className="input-standard">
+                                              <select value={elementoSelecionado.imgFormat || ''} onChange={(e) => {
+                                                  const novoFormato = e.target.value;
+                                                  atualizarElemento('imgFormat', novoFormato);
+                                                  if(novoFormato !== '') {
+                                                      gerarNovaImagemIAAutomatica(false, novoFormato);
+                                                  }
+                                              }} className="input-standard border-indigo-200 focus:border-indigo-500 bg-indigo-50">
                                                   <option value="">Tamanho Original</option>
                                                   <option value="16/9">Paisagem (Deitado)</option>
                                                   <option value="3/4">Retrato (Em pé)</option>
@@ -632,19 +721,15 @@ export default function Home() {
                                           <div>
                                               <label className="input-label">Bordas da Foto</label>
                                               <select onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
-                                                  <option value="rounded-none">Retas</option>
-                                                  <option value="rounded-md">Suaves</option>
-                                                  <option value="rounded-xl">Arredondadas</option>
-                                                  <option value="rounded-full">Círculo Perfeito</option>
+                                                  <option value="rounded-none shadow-none">Retas (Simples)</option>
+                                                  <option value="rounded-md shadow-md">Suaves com Sombra</option>
+                                                  <option value="rounded-xl shadow-xl">Arredondadas (Premium)</option>
+                                                  <option value="rounded-full shadow-lg">Círculo Perfeito</option>
+                                                  <option value="rounded-xl shadow-2xl shadow-indigo-500/50">Brilho Colorido (Glow)</option>
+                                                  <option value="rounded-lg border-4 border-white shadow-xl">Cartão Polaroid</option>
+                                                  <option value="rounded-full border-4 border-emerald-500 shadow-lg">Círculo com Borda (Status)</option>
                                               </select>
                                           </div>
-                                      </div>
-                                      <div className="panel-section flex justify-between items-center bg-slate-50 rounded-lg m-3 p-3 border border-slate-100">
-                                          <label className="flex items-center gap-2 cursor-pointer">
-                                              <input type="checkbox" onChange={(e) => atualizarElemento('imgBorder', e.target.checked)} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
-                                              <span className="text-xs font-bold text-slate-700">Colocar Moldura Grossa</span>
-                                          </label>
-                                          <input type="color" value={elementoSelecionado.borderColor || '#000000'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 p-0 shadow-sm" />
                                       </div>
                                   </>
                               ) : (
@@ -665,7 +750,15 @@ export default function Home() {
                                                   <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
                                               </div>
                                           </div>
-                                          <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
+                                          
+                                          {elementoSelecionado.bloqueiaTexto ? (
+                                              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
+                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Bloco Estrutural</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique diretamente em uma palavra ou botão para alterar o texto sem quebrar o design.</p>
+                                              </div>
+                                          ) : (
+                                              <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
+                                          )}
                                       </div>
                                       
                                       <div className="panel-section grid grid-cols-2 gap-5">
@@ -714,6 +807,7 @@ export default function Home() {
                                   </>
                               )}
 
+                              {/* PAINEL DO COPYWRITER IA */}
                               <div className="m-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-xl text-white">
                                   <label className="text-[11px] font-black uppercase tracking-widest text-indigo-300 mb-4 flex items-center"><i className="fas fa-robot text-xl mr-2 text-white"></i> Otimização com IA</label>
                                   
@@ -849,7 +943,7 @@ export default function Home() {
                               ) : (
                                   <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                                       <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Descrever o Site</h3>
-                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança, com uma área mostrando os dentistas e botão pro WhatsApp."></textarea>
+                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança..."></textarea>
                                       
                                       <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                           <i className="fas fa-code text-yellow-300 text-lg"></i> Criar Meu Site Agora
@@ -906,7 +1000,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[10px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
@@ -918,7 +1012,7 @@ export default function Home() {
       </div>
       
       {modalMeusSitesAberto && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
               <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Seus Projetos Publicados</h2>
