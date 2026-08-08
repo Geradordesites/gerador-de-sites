@@ -23,7 +23,8 @@ export async function POST(req: Request) {
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
-    const regraImagens = "- DIRETRIZ DE ASSETS: Proibido ilustrações infantis ou vetores genéricos. Utilize exclusivamente fotografias humanas reais e cenários de alta qualidade.";
+    // REGRA REFORÇADA PARA IMAGENS
+    const regraImagens = "- MÍDIAS E IMAGENS: 🚨 NUNCA INVENTE URLs DE FOTOS. Você DEVE obrigatoriamente usar este formato exato para todas as imagens: https://images.unsplash.com/random/1200x800/?keyword1,keyword2 (Substitua as keywords por termos ultradirecionados em INGLÊS que combinem com a seção). NUNCA use URLs com '/photo-'.";
     
     let instrucaoDinamica = "";
     if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES: Adicione data-aos=\"fade-up\" nas tags estruturais principais (<section>, <div> grandes).";
@@ -38,16 +39,11 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
 🚨 O valor DEVE CONTER O SITE INTEIRO (do <!DOCTYPE html> até o </html>). NUNCA utilize marcações de corte como "<!-- resto do código -->". 
 
 === REGRA DE OURO 2: RESPONSIVIDADE MOBILE-FIRST (OBRIGATÓRIO) ===
-O site DEVE se adaptar perfeitamente a celulares, tablets e desktops. 
-- Use 'flex-col md:flex-row' para que elementos fiquem um embaixo do outro no celular e lado a lado no PC.
-- Use 'p-4 md:p-8 lg:p-12' para espaçamentos dinâmicos.
-- NUNCA use larguras fixas em pixels (ex: w-[800px]). Use sempre porcentagens ou max-width (ex: 'w-full max-w-6xl mx-auto').
-- Menus devem ser responsivos (se não conseguir fazer botão hambúrguer funcional, empilhe os links no celular com flex-col).
+O site DEVE se adaptar perfeitamente a celulares, tablets e desktops. Use classes flex responsivas (ex: flex-col md:flex-row) e espaçamentos percentuais.
 
 === REGRA DE OURO 3: ARQUITETURA E ESPAÇAMENTOS ===
-- Force o espaçamento de UMA LINHA entre títulos (h2, h3) e parágrafos (p) utilizando as classes 'mb-4' ou 'mb-6'.
+- Force o espaçamento de UMA LINHA entre títulos e parágrafos utilizando as classes 'mb-4' ou 'mb-6'.
 - Otimize todas as tags <img> com: "w-full mx-auto h-auto object-cover rounded-xl shadow-lg".
-- Source de imagens: https://images.unsplash.com/random/1200x800/?keyword
 ${regraImagens}
 ${instrucaoDinamica}
 
@@ -89,7 +85,7 @@ Copie e cole este bloco HTML antes do fechamento do </body>:
 === DIRETRIZ DE MICRO-OTIMIZAÇÃO E COPYWRITING ===
 Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ATENÇÃO: Devolva APENAS a Tag HTML do elemento fornecido. 
-🚨 NUNCA narre o que você está fazendo. Devolva O CÓDIGO HTML PRONTO. Mantenha as classes Tailwind existentes a menos que seja solicitado mudá-las.
+🚨 NUNCA narre o que você está fazendo. Devolva O CÓDIGO HTML PRONTO.
         `;
     }
 
@@ -137,7 +133,46 @@ Você DEVE retornar EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html"
         if (htmlCode.includes('</body>')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
+    // CORREÇÃO: Limpador de Imagens Quebradas (Se a IA inventar links errados)
+    const regexBrokenUnsplash = /https:\/\/images\.unsplash\.com\/photo-[^"&<>\s']+/g;
+    htmlCode = htmlCode.replace(regexBrokenUnsplash, 'https://loremflickr.com/1200/800/business');
+
+    // BUSCA DE IMAGENS REAIS
+    let provedorImagemUsado = 'Sem imagens';
+    const regexUnsplash = /https:\/\/(?:images|source)\.unsplash\.com\/(?:random\/)?(\d+x\d+)\/\?([^"&<>\s']+)/g;
+    let match; const urlsToReplace = [];
+    while ((match = regexUnsplash.exec(htmlCode)) !== null) {
+        urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keyword: match[2] });
+    }
+
+    if (urlsToReplace.length > 0) {
+      let unsplashUsado = false, flickrUsado = false;
+      for (const item of urlsToReplace) {
+        let imagemEncontrada = false;
+        const kw = encodeURIComponent(item.keyword.replace(/[{}]/g, '').split(',')[0]);
+        let orient = item.dimensao === '800x1200' ? 'portrait' : 'landscape';
+        if (process.env.UNSPLASH_API_KEY) {
+          try {
+            const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kw}&per_page=15&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+            if (uRes.ok) {
+              const uData = await uRes.json();
+              if (uData.results?.length > 0) {
+                htmlCode = htmlCode.replace(item.fullMatch, uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular);
+                imagemEncontrada = true; unsplashUsado = true;
+              }
+            }
+          } catch (e) {}
+        }
+        if (!imagemEncontrada) {
+          const w = item.dimensao === '800x1200' ? '800' : '1200', h = item.dimensao === '800x1200' ? '1200' : '800';
+          htmlCode = htmlCode.replace(item.fullMatch, `https://loremflickr.com/${w}/${h}/${kw}?lock=${Math.floor(Math.random() * 9999)}`);
+          flickrUsado = true;
+        }
+      }
+      provedorImagemUsado = unsplashUsado && flickrUsado ? 'Unsplash + Flickr' : unsplashUsado ? 'Unsplash API' : 'LoremFlickr';
+    }
+
+    return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado, provedorImagem: provedorImagemUsado });
 
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
