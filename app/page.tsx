@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL
+// SCRIPT DO IFRAME: BLINDAGEM E OVERLAY INTELIGENTE PARA FUNDOS
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -52,21 +52,61 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
+                let isImg = el.tagName === 'IMG';
+
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.href !== undefined) el.setAttribute('href', event.data.href);
-                if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
-                if(event.data.opacity !== undefined) el.style.opacity = event.data.opacity;
                 
-                if(event.data.bgImage !== undefined) {
-                    if(event.data.bgImage) {
-                        el.style.backgroundImage = "url('" + event.data.bgImage + "')";
+                // SISTEMA DE OVERLAY INTELIGENTE (Opacidade no Fundo sem afetar filhos)
+                if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
+                if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
+                
+                if (event.data.opacity !== undefined) {
+                    if (isImg) {
+                        el.style.opacity = event.data.opacity;
+                    } else {
+                        el.dataset.bgOpacity = event.data.opacity;
+                        el.style.opacity = ''; // Garante que a seção inteira NÃO fique transparente
+                    }
+                }
+
+                if (!isImg) {
+                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor) || '#ffffff';
+                    let cBgImage = el.dataset.rawBgImage;
+                    
+                    if (cBgImage === undefined) {
+                        let rawBg = el.style.backgroundImage || '';
+                        let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+                        cBgImage = match ? match[1] : '';
+                    }
+                    
+                    let cOpacity = parseFloat(el.dataset.bgOpacity);
+                    if (isNaN(cOpacity)) cOpacity = 1;
+
+                    el.style.backgroundColor = cBgColor; 
+
+                    if (cBgImage && cBgImage !== 'none') {
+                        // Calcula a cor RGB e aplica a película com base na opacidade inversa
+                        let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
+                        let r = rgb ? parseInt(rgb[1], 16) : 255;
+                        let g = rgb ? parseInt(rgb[2], 16) : 255;
+                        let b = rgb ? parseInt(rgb[3], 16) : 255;
+                        
+                        let alpha = 1 - cOpacity; // Se a opacidade for 1, película é 0. Se opacidade for 0.4, película é 0.6.
+                        let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${alpha})\`;
+                        
+                        el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
                         el.style.backgroundRepeat = "no-repeat";
-                    } else { el.style.backgroundImage = "none"; }
+                    } else {
+                        el.style.backgroundImage = "none";
+                    }
+                } else {
+                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 }
 
                 if(event.data.textAlign !== undefined) {
@@ -79,6 +119,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
+                // LIMPEZA AGRESSIVA DE CLASSES DE ALTURA PARA O FORMATO DA IMAGEM FUNCIONAR
                 if(event.data.imgFormat !== undefined) {
                     if (event.data.imgFormat === '') {
                         el.style.aspectRatio = '';
@@ -161,12 +202,26 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let bloqueiaTexto = isContainer && isNavOrSection;
 
             let compStyle = window.getComputedStyle(elSelecionado);
-            let bgImg = elSelecionado.style.backgroundImage || '';
-            if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
-            else bgImg = '';
+            let isImg = elSelecionado.tagName === 'IMG';
+            
+            // Extrai as informações de cor e fundo perfeitamente
+            let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
+            
+            let bgImg = elSelecionado.dataset.rawBgImage;
+            if (bgImg === undefined) {
+                let rawBg = elSelecionado.style.backgroundImage || '';
+                let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+                bgImg = match ? match[1] : '';
+            }
 
             let aspect = elSelecionado.style.aspectRatio || '';
-            let objOpacity = parseFloat(compStyle.opacity);
+            
+            let objOpacity = 1;
+            if (isImg) {
+                objOpacity = parseFloat(compStyle.opacity);
+            } else {
+                objOpacity = parseFloat(elSelecionado.dataset.bgOpacity);
+            }
             if (isNaN(objOpacity)) objOpacity = 1;
 
             window.parent.postMessage({
@@ -177,7 +232,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 src: elSelecionado.src || '',
                 href: elSelecionado.getAttribute('href') || '',
                 className: elSelecionado.className,
-                bgColor: rgbToHex(compStyle.backgroundColor),
+                bgColor: cColor,
                 textColor: rgbToHex(compStyle.color),
                 borderColor: rgbToHex(compStyle.borderColor),
                 fontSize: parseInt(compStyle.fontSize) || 16,
@@ -225,16 +280,18 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
+  // DECLARAÇÃO DOS ESTADOS CORRIGIDA
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [heroLayout, setHeroLayout] = useState('auto');
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-  // FAXINA FINAL DO HTML
+  // FAXINA FINAL DO HTML OTIMIZADA PARA REMOVER CLASSES DE EDIÇÃO DO BODY
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
+      
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
@@ -322,37 +379,21 @@ export default function Home() {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
+                systemInstruction: "Engenheiro Sênior Tailwind.", 
                 promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
                 isSiteRefinement: true, 
                 isGeminiForced: true 
             })
         });
-        
-        // ESCUDO DE ERROS: Bloqueia JSONs corrompidos ou HTMLs de Erro 413 (Entity Too Large)
-        const responseText = await response.text();
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            if (responseText.includes('413') || responseText.includes('Too Large')) {
-                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
-            }
-            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
-        }
-
+        const data = await response.json();
         if (!data.success) throw new Error(data.error);
         
-        if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data);
-            promptInput.value = '';
-            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else {
-            throw new Error("A IA falhou ao processar a modificação global.");
-        }
+        processarRespostaDOM(data);
+        promptInput.value = '';
+        (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
 
     } catch (err: any) {
-        (window as any).showNotification(err.message || "Erro na modificação do site.", "error");
+        (window as any).showNotification(err.message || "Erro na modificação.", "error");
     } finally {
         setStatusApis({ texto: 'Aguardando Operação', processing: false });
     }
@@ -368,25 +409,13 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
       });
-      
-      // ESCUDO DE ERROS: Processa a resposta em texto bruto primeiro
-      const responseText = await response.text();
-      let data;
-      try {
-          data = JSON.parse(responseText);
-      } catch (err) {
-          if (responseText.includes('413') || responseText.includes('Too Large')) {
-              throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
-          }
-          throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
-      }
-
+      const data = await response.json();
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
       return data;
     } catch (err: any) {
       let errorMsg = err.message;
       if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
-          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto e tente novamente.";
+          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto.";
       } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
           errorMsg = "Verifique sua conexão de internet e tente novamente.";
       }
@@ -407,7 +436,7 @@ export default function Home() {
 
   const getMegaPromptCores = () => {
     const cor = corSelecionada;
-    if (cor === 'personalizada') return `CORES DO SITE: Use ${(document.getElementById('corFundo') as HTMLInputElement)?.value} como fundo principal e ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value} para botões e destaques.`;
+    if (cor === 'personalizada') return `CORES DO SITE: Use ${(document.getElementById('corFundo') as HTMLInputElement)?.value} como fundo e ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value} para botões e destaques.`;
     if (cor === 'auto') return "CORES DO SITE: Copie fielmente as cores da imagem que o usuário anexou.";
     
     const mapaCores:any = {
@@ -422,7 +451,7 @@ export default function Home() {
         'laranja': 'Laranja Criativo (Tons quentes, amigáveis, com muita energia e estímulo)',
         'cinza': 'Cinza Monocromático (Estilo limpo, prata, ultra minimalista e focado na estrutura)'
     };
-    return `CORES DO SITE: A paleta principal de cores deve ser baseada em: ${mapaCores[cor] || 'Cores neutras'}.`;
+    return `CORES DO SITE: A paleta principal de cores deve ser fortemente baseada em: ${mapaCores[cor] || 'Cores neutras'}.`;
   };
 
   const getMegaPromptHero = () => {
@@ -437,12 +466,10 @@ export default function Home() {
     const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
     const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    let promptParts: any[] = [{ text: "Gere conteúdo completo para todas as seções e cubra todo o fluxo de conversão detalhado. Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema." }];
+    let promptParts: any[] = [{ text: "Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema." }];
     uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. O resultado deve ser uma página longa, não apenas uma única seção. Crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Baseie o design no layout da imagem fornecida, mas estenda-o para criar uma página inteira. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
-
-    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `Desenvolvedor Especialista. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     if (data) processarRespostaDOM(data);
   };
@@ -453,9 +480,7 @@ export default function Home() {
     
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e longa. O resultado deve ser uma página de página inteira com pelo menos 5 seções distintas (ex: Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, Chamada para Ação). Não se limite a apenas um topo e um botão; crie um fluxo de conversão detalhado. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
-
-    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. Lembre-se: use espaçamentos precisos. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     
     const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
     if (data) processarRespostaDOM(data);
@@ -479,6 +504,7 @@ export default function Home() {
       e.target.value = ''; 
   };
 
+  // IMAGEM INTELIGENTE QUE BUSCA DIRETAMENTE DA UNSPLASH VIA API
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
@@ -490,7 +516,8 @@ export default function Home() {
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
 
-      let termoContexto = elementoSelecionado.text || productContent || "business";
+      const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
+      let termoContexto = elementoSelecionado.text || textEl?.value || "business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
       try {
@@ -514,14 +541,14 @@ export default function Home() {
           
           if(data && data.url) { 
               atualizarElemento(isBackground ? 'bgImage' : 'src', data.url);
-              (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
+              (window as any).showNotification("Foto de alta qualidade aplicada!", "success"); 
           } else {
               throw new Error("API não retornou foto");
           }
       } catch(err) { 
           const fallback = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=${w}&q=80`;
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
-          (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
+          (window as any).showNotification("Usando imagem padrão. Verifique sua chave da API.", "error"); 
       }
   };
 
@@ -551,46 +578,10 @@ export default function Home() {
     setModalMeusSitesAberto(false);
   };
 
-  // MOTOR DE COMPRESSÃO DE IMAGENS NO CLIENT-SIDE
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-        (window as any).showNotification('Por favor, envie apenas arquivos de imagem.', 'error');
-        return;
-    }
-    
+    if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = (e: any) => {
-        const img = new Image();
-        img.onload = () => {
-            // Cria um canvas para comprimir a imagem
-            const canvas = document.createElement('canvas');
-            let w = img.width;
-            let h = img.height;
-            const maxDim = 1400; // Limite excelente para IA sem perder qualidade de layout
-
-            if (w > maxDim || h > maxDim) {
-                if (w > h) {
-                    h = Math.round((h * maxDim) / w);
-                    w = maxDim;
-                } else {
-                    w = Math.round((w * maxDim) / h);
-                    h = maxDim;
-                }
-            }
-
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, w, h);
-                // Converte para JPEG com 80% de qualidade (Reduz de 5MB para ~150KB)
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                const base64Data = dataUrl.split(',')[1];
-                setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]);
-            }
-        };
-        img.src = e.target.result;
-    };
+    reader.onload = (e: any) => setUploadedImages(prev => [...prev, { mimeType: file.type, data: e.target.result.split(',')[1] }]);
     reader.readAsDataURL(file);
   };
 
@@ -804,19 +795,21 @@ export default function Home() {
                                       )}
 
                                       <div className="panel-section">
-                                          <div className="flex justify-between items-center mb-3">
-                                              <label className="input-label mb-0">Texto do Elemento</label>
-                                              <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                  <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
-                                                  <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
-                                                  <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
+                                          {!elementoSelecionado.bloqueiaTexto && (
+                                              <div className="flex justify-between items-center mb-3">
+                                                  <label className="input-label mb-0">Texto do Elemento</label>
+                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
+                                                  </div>
                                               </div>
-                                          </div>
+                                          )}
                                           
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
-                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container de Estrutura</p>
-                                                  <p className="text-[10px] leading-relaxed">Para evitar quebrar o layout, clique diretamente em uma palavra ou botão para alterar o texto interno. Aqui você pode alterar a cor e o fundo.</p>
+                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique diretamente em uma palavra ou botão específico para alterar o texto interno. Neste painel você ajusta apenas o Fundo e as Cores globais do bloco.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
@@ -1068,7 +1061,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site (Mobile-First)</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
