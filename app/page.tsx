@@ -4,12 +4,11 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM ANTI-NAVEGAÇÃO E SELEÇÃO CIRÚRGICA
+// SCRIPT DO IFRAME (AJUSTE FORÇADO DE IMAGENS E BLINDAGEM)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
 
-    // INJEÇÃO DE CSS ISOLADO (Garante que a cruzinha só exista se o painel estiver ativo)
     if (!document.getElementById('builder-core-styles')) {
         const style = document.createElement('style');
         style.id = 'builder-core-styles';
@@ -39,21 +38,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 document.body.classList.add('builder-editing');
             } else {
                 document.body.classList.remove('builder-editing');
-                
-                // FAXINEIRO AGRESSIVO: Limpa qualquer rastro de edição
-                if(elSelecionado) { 
-                    elSelecionado.style.outline = ''; 
-                    elSelecionado.style.outlineOffset = ''; 
-                    elSelecionado = null; 
-                }
-                
+                if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; elSelecionado = null; }
                 document.querySelectorAll('[data-old-outline]').forEach(el => {
                     el.style.outline = el.dataset.oldOutline || '';
                     el.style.outlineOffset = '';
                     delete el.dataset.oldOutline;
                 });
-
-                // Varredura de segurança contra cursores fantasmas
                 document.querySelectorAll('*').forEach(el => {
                     if (el.style.cursor === 'crosshair') el.style.cursor = '';
                 });
@@ -81,28 +71,22 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.textAlign) el.classList.add(event.data.textAlign);
                 }
 
-                if(event.data.animationClass !== undefined) {
-                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300', 'hover:-translate-y-2');
-                    if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
-                }
-
-                if(event.data.customClasses !== undefined) {
-                    if(el.dataset.customClasses) el.dataset.customClasses.split(' ').forEach(cls => { if(cls) el.classList.remove(cls); });
-                    if(event.data.customClasses) event.data.customClasses.split(' ').forEach(cls => { if(cls) el.classList.add(cls); });
-                    el.dataset.customClasses = event.data.customClasses; 
-                }
-
+                // AJUSTE FORÇADO DE FORMATO DE IMAGEM
                 if(event.data.imgFormat !== undefined) {
                     if (event.data.imgFormat === '') {
                         el.style.aspectRatio = '';
+                        el.style.height = ''; // Libera a altura inline
                         el.classList.remove('object-cover', 'w-full');
                     } else {
+                        // Arranca classes do Tailwind que travam a altura da imagem
+                        el.className = el.className.replace(/h-\[[^\]]+\]/g, '').replace(/h-\w+/g, '');
+                        
                         el.style.aspectRatio = event.data.imgFormat;
+                        el.style.height = 'auto'; // Permite que o Aspect Ratio comande
                         el.classList.add('object-cover', 'w-full');
                     }
                 }
                 
-                // MOTOR DE ESTILOS DE IMAGEM (Agora suporta combos de Sombra, Borda e Animação)
                 if(event.data.imgRounded !== undefined) {
                     const allClassesToRemove = [
                         'rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full',
@@ -114,9 +98,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     el.classList.remove(...allClassesToRemove);
                     
                     if (event.data.imgRounded) { 
-                        event.data.imgRounded.split(' ').forEach(cls => {
-                            if (cls) el.classList.add(cls);
-                        });
+                        event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); });
                     }
                 }
 
@@ -166,10 +148,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let targetEl = e.target;
             if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
 
-            if(elSelecionado) {
-                elSelecionado.style.outline = '';
-                elSelecionado.style.outlineOffset = '';
-            }
+            if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
             elSelecionado = targetEl;
             elSelecionado.style.outline = '3px solid #4f46e5';
             elSelecionado.style.outlineOffset = '-3px';
@@ -216,9 +195,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             var href = link.getAttribute('href') || '';
             if(href.startsWith('#')) {
                 var hash = href.substring(href.indexOf('#'));
-                if (hash.length > 1) {
-                    try { var tEl = document.querySelector(hash); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
-                }
+                if (hash.length > 1) { try { var tEl = document.querySelector(hash); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {} }
             } else if (href && !href.startsWith('javascript:')) {
                 window.open(href, '_blank');
             }
@@ -245,7 +222,6 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
-  // FAXINA FINAL DO HTML ANTES DE EXPORTAR
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
@@ -256,7 +232,7 @@ export default function Home() {
                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
                    .replace(/data-old-outline="[^"]*"/gi, '')
                    .replace(/\s*style="\s*"/gi, ''); 
-      clean = clean.replace(/ class="\s*"/gi, ''); // Remove classes vazias
+      clean = clean.replace(/ class="\s*"/gi, ''); 
       return clean;
   };
 
@@ -421,9 +397,11 @@ export default function Home() {
 
   const executarGeracaoSiteVisual = async () => {
     if (uploadedImages.length === 0) { (window as any).showNotification('Por favor, anexe uma Imagem Base para iniciar.', 'error'); return; }
-    const isMenu = (document.getElementById('checkComMenu') as HTMLInputElement)?.checked ? "O site deve conter um Menu Superior fixo no topo." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    let promptParts: any[] = [{ text: "Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Utilize estritamente o formato de imagem aleatória solicitado nas regras." }];
+    const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
+    const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
+    
+    let promptParts: any[] = [{ text: "Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato." }];
     uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     
     const instrucoesFinais = `Desenvolvedor Especialista. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
@@ -436,10 +414,10 @@ export default function Home() {
     const content = textEl?.value?.trim();
     if (!content) { (window as any).showNotification('Por favor, preencha o campo de texto explicando como deve ser o site.', 'error'); return; }
     
-    const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
-    const isMenu = checkMenuEl?.checked ? "O site deve conter um Menu Superior fixo no topo." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
+    const checkMenuEl = document.getElementById('checkComMenuTexto') as HTMLInputElement;
+    const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     
-    const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. Lembre-se: use espaçamentos precisos e apenas o formato de imagem exigido. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `Criador de Sites Profissionais. Construa uma Landing Page espetacular e completa baseada na descrição a seguir. \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     
     const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
     if (data) processarRespostaDOM(data);
@@ -463,46 +441,29 @@ export default function Home() {
       e.target.value = ''; 
   };
 
-  // A GERAÇÃO DE IMAGEM AGORA RESPEITA A PROPORÇÃO E O CONTEXTO
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está buscando a melhor imagem...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
-      let w = 1200, h = 800; 
+      let w = 1280, h = 720; // Padrão Horizontal
       
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
-      else if (formatToUse === '16/9' || formatToUse === 'aspect-video') { w = 1280; h = 720; }
 
       let termoBusca = "professional business";
       if (elementoSelecionado.text && elementoSelecionado.text.length < 50) {
           termoBusca = elementoSelecionado.text;
       } else {
           const textEl = document.getElementById('productContent') as HTMLTextAreaElement;
-          termoBusca = textEl?.value?.substring(0, 50) || "modern business";
+          termoBusca = textEl?.value?.substring(0, 50) || "modern professional";
       }
 
-      const prompt = `Você é um Diretor de Arte. Analise este texto de contexto: "${termoBusca}".
-      Sua tarefa é retornar APENAS UM JSON contendo a URL de uma imagem fotográfica real.
-      A URL DEVE ser obrigatoriamente neste formato: https://loremflickr.com/${w}/${h}/keyword1,keyword2?lock=NUMERO_ALEATORIO
-      PROIBIDO usar desenhos ou sci-fi. Escolha 2 keywords muito boas em inglês (ex: portrait, office, smile, people, clinic, business).
-      RETORNE SOMENTE O JSON: {"codigo_html": "A_URL_GERADA"}`;
-
-      try {
-          const resData = await chamarMotorIA(prompt, [{text: prompt}], true);
-          if(resData && resData.html) { 
-              let novaImg = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
-              if(novaImg.startsWith('http')) {
-                  atualizarElemento(isBackground ? 'bgImage' : 'src', novaImg);
-                  (window as any).showNotification("Nova imagem aplicada perfeitamente!", "success"); 
-              } else { throw new Error("A IA gerou um link inválido."); }
-          }
-      } catch(err) { 
-          const fallback = `https://loremflickr.com/${w}/${h}/business,success?lock=${Math.floor(Math.random() * 9999)}`;
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
-          (window as any).showNotification("Imagem ajustada ao novo formato com sucesso.", "success"); 
-      }
+      const kwFormatada = encodeURIComponent(termoBusca.trim().replace(/\s+/g, ','));
+      const fallbackUrl = `[https://loremflickr.com/$](https://loremflickr.com/$){w}/${h}/${kwFormatada}?lock=${Math.floor(Math.random() * 9999)}`;
+      
+      atualizarElemento(isBackground ? 'bgImage' : 'src', fallbackUrl);
+      (window as any).showNotification("Nova imagem encaixada no formato!", "success");
   };
 
   const carregarMeusSites = async () => {
@@ -560,8 +521,8 @@ export default function Home() {
     (window as any).mudarSeparador = (aba: string) => {
       document.getElementById('previewFrame')!.classList.toggle('active', aba === 'preview');
       document.getElementById('codigoContainer')!.classList.toggle('active', aba === 'code');
-      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition";
-      document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition";
+      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
+      document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
     };
 
     (window as any).showNotification = (msg: string, type: string) => {
@@ -625,7 +586,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -704,7 +665,7 @@ export default function Home() {
                                       </div>
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
-                                              <label className="input-label">Formato (Proporção)</label>
+                                              <label className="input-label">Proporção (Formato)</label>
                                               <select value={elementoSelecionado.imgFormat || ''} onChange={(e) => {
                                                   const novoFormato = e.target.value;
                                                   atualizarElemento('imgFormat', novoFormato);
@@ -713,9 +674,9 @@ export default function Home() {
                                                   }
                                               }} className="input-standard border-indigo-200 focus:border-indigo-500 bg-indigo-50">
                                                   <option value="">Tamanho Original</option>
-                                                  <option value="16/9">Paisagem (Deitado)</option>
-                                                  <option value="3/4">Retrato (Em pé)</option>
-                                                  <option value="1/1">Quadrado</option>
+                                                  <option value="aspect-video">Paisagem (Deitado)</option>
+                                                  <option value="aspect-[3/4]">Retrato (Em pé)</option>
+                                                  <option value="aspect-square">Quadrado</option>
                                               </select>
                                           </div>
                                           <div>
@@ -730,6 +691,13 @@ export default function Home() {
                                                   <option value="rounded-full border-4 border-emerald-500 shadow-lg">Círculo com Borda (Status)</option>
                                               </select>
                                           </div>
+                                      </div>
+                                      <div className="panel-section flex justify-between items-center bg-slate-50 rounded-lg m-3 p-3 border border-slate-100">
+                                          <label className="flex items-center gap-2 cursor-pointer">
+                                              <input type="checkbox" onChange={(e) => atualizarElemento('imgBorder', e.target.checked)} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
+                                              <span className="text-xs font-bold text-slate-700">Colocar Moldura Grossa</span>
+                                          </label>
+                                          <input type="color" value={elementoSelecionado.borderColor || '#000000'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 p-0 shadow-sm" />
                                       </div>
                                   </>
                               ) : (
@@ -943,7 +911,7 @@ export default function Home() {
                               ) : (
                                   <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                                       <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Descrever o Site</h3>
-                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança..."></textarea>
+                                      <textarea id="productContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança, com uma área mostrando os dentistas e botão pro WhatsApp."></textarea>
                                       
                                       <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                           <i className="fas fa-code text-yellow-300 text-lg"></i> Criar Meu Site Agora
