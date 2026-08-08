@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: OPACIDADE ISOLADA NO FUNDO E BLINDAGEM DE CLIQUES
+// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -52,61 +52,21 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                let isImg = el.tagName === 'IMG';
-
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.href !== undefined) el.setAttribute('href', event.data.href);
+                if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
+                if(event.data.opacity !== undefined) el.style.opacity = event.data.opacity;
                 
-                if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
-                if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
-                
-                if (event.data.opacity !== undefined) {
-                    if (isImg) {
-                        el.style.opacity = event.data.opacity;
-                    } else {
-                        el.dataset.bgOpacity = event.data.opacity;
-                        el.style.opacity = ''; // Mantém o container com 100% de opacidade para não afetar os textos/filhos
-                    }
-                }
-
-                // MOTOR DE OPACIDADE E FUNDO ISOLADO (Não afeta textos internos)
-                if (!isImg) {
-                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor) || '#ffffff';
-                    let cBgImage = el.dataset.rawBgImage;
-                    
-                    if (cBgImage === undefined) {
-                        let rawBg = el.style.backgroundImage || '';
-                        let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
-                        cBgImage = match ? match[1] : '';
-                    }
-                    
-                    let cOpacity = parseFloat(el.dataset.bgOpacity);
-                    if (isNaN(cOpacity)) cOpacity = 1;
-
-                    let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
-                    let r = rgb ? parseInt(rgb[1], 16) : 255;
-                    let g = rgb ? parseInt(rgb[2], 16) : 255;
-                    let b = rgb ? parseInt(rgb[3], 16) : 255;
-
-                    if (cBgImage && cBgImage !== 'none') {
-                        // Se tem imagem de fundo, aplica gradiente de sobreposição com opacidade
-                        let alpha = 1 - cOpacity; 
-                        let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${alpha})\`;
-                        el.style.backgroundColor = cBgColor;
-                        el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
+                if(event.data.bgImage !== undefined) {
+                    if(event.data.bgImage) {
+                        el.style.backgroundImage = "url('" + event.data.bgImage + "')";
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
                         el.style.backgroundRepeat = "no-repeat";
-                    } else {
-                        // Se for apenas cor de fundo, aplica rgba para transparência sem afetar o texto filho
-                        el.style.backgroundImage = "none";
-                        el.style.backgroundColor = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
-                    }
-                } else {
-                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
+                    } else { el.style.backgroundImage = "none"; }
                 }
 
                 if(event.data.textAlign !== undefined) {
@@ -201,25 +161,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let bloqueiaTexto = isContainer && isNavOrSection;
 
             let compStyle = window.getComputedStyle(elSelecionado);
-            let isImg = elSelecionado.tagName === 'IMG';
-            
-            let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
-            
-            let bgImg = elSelecionado.dataset.rawBgImage;
-            if (bgImg === undefined) {
-                let rawBg = elSelecionado.style.backgroundImage || '';
-                let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
-                bgImg = match ? match[1] : '';
-            }
+            let bgImg = elSelecionado.style.backgroundImage || '';
+            if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
+            else bgImg = '';
 
             let aspect = elSelecionado.style.aspectRatio || '';
-            
-            let objOpacity = 1;
-            if (isImg) {
-                objOpacity = parseFloat(compStyle.opacity);
-            } else {
-                objOpacity = parseFloat(elSelecionado.dataset.bgOpacity);
-            }
+            let objOpacity = parseFloat(compStyle.opacity);
             if (isNaN(objOpacity)) objOpacity = 1;
 
             window.parent.postMessage({
@@ -230,7 +177,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 src: elSelecionado.src || '',
                 href: elSelecionado.getAttribute('href') || '',
                 className: elSelecionado.className,
-                bgColor: cColor,
+                bgColor: rgbToHex(compStyle.backgroundColor),
                 textColor: rgbToHex(compStyle.color),
                 borderColor: rgbToHex(compStyle.borderColor),
                 fontSize: parseInt(compStyle.fontSize) || 16,
@@ -283,6 +230,7 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
+  // FAXINA FINAL DO HTML
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
@@ -381,13 +329,14 @@ export default function Home() {
             })
         });
         
+        // ESCUDO DE ERROS: Bloqueia JSONs corrompidos ou HTMLs de Erro 413 (Entity Too Large)
         const responseText = await response.text();
         let data;
         try {
             data = JSON.parse(responseText);
         } catch (e) {
-            if (response.status === 413 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
-                throw new Error("O código atual do site é muito grande para essa modificação global. Tente fazer edições menores.");
+            if (responseText.includes('413') || responseText.includes('Too Large')) {
+                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
             }
             throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
         }
@@ -420,15 +369,16 @@ export default function Home() {
         body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
       });
       
+      // ESCUDO DE ERROS: Processa a resposta em texto bruto primeiro
       const responseText = await response.text();
       let data;
       try {
           data = JSON.parse(responseText);
       } catch (err) {
-          if (response.status === 413 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
-              throw new Error("O conteúdo enviado (imagem ou projeto) excede o limite de tamanho. Tente uma imagem menor.");
+          if (responseText.includes('413') || responseText.includes('Too Large')) {
+              throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
           }
-          throw new Error("Erro no servidor ao processar a solicitação.");
+          throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
       }
 
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
@@ -436,7 +386,7 @@ export default function Home() {
     } catch (err: any) {
       let errorMsg = err.message;
       if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
-          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto.";
+          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto e tente novamente.";
       } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
           errorMsg = "Verifique sua conexão de internet e tente novamente.";
       }
@@ -531,7 +481,7 @@ export default function Home() {
 
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal...", "success");
+      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let orientation = 'landscape'; 
@@ -569,7 +519,7 @@ export default function Home() {
               throw new Error("API não retornou foto");
           }
       } catch(err) { 
-          const fallback = `[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=$](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=$){w}&q=80`;
+          const fallback = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=${w}&q=80`;
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
           (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
@@ -601,7 +551,7 @@ export default function Home() {
     setModalMeusSitesAberto(false);
   };
 
-  // MOTOR DE COMPRESSÃO DE IMAGENS NO CLIENT-SIDE (ATÉ 5MB+)
+  // MOTOR DE COMPRESSÃO DE IMAGENS NO CLIENT-SIDE
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
         (window as any).showNotification('Por favor, envie apenas arquivos de imagem.', 'error');
@@ -612,20 +562,28 @@ export default function Home() {
     reader.onload = (e: any) => {
         const img = new Image();
         img.onload = () => {
+            // Cria um canvas para comprimir a imagem
             const canvas = document.createElement('canvas');
             let w = img.width;
             let h = img.height;
-            const maxDim = 1400; // Limite ideal para IA processar sem gargalos de tamanho 413
+            const maxDim = 1400; // Limite excelente para IA sem perder qualidade de layout
 
             if (w > maxDim || h > maxDim) {
-                if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
-                else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                }
             }
 
-            canvas.width = w; canvas.height = h;
+            canvas.width = w;
+            canvas.height = h;
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 ctx.drawImage(img, 0, 0, w, h);
+                // Converte para JPEG com 80% de qualidade (Reduz de 5MB para ~150KB)
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 const base64Data = dataUrl.split(',')[1];
                 setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]);
@@ -723,7 +681,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -846,21 +804,19 @@ export default function Home() {
                                       )}
 
                                       <div className="panel-section">
-                                          {!elementoSelecionado.bloqueiaTexto && (
-                                              <div className="flex justify-between items-center mb-3">
-                                                  <label className="input-label mb-0">Texto do Elemento</label>
-                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
-                                                  </div>
+                                          <div className="flex justify-between items-center mb-3">
+                                              <label className="input-label mb-0">Texto do Elemento</label>
+                                              <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                                  <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
+                                                  <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
+                                                  <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
                                               </div>
-                                          )}
+                                          </div>
                                           
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
-                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
-                                                  <p className="text-[10px] leading-relaxed">Para evitar quebrar o layout, clique diretamente em uma palavra ou botão específico para alterar o texto interno. Neste painel você ajusta apenas o Fundo e as Cores globais do bloco.</p>
+                                                  <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container de Estrutura</p>
+                                                  <p className="text-[10px] leading-relaxed">Para evitar quebrar o layout, clique diretamente em uma palavra ou botão para alterar o texto interno. Aqui você pode alterar a cor e o fundo.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
@@ -885,7 +841,7 @@ export default function Home() {
                                       </div>
 
                                       <div className="panel-section">
-                                          <label className="input-label flex justify-between">Transparência (Opacidade do Fundo) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
+                                          <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
                                           <input type="range" min="10" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
 
@@ -1112,7 +1068,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site (Mobile-First)</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
