@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: CONTROLE DE OPACIDADE E BLINDAGEM TOTAL
+// SCRIPT DO IFRAME: BLINDAGEM VISUAL E CONTROLE TOTAL CONTRA INCEPTION
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -136,12 +136,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
     });
 
+    // INTERCEPTADOR ABSOLUTO DE NAVEGAÇÃO
     window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 
     document.addEventListener('click', (e) => {
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
         
+        // COMPORTAMENTO DURANTE A EDIÇÃO VISUAL
         if (modoEdicao) {
             e.preventDefault(); 
             e.stopPropagation();
@@ -191,20 +193,33 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             return;
         }
 
+        // COMPORTAMENTO DURANTE O MODO DE VISUALIZAÇÃO (Anti-Inception)
         if (link) {
-            if (link.hasAttribute('onclick')) return; 
-            e.preventDefault();
+            // Se o link tiver um script nativo (ex: as sanfonas do rodapé), permite executar mas não recarregar
+            if (link.hasAttribute('onclick')) {
+                let href = link.getAttribute('href') || '';
+                if(href === '/' || href === '') e.preventDefault(); 
+                return; 
+            }
+            
+            e.preventDefault(); 
             e.stopPropagation();
-            var href = link.getAttribute('href') || '';
-            if(href.startsWith('#')) {
-                var hash = href.substring(href.indexOf('#'));
-                if (hash.length > 1) { try { var tEl = document.querySelector(hash); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {} }
-            } else if (href && !href.startsWith('javascript:')) {
-                window.open(href, '_blank');
+            
+            let href = link.getAttribute('href') || '';
+            if(href.startsWith('#') && href.length > 1) {
+                try { 
+                    var tEl = document.querySelector(href); 
+                    if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                } catch(err) {}
+            } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
+                window.open(href, '_blank'); // Abre links reais em nova guia
             }
             return;
         }
-        if (btn && btn.type === 'submit') { e.preventDefault(); return; }
+        
+        // Bloqueia qualquer botão de recarregar a tela
+        if (btn) { e.preventDefault(); e.stopPropagation(); return; }
+        
     }, true); 
 </script>`;
 
@@ -831,10 +846,10 @@ export default function Home() {
                   
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white">
                       
-                      <div className="flex p-3 bg-slate-50 border-b border-slate-200 gap-2">
-                          <button onClick={() => setAbaAtiva('visual')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Por Imagem</button>
-                          <button onClick={() => setAbaAtiva('copy')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Por Texto</button>
-                          <button onClick={() => setAbaAtiva('refinar')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1"></i> Modificar</button>
+                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar">
+                          <button onClick={() => setAbaAtiva('visual')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Por Imagem</button>
+                          <button onClick={() => setAbaAtiva('copy')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Por Texto</button>
+                          <button onClick={() => setAbaAtiva('refinar')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1"></i> Modificar</button>
                       </div>
 
                       {abaAtiva === 'refinar' ? (
@@ -1009,7 +1024,7 @@ export default function Home() {
                   {modoInspetor && (
                       <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site (Mobile-First)</div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
