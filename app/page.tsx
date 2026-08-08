@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM VISUAL E CONTROLE TOTAL CONTRA INCEPTION
+// SCRIPT DO IFRAME: OPACIDADE ISOLADA NO FUNDO E BLINDAGEM DE CLIQUES
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -68,10 +68,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         el.style.opacity = event.data.opacity;
                     } else {
                         el.dataset.bgOpacity = event.data.opacity;
-                        el.style.opacity = ''; 
+                        el.style.opacity = ''; // Mantém o container com 100% de opacidade para não afetar os textos/filhos
                     }
                 }
 
+                // MOTOR DE OPACIDADE E FUNDO ISOLADO (Não afeta textos internos)
                 if (!isImg) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor) || '#ffffff';
                     let cBgImage = el.dataset.rawBgImage;
@@ -85,23 +86,24 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     let cOpacity = parseFloat(el.dataset.bgOpacity);
                     if (isNaN(cOpacity)) cOpacity = 1;
 
-                    el.style.backgroundColor = cBgColor; 
+                    let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
+                    let r = rgb ? parseInt(rgb[1], 16) : 255;
+                    let g = rgb ? parseInt(rgb[2], 16) : 255;
+                    let b = rgb ? parseInt(rgb[3], 16) : 255;
 
                     if (cBgImage && cBgImage !== 'none') {
-                        let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
-                        let r = rgb ? parseInt(rgb[1], 16) : 255;
-                        let g = rgb ? parseInt(rgb[2], 16) : 255;
-                        let b = rgb ? parseInt(rgb[3], 16) : 255;
-                        
-                        let alpha = 1 - cOpacity;
+                        // Se tem imagem de fundo, aplica gradiente de sobreposição com opacidade
+                        let alpha = 1 - cOpacity; 
                         let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${alpha})\`;
-                        
+                        el.style.backgroundColor = cBgColor;
                         el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
                         el.style.backgroundRepeat = "no-repeat";
                     } else {
+                        // Se for apenas cor de fundo, aplica rgba para transparência sem afetar o texto filho
                         el.style.backgroundImage = "none";
+                        el.style.backgroundColor = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
                     }
                 } else {
                     if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
