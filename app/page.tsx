@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE INTELIGENTE E GLASSMORPHISM
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE INTELIGENTE E LIBERAÇÃO DE SANFONAS
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -16,7 +16,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         document.head.appendChild(style);
     }
 
-    // Corrigido para garantir conversão RGB segura, mesmo vindo do Tailwind
+    // Leitura perfeita de RGB para Hexadecimal
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
         let res = rgb.match(/\\d+/g);
@@ -32,7 +32,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
     }
 
-    // Função centralizada para selecionar elementos e evitar código duplicado
     function selectElement(targetEl) {
         if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
 
@@ -108,7 +107,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
         
-        // Pega a caixa PAI se o usuário clicar no botão no painel
         if (event.data.type === 'SELECT_PARENT') {
             let el = document.getElementById(event.data.id);
             if (el && el.parentElement && el.parentElement.tagName !== 'BODY') {
@@ -135,14 +133,16 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         el.style.opacity = event.data.opacity;
                     } else {
                         el.dataset.bgOpacity = event.data.opacity;
-                        el.style.opacity = ''; // Mantém container 100% visível para não afetar os textos filhos
+                        el.style.opacity = ''; // Garante que a caixa não desbote os textos filhos
                     }
                 }
 
+                // MOTOR DE SOBREPOSIÇÃO DE FUNDO E OPACIDADE
                 if (!isImg) {
-                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor) || '#ffffff';
+                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
+                    if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
+
                     let cBgImage = el.dataset.rawBgImage;
-                    
                     if (cBgImage === undefined) {
                         let rawBg = el.style.backgroundImage || '';
                         let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
@@ -152,34 +152,37 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     let cOpacity = parseFloat(el.dataset.bgOpacity);
                     if (isNaN(cOpacity)) cOpacity = 1;
 
-                    let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
-                    let r = rgb ? parseInt(rgb[1], 16) : 255;
-                    let g = rgb ? parseInt(rgb[2], 16) : 255;
-                    let b = rgb ? parseInt(rgb[3], 16) : 255;
+                    let r = 255, g = 255, b = 255;
+                    if (cBgColor.startsWith('#')) {
+                        let hex = cBgColor.replace('#', '');
+                        if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
+                        if (hex.length === 6) {
+                            r = parseInt(hex.substring(0,2), 16);
+                            g = parseInt(hex.substring(2,4), 16);
+                            b = parseInt(hex.substring(4,6), 16);
+                        }
+                    }
 
-                    // Anula regras conflitantes do Tailwind
+                    let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
+
+                    // Remove bloqueios do Tailwind
                     el.style.setProperty('--tw-bg-opacity', '1');
 
                     if (cBgImage && cBgImage !== 'none') {
-                        let alpha = 1 - cOpacity; 
-                        let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${alpha})\`;
-                        el.style.backgroundColor = cBgColor;
+                        el.style.backgroundColor = 'transparent'; // A cor será aplicada pelo gradiente overlay
                         el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
                         el.style.backgroundRepeat = "no-repeat";
                     } else {
                         el.style.backgroundImage = "none";
-                        // Aplica cor sólida com RGBA para ficar transparente
-                        el.style.backgroundColor = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
-                        
-                        // Glassmorphism Automático (Efeito Vidro Jateado)
-                        if (cOpacity < 1 && cOpacity > 0) {
-                            el.classList.add('backdrop-blur-md');
-                        } else {
-                            el.classList.remove('backdrop-blur-md');
-                        }
+                        el.style.backgroundColor = rgbaStr;
                     }
+
+                    // Aplica Glassmorphism Automático se a cor estiver transparente
+                    if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
+                    else el.classList.remove('backdrop-blur-md');
+                    
                 } else {
                     if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 }
@@ -257,22 +260,29 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
         let form = e.target.closest('form');
+        let summary = e.target.closest('summary'); // IDENTIFICA A SANFONA
 
-        if (form) { e.preventDefault(); }
+        if (form && !summary && !btn) { e.preventDefault(); }
         
         if (modoEdicao) {
-            e.preventDefault(); 
+            // Se for sanfona, permite abrir e fechar, mas continua a seleção para edição!
+            if (!summary) e.preventDefault(); 
             e.stopPropagation();
+
             selectElement(e.target);
             return;
         }
 
         if (link) {
-            e.preventDefault(); 
             let href = link.getAttribute('href') || '';
-            if (link.hasAttribute('onclick')) { return; }
+            if (link.hasAttribute('onclick')) { 
+                if (href === '/' || href === '' || href === '#') e.preventDefault(); 
+                return; 
+            }
+            
+            e.preventDefault();
             e.stopPropagation();
-
+            
             if(href.startsWith('#') && href.length > 1) {
                 try { 
                     var tEl = document.querySelector(href); 
@@ -310,12 +320,11 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-  // FAXINA FINAL DO HTML PARA IMPEDIR VAZAMENTOS
+  // FAXINA FINAL DO HTML
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
-      
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
@@ -366,7 +375,6 @@ export default function Home() {
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
 
-  // BOTÃO DESFAZER BLINDADO E CORRIGIDO
   const desfazerCodigo = () => {
     if (historicoCodigo.length === 0) {
         (window as any).showNotification("Nenhuma alteração para desfazer.", "error");
@@ -915,7 +923,7 @@ export default function Home() {
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
                                                   <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
-                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar seus conteúdos. Neste painel você ajusta apenas o Fundo e as Cores globais desta caixa.</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar seus conteúdos. Neste painel você ajusta apenas a Cor (Película) e a Imagem de Fundo desta caixa.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
@@ -940,7 +948,7 @@ export default function Home() {
                                       </div>
 
                                       <div className="panel-section">
-                                          <label className="input-label flex justify-between">Transparência (Opacidade do Fundo) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
+                                          <label className="input-label flex justify-between">Opacidade da Cor (Película) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
                                           <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
 
