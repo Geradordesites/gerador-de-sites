@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM ANTI-INCEPTION E OVERLAY INTELIGENTE
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE INTELIGENTE E GLASSMORPHISM
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -16,11 +16,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         document.head.appendChild(style);
     }
 
+    // Corrigido para garantir conversão RGB segura, mesmo vindo do Tailwind
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
         let res = rgb.match(/\\d+/g);
-        if(!res) return '';
-        return "#" + res.map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+        if(!res || res.length < 3) return '';
+        return "#" + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
     }
 
     function sendCleanHtml() {
@@ -29,6 +30,63 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
         if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
         window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
+    }
+
+    // Função centralizada para selecionar elementos e evitar código duplicado
+    function selectElement(targetEl) {
+        if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
+
+        if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
+        elSelecionado = targetEl;
+        elSelecionado.style.outline = '3px solid #4f46e5';
+        elSelecionado.style.outlineOffset = '-3px';
+
+        if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
+
+        let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
+        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE'].includes(elSelecionado.tagName);
+        let bloqueiaTexto = isContainer && isNavOrSection;
+
+        let compStyle = window.getComputedStyle(elSelecionado);
+        let isImg = elSelecionado.tagName === 'IMG';
+        
+        let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
+        let bgImg = elSelecionado.dataset.rawBgImage;
+        
+        if (bgImg === undefined) {
+            let rawBg = elSelecionado.style.backgroundImage || '';
+            let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+            bgImg = match ? match[1] : '';
+        }
+
+        let aspect = elSelecionado.style.aspectRatio || '';
+        let objOpacity = 1;
+        
+        if (isImg) { 
+            objOpacity = parseFloat(compStyle.opacity); 
+        } else { 
+            objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
+        }
+        if (isNaN(objOpacity)) objOpacity = 1;
+
+        window.parent.postMessage({
+            type: 'ELEMENT_SELECTED',
+            id: elSelecionado.id,
+            tagName: elSelecionado.tagName.toLowerCase(),
+            text: elSelecionado.innerText || '',
+            src: elSelecionado.src || '',
+            href: elSelecionado.getAttribute('href') || '',
+            className: elSelecionado.className,
+            bgColor: cColor,
+            textColor: rgbToHex(compStyle.color),
+            borderColor: rgbToHex(compStyle.borderColor),
+            fontSize: parseInt(compStyle.fontSize) || 16,
+            opacity: objOpacity,
+            bgImage: bgImg,
+            imgFormat: aspect,
+            bloqueiaTexto: bloqueiaTexto,
+            outerHTML: elSelecionado.outerHTML
+        }, '*');
     }
 
     window.addEventListener('message', (event) => {
@@ -49,6 +107,15 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 });
             }
         }
+        
+        // Pega a caixa PAI se o usuário clicar no botão no painel
+        if (event.data.type === 'SELECT_PARENT') {
+            let el = document.getElementById(event.data.id);
+            if (el && el.parentElement && el.parentElement.tagName !== 'BODY') {
+                selectElement(el.parentElement);
+            }
+        }
+
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
@@ -68,7 +135,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         el.style.opacity = event.data.opacity;
                     } else {
                         el.dataset.bgOpacity = event.data.opacity;
-                        el.style.opacity = ''; 
+                        el.style.opacity = ''; // Mantém container 100% visível para não afetar os textos filhos
                     }
                 }
 
@@ -85,23 +152,33 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     let cOpacity = parseFloat(el.dataset.bgOpacity);
                     if (isNaN(cOpacity)) cOpacity = 1;
 
-                    el.style.backgroundColor = cBgColor; 
+                    let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
+                    let r = rgb ? parseInt(rgb[1], 16) : 255;
+                    let g = rgb ? parseInt(rgb[2], 16) : 255;
+                    let b = rgb ? parseInt(rgb[3], 16) : 255;
+
+                    // Anula regras conflitantes do Tailwind
+                    el.style.setProperty('--tw-bg-opacity', '1');
 
                     if (cBgImage && cBgImage !== 'none') {
-                        let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
-                        let r = rgb ? parseInt(rgb[1], 16) : 255;
-                        let g = rgb ? parseInt(rgb[2], 16) : 255;
-                        let b = rgb ? parseInt(rgb[3], 16) : 255;
-                        
-                        let alpha = 1 - cOpacity;
+                        let alpha = 1 - cOpacity; 
                         let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${alpha})\`;
-                        
+                        el.style.backgroundColor = cBgColor;
                         el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
                         el.style.backgroundRepeat = "no-repeat";
                     } else {
                         el.style.backgroundImage = "none";
+                        // Aplica cor sólida com RGBA para ficar transparente
+                        el.style.backgroundColor = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
+                        
+                        // Glassmorphism Automático (Efeito Vidro Jateado)
+                        if (cOpacity < 1 && cOpacity > 0) {
+                            el.classList.add('backdrop-blur-md');
+                        } else {
+                            el.classList.remove('backdrop-blur-md');
+                        }
                     }
                 } else {
                     if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
@@ -174,111 +251,40 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
     });
 
-    // INTERCEPTADOR DE FORMULÁRIOS (Impede a página de recarregar se houver formulários fakes gerados pela IA)
     window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 
     document.addEventListener('click', (e) => {
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
         let form = e.target.closest('form');
-        
-        // Bloqueia preventivamente qualquer ação nativa de formulário
-        if (form) { e.preventDefault(); }
 
-        // MODO EDIÇÃO ATIVO
+        if (form) { e.preventDefault(); }
+        
         if (modoEdicao) {
             e.preventDefault(); 
             e.stopPropagation();
-
-            let targetEl = e.target;
-            if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
-
-            if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
-            elSelecionado = targetEl;
-            elSelecionado.style.outline = '3px solid #4f46e5';
-            elSelecionado.style.outlineOffset = '-3px';
-
-            if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
-
-            let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
-            let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE'].includes(elSelecionado.tagName);
-            let bloqueiaTexto = isContainer && isNavOrSection;
-
-            let compStyle = window.getComputedStyle(elSelecionado);
-            let isImg = elSelecionado.tagName === 'IMG';
-            
-            let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
-            
-            let bgImg = elSelecionado.dataset.rawBgImage;
-            if (bgImg === undefined) {
-                let rawBg = elSelecionado.style.backgroundImage || '';
-                let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
-                bgImg = match ? match[1] : '';
-            }
-
-            let aspect = elSelecionado.style.aspectRatio || '';
-            
-            let objOpacity = 1;
-            if (isImg) {
-                objOpacity = parseFloat(compStyle.opacity);
-            } else {
-                objOpacity = parseFloat(elSelecionado.dataset.bgOpacity);
-            }
-            if (isNaN(objOpacity)) objOpacity = 1;
-
-            window.parent.postMessage({
-                type: 'ELEMENT_SELECTED',
-                id: elSelecionado.id,
-                tagName: elSelecionado.tagName.toLowerCase(),
-                text: elSelecionado.innerText || '',
-                src: elSelecionado.src || '',
-                href: elSelecionado.getAttribute('href') || '',
-                className: elSelecionado.className,
-                bgColor: cColor,
-                textColor: rgbToHex(compStyle.color),
-                borderColor: rgbToHex(compStyle.borderColor),
-                fontSize: parseInt(compStyle.fontSize) || 16,
-                opacity: objOpacity,
-                bgImage: bgImg,
-                imgFormat: aspect,
-                bloqueiaTexto: bloqueiaTexto,
-                outerHTML: elSelecionado.outerHTML
-            }, '*');
-            
+            selectElement(e.target);
             return;
         }
 
-        // MODO VISUALIZAÇÃO ATIVO (BLINDAGEM ANTI-INCEPTION)
         if (link) {
+            e.preventDefault(); 
             let href = link.getAttribute('href') || '';
-            
-            // Permite a execução de scripts em links (como Menu sanfona), mas impede a navegação falha
-            if (link.hasAttribute('onclick')) { 
-                if (href === '/' || href === '' || href === '#') e.preventDefault(); 
-                return; 
-            }
-            
-            e.preventDefault();
+            if (link.hasAttribute('onclick')) { return; }
             e.stopPropagation();
-            
+
             if(href.startsWith('#') && href.length > 1) {
                 try { 
                     var tEl = document.querySelector(href); 
                     if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
                 } catch(err) {}
             } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
-                window.open(href, '_blank'); // Abre links externos de forma segura
+                window.open(href, '_blank'); 
             }
             return;
         }
         
-        // Bloqueia qualquer botão solto de atualizar a tela acidentalmente
-        if (btn) { 
-            e.preventDefault(); 
-            e.stopPropagation(); 
-            return; 
-        }
-
+        if (btn && btn.type === 'submit') { e.preventDefault(); e.stopPropagation(); return; }
     }, true); 
 </script>`;
 
@@ -309,6 +315,7 @@ export default function Home() {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
+      
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
@@ -332,10 +339,9 @@ export default function Home() {
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             if (codEl) {
                 const htmlLimpo = purificarHTML(e.data.html);
-                // Salva no histórico somente se o código for realmente diferente
                 setHistoricoCodigo(prev => {
-                    if (prev.length > 0 && prev[prev.length - 1] === codEl.value) return prev;
-                    return [...prev, codEl.value];
+                    if (prev.length > 0 && prev[prev.length - 1] === htmlLimpo) return prev;
+                    return [...prev, codEl.value]; 
                 });
                 codEl.value = htmlLimpo; 
             }
@@ -358,6 +364,27 @@ export default function Home() {
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
+  };
+
+  // BOTÃO DESFAZER BLINDADO E CORRIGIDO
+  const desfazerCodigo = () => {
+    if (historicoCodigo.length === 0) {
+        (window as any).showNotification("Nenhuma alteração para desfazer.", "error");
+        return;
+    }
+    
+    const novoHistorico = [...historicoCodigo];
+    const estadoAnterior = novoHistorico.pop();
+    setHistoricoCodigo(novoHistorico);
+    
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    
+    if (codEl) codEl.value = estadoAnterior || '';
+    if (prevEl) prevEl.srcdoc = (estadoAnterior || '') + SCRIPT_PREVIEW; 
+    
+    setElementoSelecionado(null);
+    (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
 
   const otimizarComIA = async (comandoOverride?: string) => {
@@ -452,7 +479,9 @@ export default function Home() {
       try {
           data = JSON.parse(responseText);
       } catch (err) {
-          if (response.status === 413 || responseText.includes('Too Large')) throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
+          if (response.status === 413 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
+              throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
+          }
           throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
       }
 
@@ -540,7 +569,7 @@ export default function Home() {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
       if (codEl) { 
-          // O histórico já foi salvo com segurança no handler
+          setHistoricoCodigo(prev => [...prev, codEl.value]);
           codEl.value = purificarHTML(data.html); 
       }
       if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
@@ -734,28 +763,6 @@ export default function Home() {
     };
   }, [siteEditando]); 
 
-  // BOTÃO DESFAZER BLINDADO E CORRIGIDO
-  const desfazerCodigo = () => {
-    if (historicoCodigo.length === 0) {
-        (window as any).showNotification("Nenhuma alteração anterior para desfazer.", "error");
-        return;
-    }
-    
-    // Pega a última versão do histórico removendo-a da array
-    const novoHistorico = [...historicoCodigo];
-    const ultimo = novoHistorico.pop();
-    setHistoricoCodigo(novoHistorico);
-    
-    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    
-    if (codEl) codEl.value = ultimo || '';
-    if (prevEl) prevEl.srcdoc = (ultimo || '') + SCRIPT_PREVIEW; 
-    
-    setElementoSelecionado(null);
-    (window as any).showNotification("Ação desfeita com sucesso.", "success");
-  };
-
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
@@ -825,7 +832,15 @@ export default function Home() {
                           <div className="pb-10 bg-white">
                               <div className="panel-section bg-slate-50/50">
                                   <div className="flex justify-between items-center">
-                                      <div><span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md shadow-sm">{elementoSelecionado.tagName}</span></div>
+                                      <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md shadow-sm">{elementoSelecionado.tagName}</span>
+                                          <button onClick={() => {
+                                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                                              iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
+                                          }} className="text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition flex items-center bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">
+                                              <i className="fas fa-level-up-alt mr-1"></i> Pegar Caixa Pai
+                                          </button>
+                                      </div>
                                       <span className="text-[9px] font-bold text-slate-400">ID: {elementoSelecionado.id.substring(0,6)}</span>
                                   </div>
                               </div>
@@ -872,7 +887,7 @@ export default function Home() {
                                       
                                       <div className="panel-section">
                                           <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
-                                          <input type="range" min="10" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
+                                          <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
 
                                   </>
@@ -900,7 +915,7 @@ export default function Home() {
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
                                                   <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
-                                                  <p className="text-[10px] leading-relaxed">Clique diretamente em uma palavra ou botão específico para alterar o texto interno. Neste painel você ajusta apenas o Fundo e as Cores globais do bloco.</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar seus conteúdos. Neste painel você ajusta apenas o Fundo e as Cores globais desta caixa.</p>
                                               </div>
                                           ) : (
                                               <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
@@ -926,7 +941,7 @@ export default function Home() {
 
                                       <div className="panel-section">
                                           <label className="input-label flex justify-between">Transparência (Opacidade do Fundo) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
-                                          <input type="range" min="10" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
+                                          <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
 
                                       <div className="panel-section">
@@ -1157,7 +1172,17 @@ export default function Home() {
                   )}
                   <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
                   <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
-                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"></textarea>
+                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
+                          onBlur={(e) => {
+                              const newHtml = e.target.value;
+                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
+                              setHistoricoCodigo(prev => {
+                                  if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev;
+                                  return [...prev, newHtml];
+                              });
+                          }}
+                      ></textarea>
                   </div>
               </div>
           </div>
