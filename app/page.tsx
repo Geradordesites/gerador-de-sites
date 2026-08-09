@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM VISUAL E ESTRUTURAL (SEM LIXO NO HTML)
+// SCRIPT DO IFRAME: BLINDAGEM ANTI-INCEPTION E OVERLAY INTELIGENTE
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -52,21 +52,59 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
+                let isImg = el.tagName === 'IMG';
+
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.href !== undefined) el.setAttribute('href', event.data.href);
-                if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
-                if(event.data.opacity !== undefined) el.style.opacity = event.data.opacity;
                 
-                if(event.data.bgImage !== undefined) {
-                    if(event.data.bgImage) {
-                        el.style.backgroundImage = "url('" + event.data.bgImage + "')";
+                if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
+                if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
+                
+                if (event.data.opacity !== undefined) {
+                    if (isImg) {
+                        el.style.opacity = event.data.opacity;
+                    } else {
+                        el.dataset.bgOpacity = event.data.opacity;
+                        el.style.opacity = ''; 
+                    }
+                }
+
+                if (!isImg) {
+                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor) || '#ffffff';
+                    let cBgImage = el.dataset.rawBgImage;
+                    
+                    if (cBgImage === undefined) {
+                        let rawBg = el.style.backgroundImage || '';
+                        let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+                        cBgImage = match ? match[1] : '';
+                    }
+                    
+                    let cOpacity = parseFloat(el.dataset.bgOpacity);
+                    if (isNaN(cOpacity)) cOpacity = 1;
+
+                    el.style.backgroundColor = cBgColor; 
+
+                    if (cBgImage && cBgImage !== 'none') {
+                        let rgb = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(cBgColor);
+                        let r = rgb ? parseInt(rgb[1], 16) : 255;
+                        let g = rgb ? parseInt(rgb[2], 16) : 255;
+                        let b = rgb ? parseInt(rgb[3], 16) : 255;
+                        
+                        let alpha = 1 - cOpacity;
+                        let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${alpha})\`;
+                        
+                        el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
                         el.style.backgroundRepeat = "no-repeat";
-                    } else { el.style.backgroundImage = "none"; }
+                    } else {
+                        el.style.backgroundImage = "none";
+                    }
+                } else {
+                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 }
 
                 if(event.data.textAlign !== undefined) {
@@ -136,12 +174,18 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
     });
 
+    // INTERCEPTADOR DE FORMULÁRIOS (Impede a página de recarregar se houver formulários fakes gerados pela IA)
     window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 
     document.addEventListener('click', (e) => {
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
+        let form = e.target.closest('form');
         
+        // Bloqueia preventivamente qualquer ação nativa de formulário
+        if (form) { e.preventDefault(); }
+
+        // MODO EDIÇÃO ATIVO
         if (modoEdicao) {
             e.preventDefault(); 
             e.stopPropagation();
@@ -161,12 +205,25 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let bloqueiaTexto = isContainer && isNavOrSection;
 
             let compStyle = window.getComputedStyle(elSelecionado);
-            let bgImg = elSelecionado.style.backgroundImage || '';
-            if(bgImg.startsWith('url(')) bgImg = bgImg.slice(5, -2).replace(/['"]/g, ''); 
-            else bgImg = '';
+            let isImg = elSelecionado.tagName === 'IMG';
+            
+            let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
+            
+            let bgImg = elSelecionado.dataset.rawBgImage;
+            if (bgImg === undefined) {
+                let rawBg = elSelecionado.style.backgroundImage || '';
+                let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+                bgImg = match ? match[1] : '';
+            }
 
             let aspect = elSelecionado.style.aspectRatio || '';
-            let objOpacity = parseFloat(compStyle.opacity);
+            
+            let objOpacity = 1;
+            if (isImg) {
+                objOpacity = parseFloat(compStyle.opacity);
+            } else {
+                objOpacity = parseFloat(elSelecionado.dataset.bgOpacity);
+            }
             if (isNaN(objOpacity)) objOpacity = 1;
 
             window.parent.postMessage({
@@ -177,7 +234,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 src: elSelecionado.src || '',
                 href: elSelecionado.getAttribute('href') || '',
                 className: elSelecionado.className,
-                bgColor: rgbToHex(compStyle.backgroundColor),
+                bgColor: cColor,
                 textColor: rgbToHex(compStyle.color),
                 borderColor: rgbToHex(compStyle.borderColor),
                 fontSize: parseInt(compStyle.fontSize) || 16,
@@ -191,20 +248,37 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             return;
         }
 
+        // MODO VISUALIZAÇÃO ATIVO (BLINDAGEM ANTI-INCEPTION)
         if (link) {
-            if (link.hasAttribute('onclick')) return; 
+            let href = link.getAttribute('href') || '';
+            
+            // Permite a execução de scripts em links (como Menu sanfona), mas impede a navegação falha
+            if (link.hasAttribute('onclick')) { 
+                if (href === '/' || href === '' || href === '#') e.preventDefault(); 
+                return; 
+            }
+            
             e.preventDefault();
             e.stopPropagation();
-            var href = link.getAttribute('href') || '';
-            if(href.startsWith('#')) {
-                var hash = href.substring(href.indexOf('#'));
-                if (hash.length > 1) { try { var tEl = document.querySelector(hash); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {} }
-            } else if (href && !href.startsWith('javascript:')) {
-                window.open(href, '_blank');
+            
+            if(href.startsWith('#') && href.length > 1) {
+                try { 
+                    var tEl = document.querySelector(href); 
+                    if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                } catch(err) {}
+            } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
+                window.open(href, '_blank'); // Abre links externos de forma segura
             }
             return;
         }
-        if (btn && btn.type === 'submit') { e.preventDefault(); return; }
+        
+        // Bloqueia qualquer botão solto de atualizar a tela acidentalmente
+        if (btn) { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            return; 
+        }
+
     }, true); 
 </script>`;
 
@@ -230,7 +304,7 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-  // FAXINA FINAL DO HTML
+  // FAXINA FINAL DO HTML PARA IMPEDIR VAZAMENTOS
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
@@ -257,8 +331,13 @@ export default function Home() {
         if (e.data.type === 'HTML_SYNC') {
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             if (codEl) {
-                setHistoricoCodigo(prev => [...prev, codEl.value]);
-                codEl.value = purificarHTML(e.data.html); 
+                const htmlLimpo = purificarHTML(e.data.html);
+                // Salva no histórico somente se o código for realmente diferente
+                setHistoricoCodigo(prev => {
+                    if (prev.length > 0 && prev[prev.length - 1] === codEl.value) return prev;
+                    return [...prev, codEl.value];
+                });
+                codEl.value = htmlLimpo; 
             }
         }
     };
@@ -300,7 +379,6 @@ export default function Home() {
       }
   };
 
-  // SISTEMA DE REFATORAÇÃO GLOBAL COM RETRY (Tratamento de timeout do servidor)
   const executarRefinamentoGlobal = async () => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
@@ -317,120 +395,80 @@ export default function Home() {
         return;
     }
 
-    let success = false;
-    let data = null;
+    setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
 
-    // Loop de tentativas para o Refinar
-    for(let attempt = 0; attempt < 3; attempt++) {
+    try {
+        const response = await fetch('/api/gerar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
+                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
+                isSiteRefinement: true, 
+                isGeminiForced: true 
+            })
+        });
+        
+        const responseText = await response.text();
+        let data;
         try {
-            if (attempt === 0) setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
-            else setStatusApis({ texto: `Servidor ocupado. Tentando novamente (${attempt}/3)...`, processing: true });
-
-            const response = await fetch('/api/gerar', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
-                    promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
-                    isSiteRefinement: true, 
-                    isGeminiForced: true 
-                })
-            });
-            
-            const responseText = await response.text();
-            
-            try {
-                data = JSON.parse(responseText);
-            } catch (e) {
-                if (response.status === 413 || response.status === 429 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
-                    throw new Error("RATE_LIMIT_OR_SIZE");
-                }
-                throw new Error("SERVER_ERROR");
+            data = JSON.parse(responseText);
+        } catch (e) {
+            if (response.status === 413 || response.status === 429 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
+                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
             }
-
-            if (!data.success) {
-                if (data.error?.includes('429') || data.error?.toLowerCase().includes('quota') || data.error?.includes('ResourceExhausted')) {
-                     throw new Error("RATE_LIMIT");
-                }
-                throw new Error(data.error);
-            }
-            
-            success = true;
-            break; // Sai do loop de tentativa se deu certo
-
-        } catch (err: any) {
-            if (attempt < 2 && (err.message.includes('RATE_LIMIT') || err.message.includes('SERVER_ERROR'))) {
-                await new Promise(r => setTimeout(r, (attempt + 1) * 4000)); // Espera 4s, depois 8s
-                continue;
-            }
-            
-            setStatusApis({ texto: 'Aguardando Operação', processing: false });
-            (window as any).showNotification("O servidor da IA está muito ocupado no momento. Aguarde um instante e tente novamente.", "error");
-            return;
+            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
         }
-    }
 
-    if (success && data && data.html && data.html.length > 50) {
-        processarRespostaDOM(data);
-        promptInput.value = '';
-        (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        if (!data.success) throw new Error(data.error);
+        
+        if (data.html && data.html.length > 50) {
+            processarRespostaDOM(data);
+            promptInput.value = '';
+            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        } else {
+            throw new Error("A IA falhou ao processar a modificação global.");
+        }
+
+    } catch (err: any) {
+        (window as any).showNotification(err.message || "Erro na modificação do site.", "error");
+    } finally {
+        setStatusApis({ texto: 'Aguardando Operação', processing: false });
     }
-    setStatusApis({ texto: 'Aguardando Operação', processing: false });
   };
 
-  // SISTEMA DE GERAÇÃO COM LOOP DE TENTATIVAS CLIENT-SIDE
-  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, maxRetries = 3) => {
-    const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
+  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            if (attempt === 0) setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
-            else setStatusApis({ texto: `Servidor ocupado. Re-tentando (${attempt}/${maxRetries})...`, processing: true });
+    try {
+      const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
 
-            const response = await fetch('/api/gerar', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
-            });
-            
-            const responseText = await response.text();
-            let data;
-            
-            try {
-                data = JSON.parse(responseText);
-            } catch (err) {
-                if (response.status === 413 || responseText.includes('Too Large')) throw new Error("SIZE_ERROR");
-                if (response.status === 504 || response.status === 502) throw new Error("TIMEOUT_ERROR");
-                throw new Error("SERVER_ERROR");
-            }
+      const response = await fetch('/api/gerar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
+      });
+      
+      const responseText = await response.text();
+      let data;
+      try {
+          data = JSON.parse(responseText);
+      } catch (err) {
+          if (response.status === 413 || responseText.includes('Too Large')) throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
+          throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
+      }
 
-            if (!data.success) {
-                if (data.error?.includes('429') || data.error?.toLowerCase().includes('quota') || data.error?.includes('ResourceExhausted') || data.error === 'RATE_LIMIT_EXCEEDED') {
-                    throw new Error("RATE_LIMIT_ERROR");
-                }
-                throw new Error(data.error);
-            }
-            
-            setStatusApis({ texto: 'Aguardando Ação', processing: false });
-            return data;
-
-        } catch (err: any) {
-            let errorMsg = err.message;
-            const isRetryable = errorMsg.includes('RATE_LIMIT_ERROR') || errorMsg.includes('TIMEOUT_ERROR') || errorMsg.includes('SERVER_ERROR');
-            
-            if (isRetryable && attempt < maxRetries) {
-                // Exponential Backoff: Espera 3s, depois 6s, depois 9s.
-                await new Promise(r => setTimeout(r, (attempt + 1) * 3000));
-                continue; 
-            }
-
-            // Se esgotou as tentativas ou é erro de tamanho
-            setStatusApis({ texto: 'Aguardando Ação', processing: false });
-            if (errorMsg.includes('SIZE_ERROR')) {
-                (window as any).showNotification("Sua imagem de referência é muito pesada. Envie uma versão mais leve.", 'error');
-            } else {
-                (window as any).showNotification("O Servidor da IA está sobrecarregado no momento. Por favor, aguarde cerca de um minuto e tente novamente.", 'error');
-            }
-            return null;
-        }
+      if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
+      return data;
+    } catch (err: any) {
+      let errorMsg = err.message;
+      if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
+          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto e tente novamente.";
+      } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
+          errorMsg = "Verifique sua conexão de internet e tente novamente.";
+      }
+      (window as any).showNotification(errorMsg, 'error');
+      return null;
+    } finally {
+      setStatusApis({ texto: 'Aguardando Ação', processing: false });
     }
   };
 
@@ -501,7 +539,10 @@ export default function Home() {
   function processarRespostaDOM(data: any) {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
+      if (codEl) { 
+          // O histórico já foi salvo com segurança no handler
+          codEl.value = purificarHTML(data.html); 
+      }
       if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
       (window as any).showNotification(`Pronto! Operação concluída com sucesso.`, 'success');
       if (modoInspetor) toggleInspetor(); 
@@ -693,13 +734,26 @@ export default function Home() {
     };
   }, [siteEditando]); 
 
+  // BOTÃO DESFAZER BLINDADO E CORRIGIDO
   const desfazerCodigo = () => {
-    if (historicoCodigo.length === 0) return;
-    const ultimo = historicoCodigo[historicoCodigo.length - 1];
-    setHistoricoCodigo(prev => prev.slice(0, prev.length - 1));
-    (document.getElementById('codigoGerado') as HTMLTextAreaElement).value = ultimo;
-    (document.getElementById('previewFrame') as HTMLIFrameElement).srcdoc = ultimo + SCRIPT_PREVIEW; 
+    if (historicoCodigo.length === 0) {
+        (window as any).showNotification("Nenhuma alteração anterior para desfazer.", "error");
+        return;
+    }
+    
+    // Pega a última versão do histórico removendo-a da array
+    const novoHistorico = [...historicoCodigo];
+    const ultimo = novoHistorico.pop();
+    setHistoricoCodigo(novoHistorico);
+    
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    
+    if (codEl) codEl.value = ultimo || '';
+    if (prevEl) prevEl.srcdoc = (ultimo || '') + SCRIPT_PREVIEW; 
+    
     setElementoSelecionado(null);
+    (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
 
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
