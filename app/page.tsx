@@ -437,13 +437,23 @@ export default function Home() {
     (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
 
-  // MÁQUINA DE IMPORTAÇÃO INTELIGENTE
+  // MÁQUINA DE IMPORTAÇÃO INTELIGENTE BLINDADA CONTRA FRAMEBUSTING
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
 
     let htmlFinal = codigoExterno;
 
-    // Se for apenas um pedaço de código solto, envelopamos com Tailwind e FontAwesome
+    // 🛡️ FILTRO ANTI-BLOQUEIO: Remove tags maliciosas e redirecionamentos
+    // 1. Remove qualquer script externo (que causa o bloqueio "X-Frame-Options")
+    htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    
+    // 2. Remove redirecionamentos forçados via meta tag
+    htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
+    
+    // 3. Substitui iframes perigosos por um bloco editável inofensivo
+    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
+
+    // Se for apenas um pedaço de código solto, envelopamos com a base HTML
     if(!htmlFinal.toLowerCase().includes('<body')) {
         htmlFinal = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -458,13 +468,11 @@ export default function Home() {
 </body>
 </html>`;
     } else {
-        // Se já for um site inteiro, injeta Tailwind se não existir
-        if(!htmlFinal.includes('tailwindcss.com')) {
-            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n</head>');
-        }
-        // Injeta FontAwesome se não existir
-        if(!htmlFinal.includes('font-awesome')) {
-            htmlFinal = htmlFinal.replace('</head>', '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
+        // Como removemos todos os scripts por segurança, reinjetamos o motor do Tailwind e Ícones
+        if(htmlFinal.includes('</head>')) {
+            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
+        } else if(htmlFinal.includes('<body')) {
+            htmlFinal = htmlFinal.replace('<body', '<head><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></head><body');
         }
     }
 
@@ -479,7 +487,7 @@ export default function Home() {
     
     setCodigoExterno('');
     setModalImportarCodigo(false);
-    (window as any).showNotification("Código importado, blindado e pronto para edição visual!", "success");
+    (window as any).showNotification("Código importado e blindado contra bloqueios!", "success");
     
     if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
   };
