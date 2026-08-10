@@ -290,7 +290,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (form && !summary && !btn) { e.preventDefault(); }
         
         if (modoEdicao) {
-            // A MAGIA DA SANFONA: Deixa o navegador processar a abertura, e apenas seleciona
             if (summary) {
                 setTimeout(() => selectElement(summary), 10);
                 return; 
@@ -345,6 +344,10 @@ export default function Home() {
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
+
+  // ESTADOS DA NOVA FUNÇÃO DE IMPORTAR HTML
+  const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
+  const [codigoExterno, setCodigoExterno] = useState('');
 
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [heroLayout, setHeroLayout] = useState('auto');
@@ -432,6 +435,53 @@ export default function Home() {
     
     setElementoSelecionado(null);
     (window as any).showNotification("Ação desfeita com sucesso.", "success");
+  };
+
+  // MÁQUINA DE IMPORTAÇÃO INTELIGENTE
+  const injetarCodigoExterno = () => {
+    if(!codigoExterno.trim()) return;
+
+    let htmlFinal = codigoExterno;
+
+    // Se for apenas um pedaço de código solto, envelopamos com Tailwind e FontAwesome
+    if(!htmlFinal.toLowerCase().includes('<body')) {
+        htmlFinal = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="antialiased text-slate-800 bg-white">
+    ${htmlFinal}
+</body>
+</html>`;
+    } else {
+        // Se já for um site inteiro, injeta Tailwind se não existir
+        if(!htmlFinal.includes('tailwindcss.com')) {
+            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n</head>');
+        }
+        // Injeta FontAwesome se não existir
+        if(!htmlFinal.includes('font-awesome')) {
+            htmlFinal = htmlFinal.replace('</head>', '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
+        }
+    }
+
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    
+    if (codEl) { 
+        setHistoricoCodigo(prev => [...prev, codEl.value]);
+        codEl.value = htmlFinal; 
+    }
+    if (prevEl) prevEl.srcdoc = htmlFinal + SCRIPT_PREVIEW; 
+    
+    setCodigoExterno('');
+    setModalImportarCodigo(false);
+    (window as any).showNotification("Código importado, blindado e pronto para edição visual!", "success");
+    
+    if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
   };
 
   const otimizarComIA = async (comandoOverride?: string) => {
@@ -836,6 +886,33 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
+      {/* MODAL DE IMPORTAR CÓDIGO */}
+      {modalImportarCodigo && (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+                  <div className="p-5 border-b border-slate-100 flex justify-between items-center">
+                      <h2 className="text-lg font-black text-slate-800"><i className="fas fa-code text-indigo-500 mr-2"></i> Importar Código Externo</h2>
+                      <button onClick={() => setModalImportarCodigo(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
+                  </div>
+                  <div className="p-6 bg-slate-50">
+                      <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                          Cole qualquer código HTML, blocos do Tailwind UI ou código gerado pelo ChatGPT. O sistema vai aplicar o <strong>Tailwind CSS</strong> automaticamente para você poder editar tudo visualmente!
+                      </p>
+                      <textarea 
+                          value={codigoExterno} 
+                          onChange={(e) => setCodigoExterno(e.target.value)} 
+                          className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"
+                          placeholder="<!-- Cole seu código HTML aqui... -->"
+                      ></textarea>
+                  </div>
+                  <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
+                      <button onClick={() => setModalImportarCodigo(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition">Cancelar</button>
+                      <button onClick={injetarCodigoExterno} disabled={!codigoExterno.trim()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition shadow-md flex items-center gap-2 disabled:opacity-50"><i className="fas fa-magic"></i> Processar e Editar</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* OVERLAY DE CARREGAMENTO AMIGÁVEL */}
       {statusApis.processing && (
           <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
@@ -1200,6 +1277,13 @@ export default function Home() {
                       <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-xs bg-white text-indigo-700 shadow-sm transition">Ver o Site</button>
                       <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
                   </div>
+                  
+                  {/* BOTÃO MÁGICO DE IMPORTAR HTML DA INTERNET */}
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <button onClick={() => setModalImportarCodigo(true)} className="hidden md:flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-indigo-50 border border-indigo-200 bg-indigo-50/50 shadow-sm">
+                      <i className="fas fa-file-import"></i> Importar HTML Externo
+                  </button>
+                  
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                   <button onClick={desfazerCodigo} className="hidden md:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer Erro</button>
               </div>
