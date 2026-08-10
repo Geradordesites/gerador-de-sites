@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE INTELIGENTE E LIBERAÇÃO DE SANFONAS + DELETAR ELEMENTO
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO, SANFONAS + DELETAR ELEMENTO
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -16,7 +16,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         document.head.appendChild(style);
     }
 
-    // Leitura perfeita de RGB para Hexadecimal
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
         let res = rgb.match(/\\d+/g);
@@ -43,7 +42,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
 
         let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
-        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE'].includes(elSelecionado.tagName);
+        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS'].includes(elSelecionado.tagName);
         let bloqueiaTexto = isContainer && isNavOrSection;
 
         let compStyle = window.getComputedStyle(elSelecionado);
@@ -68,6 +67,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
         if (isNaN(objOpacity)) objOpacity = 1;
 
+        // VERIFICAR ALINHAMENTOS ATUAIS
+        let tAlign = '';
+        if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center';
+        else if(elSelecionado.classList.contains('text-right')) tAlign = 'text-right';
+        else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
+
+        let bAlign = '';
+        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center')) bAlign = 'center';
+        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end')) bAlign = 'right';
+        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start')) bAlign = 'left';
+
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
             id: elSelecionado.id,
@@ -84,6 +94,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             bgImage: bgImg,
             imgFormat: aspect,
             bloqueiaTexto: bloqueiaTexto,
+            textAlign: tAlign,
+            boxAlign: bAlign,
             outerHTML: elSelecionado.outerHTML
         }, '*');
     }
@@ -146,7 +158,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     }
                 }
 
-                // MOTOR DE SOBREPOSIÇÃO DE FUNDO E OPACIDADE
                 if (!isImg) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
                     if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
@@ -174,11 +185,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                     let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
 
-                    // Remove bloqueios do Tailwind
                     el.style.setProperty('--tw-bg-opacity', '1');
 
                     if (cBgImage && cBgImage !== 'none') {
-                        el.style.backgroundColor = 'transparent'; // A cor será aplicada pelo gradiente overlay
+                        el.style.backgroundColor = 'transparent';
                         el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; 
                         el.style.backgroundPosition = "center";
@@ -188,7 +198,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         el.style.backgroundColor = rgbaStr;
                     }
 
-                    // Aplica Glassmorphism Automático se a cor estiver transparente
                     if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
                     else el.classList.remove('backdrop-blur-md');
                     
@@ -199,6 +208,13 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if(event.data.textAlign !== undefined) {
                     el.classList.remove('text-left', 'text-center', 'text-right', 'text-justify');
                     if(event.data.textAlign) el.classList.add(event.data.textAlign);
+                }
+
+                if(event.data.boxAlign !== undefined) {
+                    el.classList.remove('mx-auto', 'ml-auto', 'mr-auto', 'self-center', 'self-start', 'self-end');
+                    if(event.data.boxAlign === 'center') el.classList.add('mx-auto', 'self-center');
+                    if(event.data.boxAlign === 'right') el.classList.add('ml-auto', 'self-end');
+                    if(event.data.boxAlign === 'left') el.classList.add('mr-auto', 'self-start');
                 }
 
                 if(event.data.animationClass !== undefined) {
@@ -274,7 +290,13 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (form && !summary && !btn) { e.preventDefault(); }
         
         if (modoEdicao) {
-            if (!summary) e.preventDefault(); 
+            // A MAGIA DA SANFONA: Deixa o navegador processar a abertura, e apenas seleciona
+            if (summary) {
+                setTimeout(() => selectElement(summary), 10);
+                return; 
+            }
+
+            e.preventDefault(); 
             e.stopPropagation();
 
             selectElement(e.target);
@@ -318,7 +340,6 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
-  // ABAS SIMPLIFICADAS
   const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'refinar'>('gerar');
   
   const [modoInspetor, setModoInspetor] = useState(false);
@@ -934,25 +955,37 @@ export default function Home() {
                                       )}
 
                                       <div className="panel-section">
-                                          {!elementoSelecionado.bloqueiaTexto && (
-                                              <div className="flex justify-between items-center mb-3">
-                                                  <label className="input-label mb-0">Texto do Elemento</label>
-                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-left text-[10px]"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-center text-[10px]"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className="w-7 h-6 flex items-center justify-center hover:bg-white rounded text-slate-500 transition"><i className="fas fa-align-right text-[10px]"></i></button>
-                                                  </div>
-                                              </div>
-                                          )}
-                                          
                                           {elementoSelecionado.bloqueiaTexto ? (
-                                              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800">
+                                              <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800 mb-4">
                                                   <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
-                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar seus conteúdos. Neste painel você ajusta apenas a Cor (Película) e a Imagem de Fundo desta caixa.</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar seus conteúdos. Neste painel você ajusta a Posição, Cor e Fundo desta caixa.</p>
                                               </div>
                                           ) : (
-                                              <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
+                                              <div className="mb-4">
+                                                  <label className="input-label mb-2">Texto do Elemento</label>
+                                                  <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
+                                              </div>
                                           )}
+
+                                          {/* PAINEL DE ALINHAMENTO GLOBAL (TEXTO + CAIXA) */}
+                                          <div className="grid grid-cols-2 gap-4">
+                                              <div>
+                                                  <label className="input-label mb-2 text-[9px]">Alinhar Texto</label>
+                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.textAlign === 'text-left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}><i className="fas fa-align-left"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.textAlign === 'text-center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}><i className="fas fa-align-center"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.textAlign === 'text-right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}><i className="fas fa-align-right"></i></button>
+                                                  </div>
+                                              </div>
+                                              <div>
+                                                  <label className="input-label mb-2 text-[9px]">Mover Elemento</label>
+                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Esquerda"><i className="fas fa-chevron-left"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centralizar Caixa"><i className="fas fa-minus"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Direita"><i className="fas fa-chevron-right"></i></button>
+                                                  </div>
+                                              </div>
+                                          </div>
                                       </div>
                                       
                                       <div className="panel-section grid grid-cols-2 gap-5">
