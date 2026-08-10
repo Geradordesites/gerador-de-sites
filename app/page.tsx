@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE INTELIGENTE E LIBERAÇÃO DE SANFONAS
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE INTELIGENTE E LIBERAÇÃO DE SANFONAS + DELETAR ELEMENTO
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -114,6 +114,15 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
+        if (event.data.type === 'DELETE_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                el.remove();
+                elSelecionado = null;
+                sendCleanHtml();
+            }
+        }
+
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
@@ -133,7 +142,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         el.style.opacity = event.data.opacity;
                     } else {
                         el.dataset.bgOpacity = event.data.opacity;
-                        el.style.opacity = ''; // Garante que a caixa não desbote os textos filhos
+                        el.style.opacity = ''; 
                     }
                 }
 
@@ -260,12 +269,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
         let form = e.target.closest('form');
-        let summary = e.target.closest('summary'); // IDENTIFICA A SANFONA
+        let summary = e.target.closest('summary');
 
         if (form && !summary && !btn) { e.preventDefault(); }
         
         if (modoEdicao) {
-            // Se for sanfona, permite abrir e fechar, mas continua a seleção para edição!
             if (!summary) e.preventDefault(); 
             e.stopPropagation();
 
@@ -310,7 +318,9 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
-  const [abaAtiva, setAbaAtiva] = useState<'visual' | 'copy' | 'refinar'>('visual');
+  // ABAS SIMPLIFICADAS
+  const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'refinar'>('gerar');
+  
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
@@ -373,6 +383,14 @@ export default function Home() {
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
+  };
+
+  const deletarElementoSelecionado = () => {
+      if(!elementoSelecionado) return;
+      if(!confirm('Tem certeza que deseja excluir este elemento do site?')) return;
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: 'DELETE_ELEMENT', id: elementoSelecionado.id }, '*');
+      setElementoSelecionado(null);
   };
 
   const desfazerCodigo = () => {
@@ -544,32 +562,33 @@ export default function Home() {
     return "";
   };
 
-  const executarGeracaoSiteVisual = async () => {
-    if (uploadedImages.length === 0) { (window as any).showNotification('Por favor, anexe uma Imagem Base para iniciar.', 'error'); return; }
-    const checkMenuEl = document.getElementById('checkComMenu') as HTMLInputElement;
-    const isMenu = checkMenuEl?.checked ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
-    
-    let promptParts: any[] = [{ text: "Gere conteúdo completo para todas as seções e cubra todo o fluxo de conversão detalhado. Crie o site em HTML e Tailwind com base no layout desta imagem. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema." }];
-    uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
-    
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. O resultado deve ser uma página longa, não apenas uma única seção. Crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Baseie o design no layout da imagem fornecida, mas estenda-o para criar uma página inteira. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
-
-    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-    const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
-    if (data) processarRespostaDOM(data);
-  };
-
-  const executarGeracaoSiteTexto = async () => {
+  const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
-    if (!content) { (window as any).showNotification('Por favor, preencha o campo de texto explicando como deve ser o site.', 'error'); return; }
-    
+    if (uploadedImages.length === 0 && !content) {
+        (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error');
+        return;
+    }
+
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
-    
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e longa. O resultado deve ser uma página de página inteira com pelo menos 5 seções distintas (ex: Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, Chamada para Ação). Não se limite a apenas um topo e um botão; crie um fluxo de conversão detalhado. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
+
+    let promptParts: any[] = [];
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema.\n\n";
+
+    if (content) {
+        commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`;
+    }
+    if (uploadedImages.length > 0) {
+        commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
+        uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
+    }
+
+    promptParts.unshift({ text: commandText });
+
+    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
 
     const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-    
-    const data = await chamarMotorIA(instrucoesFinais, [{ text: content }], false);
+
+    const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     if (data) processarRespostaDOM(data);
   };
 
@@ -846,8 +865,14 @@ export default function Home() {
                                               const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
                                               iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
                                           }} className="text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition flex items-center bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">
-                                              <i className="fas fa-level-up-alt mr-1"></i> Pegar Caixa Pai
+                                              <i className="fas fa-level-up-alt mr-1"></i> Pai
                                           </button>
+                                          
+                                          {/* BOTÃO DE DELETAR O ELEMENTO SELECIONADO */}
+                                          <button onClick={deletarElementoSelecionado} className="text-[9px] font-bold text-red-500 hover:text-red-700 transition flex items-center bg-white border border-red-100 hover:border-red-300 px-2 py-1 rounded shadow-sm">
+                                              <i className="fas fa-trash-alt mr-1"></i> Excluir
+                                          </button>
+
                                       </div>
                                       <span className="text-[9px] font-bold text-slate-400">ID: {elementoSelecionado.id.substring(0,6)}</span>
                                   </div>
@@ -997,10 +1022,10 @@ export default function Home() {
                   
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white">
                       
+                      {/* NOVAS ABAS DE NAVEGAÇÃO */}
                       <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar">
-                          <button onClick={() => setAbaAtiva('visual')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'visual' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-eye mr-1"></i> Clonagem</button>
-                          <button onClick={() => setAbaAtiva('copy')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'copy' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-keyboard mr-1"></i> Texto</button>
-                          <button onClick={() => setAbaAtiva('refinar')} className={`whitespace-nowrap px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1"></i> Modificar</button>
+                          <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
+                          <button onClick={() => setAbaAtiva('refinar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1.5"></i> Modificar</button>
                       </div>
 
                       {abaAtiva === 'refinar' ? (
@@ -1077,54 +1102,56 @@ export default function Home() {
                                           </select>
                                       </div>
                                       <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
-                                          <input type="checkbox" id="checkComMenu" defaultChecked={true} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                                          <input type="checkbox" checked={terMenuTexto} onChange={(e) => setTerMenuTexto(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                                           <span className="text-xs font-bold text-slate-700">Ter um Menu no Topo do Site</span>
                                       </label>
                                   </div>
                               </div>
 
-                              {abaAtiva === 'visual' ? (
-                                  <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
-                                      <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Enviar Referência</h3>
-                                      <div className="bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm" onClick={() => document.getElementById('imageUploadInput')?.click()}>
-                                          <div className="w-14 h-14 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-3"><i className="fas fa-image text-2xl"></i></div>
-                                          <p className="text-sm font-bold text-slate-700">Clique para enviar a imagem</p>
-                                          <p className="text-xs font-medium text-slate-500 mt-1">Ou apenas cole aqui (Ctrl+V)</p>
+                              {/* A NOVA SEÇÃO 3: HÍBRIDA (COPY + REFERÊNCIA) */}
+                              <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
+                                  <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Base de Conhecimento</h3>
+                                  
+                                  {/* Área de Texto / Prompt */}
+                                  <div className="mb-4">
+                                      <label className="input-label text-indigo-800">Texto / Copy / Prompt (Opcional)</label>
+                                      <textarea 
+                                          value={productContent} 
+                                          maxLength={5000} 
+                                          onChange={(e) => setProductContent(e.target.value)} 
+                                          className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" 
+                                          placeholder="Cole a copy do site, descreva seu negócio, ou dê comandos extras para a IA... (Até 5.000 caracteres)"
+                                      ></textarea>
+                                      <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/5000</div>
+                                  </div>
+
+                                  {/* Área de Imagem */}
+                                  <div className="mb-4">
+                                      <label className="input-label text-indigo-800">Imagem de Referência (Opcional)</label>
+                                      <div className="bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-colors rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm" onClick={() => document.getElementById('imageUploadInput')?.click()}>
+                                          <div className="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-2"><i className="fas fa-image text-lg"></i></div>
+                                          <p className="text-xs font-bold text-slate-700">Anexar imagem base do layout</p>
+                                          <p className="text-[10px] font-medium text-slate-500 mt-0.5">Ou cole aqui (Ctrl+V)</p>
                                       </div>
                                       <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
                                       
                                       {uploadedImages.length > 0 && (
-                                          <div className="flex gap-3 mt-4 overflow-x-auto pb-2 custom-scrollbar">
+                                          <div className="flex gap-3 mt-3 overflow-x-auto pb-2 custom-scrollbar">
                                               {uploadedImages.map((imgObj, idx) => (
-                                                  <div key={idx} className="relative w-20 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-200 shadow-sm group">
+                                                  <div key={idx} className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-200 shadow-sm group">
                                                       <img src={`data:${imgObj.mimeType};base64,${imgObj.data}`} className="w-full h-full object-cover" />
                                                       <button className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" onClick={(e) => { e.stopPropagation(); removerImagem(idx); }}><i className="fas fa-trash text-sm"></i></button>
                                                   </div>
                                               ))}
                                           </div>
                                       )}
-                                      
-                                      <button onClick={executarGeracaoSiteVisual} className="w-full mt-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                          <i className="fas fa-code text-yellow-300 text-lg"></i> Criar Meu Site Agora
-                                      </button>
                                   </div>
-                              ) : (
-                                  <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
-                                      <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Descrever o Site</h3>
-                                      <textarea id="productContent" value={productContent} onChange={(e) => setProductContent(e.target.value)} className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Ex: Preciso de um site para minha clínica odontológica. Foco em implantes e clareamento. Quero transmitir muita segurança..."></textarea>
-                                      
-                                      <div className="mt-4">
-                                          <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
-                                              <input type="checkbox" id="checkComMenuTexto" checked={terMenuTexto} onChange={(e) => setTerMenuTexto(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                                              <span className="text-xs font-bold text-slate-700">Ter um Menu no Topo do Site</span>
-                                          </label>
-                                      </div>
 
-                                      <button onClick={executarGeracaoSiteTexto} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                          <i className="fas fa-code text-yellow-300 text-lg"></i> Criar Meu Site Agora
-                                      </button>
-                                  </div>
-                              )}
+                                  <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                      <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Meu Site Agora
+                                  </button>
+                              </div>
+
                           </div>
                       )}
                   </div>
