@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO, SANFONAS, LINKS, REORDENAMENTO E BLOCOS
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO TURBO, SANFONAS, LINKS GLOBAIS, ELEMENTOS, SUPER ESTILOS E INJEÇÃO INTELIGENTE
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -214,24 +214,33 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
+        // INJEÇÃO INTELIGENTE DE BLOCOS (Onde o usuário quiser)
         if (event.data.type === 'INJECT_BLOCK') {
             let el = document.getElementById(event.data.id);
-            // Se nenhum elemento estiver selecionado, injeta no final do body
-            let targetEl = el && el.tagName === 'SECTION' ? el : document.body;
+            
+            // Tenta achar a seção "Pai" mais próxima do elemento clicado.
+            // Se não tiver nada selecionado, vai pro fim da página (document.body)
+            let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
             
             let tempDiv = document.createElement('div');
             tempDiv.innerHTML = event.data.html;
+            let newBlock = tempDiv.firstElementChild;
             
-            // Regenerar IDs do bloco
-            tempDiv.querySelectorAll('*').forEach(child => {
-                child.id = 'node_' + Math.random().toString(36).substr(2,9);
+            // Regenerar IDs para não conflitar com nada
+            newBlock.querySelectorAll('*').forEach(child => {
+                if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
             });
+            newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
 
-            if (targetEl === document.body) {
-                document.body.appendChild(tempDiv.firstElementChild);
+            // Injeta EXATAMENTE após a seção selecionada
+            if (targetEl && targetEl !== document.body) {
+                targetEl.insertAdjacentElement('afterend', newBlock);
+                newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
-                targetEl.insertAdjacentElement('afterend', tempDiv.firstElementChild);
+                document.body.appendChild(newBlock);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }
+            
             sendCleanHtml();
         }
 
@@ -467,7 +476,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true); 
 </script>`;
 
-// BLOCOS PRONTOS (UI KIT DE ALTA CONVERSÃO COM FOTOGRAFIA REAL E ESPAÇAMENTOS EXATOS)
+// BLOCOS PRONTOS ATUALIZADOS (ÉTICOS, FATOR CONVERSÃO E CONTROLE DE IMAGEM)
 const UI_BLOCKS = {
     faq: `
     <section class="py-20 px-8 bg-slate-50" id="block-faq">
@@ -512,44 +521,101 @@ const UI_BLOCKS = {
     <section class="py-20 px-8 bg-slate-900" id="block-depoimentos">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold text-center text-white mb-4">O Que Dizem Nossos Clientes</h2>
-            <p class="text-center text-slate-400 mb-12 text-lg">Pessoas reais que transformaram suas vidas com nosso método.</p>
+            <p class="text-center text-slate-400 mb-12 text-lg">Histórias reais de quem já aplicou e validou nosso método.</p>
             
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 leading-relaxed italic">"A didática é impecável. Consegui aplicar no mesmo dia e já vi os primeiros resultados aparecendo."</p>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica é o maior gatilho para gerar confiança e novas vendas no seu site."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente realista" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
-                            <p class="text-white font-bold text-sm mb-1">Marina Costa</p>
-                            <p class="text-slate-400 text-xs">Empreendedora</p>
+                            <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
+                            <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 leading-relaxed italic">"O melhor investimento que fiz este ano. Material direto ao ponto, sem enrolação e focado na prática."</p>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Copie exatamente as palavras que seu cliente usou no WhatsApp ou nos comentários para manter a naturalidade e a transparência."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente realista" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
-                            <p class="text-white font-bold text-sm mb-1">Roberto Mendes</p>
-                            <p class="text-slate-400 text-xs">Consultor de Vendas</p>
+                            <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
+                            <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Me surpreendi com a qualidade do suporte e com a profundidade do conteúdo entregue. Recomendo de olhos fechados."</p>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui. Lembre-se que avaliações honestas valem muito mais do que promessas exageradas e evitam qualquer indução a erros."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente realista" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
-                            <p class="text-white font-bold text-sm mb-1">Carla Dias</p>
-                            <p class="text-slate-400 text-xs">Especialista de Marketing</p>
+                            <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
+                            <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>`,
+
+    precoDestaque: `
+    <section class="py-20 px-8 bg-slate-50" id="block-preco">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Acesso Imediato ao Método</h2>
+            <p class="text-slate-600 mb-12 text-lg">Tudo o que você precisa por um valor extremamente acessível.</p>
+            
+            <div class="bg-white rounded-3xl shadow-xl border border-indigo-100 p-8 md:p-12 max-w-lg mx-auto transform transition hover:scale-105 hover:shadow-2xl">
+                <div class="bg-indigo-100 text-indigo-700 font-black text-xs uppercase tracking-widest py-1.5 px-4 rounded-full inline-block mb-6">Oferta Especial</div>
+                <h3 class="text-2xl font-black text-slate-900 mb-2">Plano VIP Completo</h3>
+                <p class="text-slate-500 mb-6">Acesso vitalício e suporte premium para acelerar seus resultados.</p>
+                <div class="text-5xl font-black text-slate-900 mb-6">R$ 97<span class="text-lg text-slate-500 font-normal">/à vista</span></div>
+                
+                <ul class="text-left space-y-4 mb-8 text-slate-600">
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Todo o conteúdo prático do Método</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Acesso aos Bônus Exclusivos</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Suporte Prioritário para Dúvidas</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Garantia de 7 Dias</li>
+                </ul>
+                
+                <a href="#" class="block w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 hover:shadow-indigo-500/30 transition-all text-lg">Quero Garantir Minha Vaga</a>
+                <p class="text-xs text-slate-400 mt-4"><i class="fas fa-lock mr-1"></i> Pagamento 100% seguro e criptografado</p>
+            </div>
+        </div>
+    </section>`,
+
+    autorEsq: `
+    <section class="py-20 px-8 bg-white" id="block-autor-esq">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
+            <div class="flex-1 w-full relative">
+                <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+            </div>
+            <div class="flex-1 w-full text-center md:text-left relative z-10">
+                <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Conheça Sua História</h2>
+                <p class="text-slate-600 leading-relaxed mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
+                <p class="text-slate-600 leading-relaxed text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
+            </div>
+        </div>
+    </section>`,
+
+    autorDir: `
+    <section class="py-20 px-8 bg-white" id="block-autor-dir">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
+            <div class="flex-1 w-full relative">
+                <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+            </div>
+            <div class="flex-1 w-full text-center md:text-left relative z-10">
+                <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Conheça Sua História</h2>
+                <p class="text-slate-600 leading-relaxed mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
+                <p class="text-slate-600 leading-relaxed text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
             </div>
         </div>
     </section>`
@@ -573,11 +639,9 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
-  // ESTADOS DA NOVA FUNÇÃO DE IMPORTAR HTML
   const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
   const [codigoExterno, setCodigoExterno] = useState('');
 
-  // ESTADOS PARA RESPONSIVIDADE, FONTES E SEO
   const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [fontFamily, setFontFamily] = useState('sans-serif');
   const [modalSEO, setModalSEO] = useState(false);
@@ -587,63 +651,7 @@ export default function Home() {
   const [heroLayout, setHeroLayout] = useState('auto');
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
-  const executarRefinamentoGlobal = async () => {
-  const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-  const currentHtml = codEl?.value || '';
-    
-    if (!currentHtml || currentHtml.length < 100) {
-        (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error");
-        return;
-    }
 
-    const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
-    const comando = promptInput?.value.trim();
-    if (!comando) {
-        (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error");
-        return;
-    }
-
-    setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
-
-    try {
-        const response = await fetch('/api/gerar', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
-                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
-                isSiteRefinement: true, 
-                isGeminiForced: true 
-            })
-        });
-        
-        const responseText = await response.text();
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            if (response.status === 413 || response.status === 429 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
-                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
-            }
-            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
-        }
-
-        if (!data.success) throw new Error(data.error);
-        
-        if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data);
-            promptInput.value = '';
-            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else {
-            throw new Error("A IA falhou ao processar a modificação global.");
-        }
-
-    } catch (err: any) {
-        (window as any).showNotification(err.message || "Erro na modificação do site.", "error");
-    } finally {
-        setStatusApis({ texto: 'Aguardando Operação', processing: false });
-    }
-  };
-  // FAXINA FINAL DO HTML
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
@@ -726,10 +734,10 @@ export default function Home() {
       iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*');
   };
 
+  // INJETAR BLOCO (Controlado pelo iframe para colocar abaixo da seção)
   const injetarBlocoPronto = (tipo: keyof typeof UI_BLOCKS) => {
       const htmlBloco = UI_BLOCKS[tipo];
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      // Injeta enviando ID atual (se houver, injeta abaixo dele, senão injeta no fim do body)
       iframe.contentWindow?.postMessage({ type: 'INJECT_BLOCK', id: elementoSelecionado?.id, html: htmlBloco }, '*');
       (window as any).showNotification("Bloco inserido com sucesso!", "success");
   };
@@ -745,21 +753,18 @@ export default function Home() {
       if(codEl) {
           let htmlAtual = codEl.value;
           
-          // Atualizar Title
           if(htmlAtual.includes('<title>')) {
               htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, `<title>${seoData.title}</title>`);
           } else {
               htmlAtual = htmlAtual.replace('<head>', `<head>\n    <title>${seoData.title}</title>`);
           }
 
-          // Atualizar Description
           if(htmlAtual.includes('name="description"')) {
               htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, `<meta name="description" content="${seoData.description}">`);
           } else {
               htmlAtual = htmlAtual.replace('<head>', `<head>\n    <meta name="description" content="${seoData.description}">`);
           }
 
-          // Injetar Scripts
           htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\s\S]*?<!-- END_HEAD -->/gi, '');
           htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\s\S]*?<!-- END_BODY -->/gi, '');
 
@@ -848,6 +853,29 @@ export default function Home() {
       }
   };
 
+  const executarRefinamentoGlobal = async () => {
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const currentHtml = codEl?.value || '';
+    if (!currentHtml || currentHtml.length < 100) { (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error"); return; }
+    const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
+    const comando = promptInput?.value.trim();
+    if (!comando) { (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error"); return; }
+    setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
+    try {
+        const response = await fetch('/api/gerar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], isSiteRefinement: true, isGeminiForced: true })
+        });
+        const responseText = await response.text();
+        let data;
+        try { data = JSON.parse(responseText); } catch (e) { throw new Error("Ocorreu um erro no servidor de IA."); }
+        if (!data.success) throw new Error(data.error);
+        if (data.html && data.html.length > 50) {
+            processarRespostaDOM(data); promptInput.value = ''; (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        } else { throw new Error("A IA falhou ao processar a modificação global."); }
+    } catch (err: any) { (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); } finally { setStatusApis({ texto: 'Aguardando Operação', processing: false }); }
+  };
+
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
     setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
     try {
@@ -904,7 +932,6 @@ export default function Home() {
     const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     
-    // Injetar Font e SEO base antes de exibir
     if (data && data.html) {
         let hHtml = data.html;
         if(fontFamily !== 'sans-serif') {
@@ -957,7 +984,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; // Fotorrealista padrão
+          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`;
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -1473,7 +1500,7 @@ export default function Home() {
                           <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-layer-group"></i></span> UI Kit de Alta Conversão</h3>
-                                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">Adicione seções completas prontas para converter, usando fotografia real. Elas serão inseridas abaixo do elemento que você estiver selecionando na tela (ou no final da página).</p>
+                                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">Adicione seções completas prontas para converter. Elas serão inseridas <b>abaixo do elemento</b> que você estiver selecionando na tela (ou no final da página, se não houver seleção).</p>
                                   
                                   <div className="space-y-4">
                                       <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
@@ -1494,10 +1521,34 @@ export default function Home() {
 
                                       <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
                                           <div>
-                                              <p className="font-bold text-sm text-slate-800">Depoimentos</p>
-                                              <p className="text-[10px] text-slate-500">Cards escuros de prova social</p>
+                                              <p className="font-bold text-sm text-slate-800">Depoimentos (Éticos)</p>
+                                              <p className="text-[10px] text-slate-500">Cards para provas sociais reais</p>
                                           </div>
                                           <button onClick={() => injetarBlocoPronto('depoimentos')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                      </div>
+
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                          <div>
+                                              <p className="font-bold text-sm text-slate-800">Preço (Checkout)</p>
+                                              <p className="text-[10px] text-slate-500">Plano único de alta conversão</p>
+                                          </div>
+                                          <button onClick={() => injetarBlocoPronto('precoDestaque')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                      </div>
+
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                          <div>
+                                              <p className="font-bold text-sm text-slate-800">Autor (Foto Esquerda)</p>
+                                              <p className="text-[10px] text-slate-500">Apresentação biográfica</p>
+                                          </div>
+                                          <button onClick={() => injetarBlocoPronto('autorEsq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                      </div>
+
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                          <div>
+                                              <p className="font-bold text-sm text-slate-800">Autor (Foto Direita)</p>
+                                              <p className="text-[10px] text-slate-500">Apresentação biográfica</p>
+                                          </div>
+                                          <button onClick={() => injetarBlocoPronto('autorDir')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
                                       </div>
                                   </div>
 
