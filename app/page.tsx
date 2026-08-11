@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO TURBO, SANFONAS, LINKS GLOBAIS, ELEMENTOS E SUPER ESTILOS DE BOTÃO
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO, SANFONAS, LINKS, REORDENAMENTO E BLOCOS
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -67,7 +67,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
         if (isNaN(objOpacity)) objOpacity = 1;
 
-        // VERIFICAR ALINHAMENTOS ATUAIS
         let tAlign = '';
         if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center';
         else if(elSelecionado.classList.contains('text-right')) tAlign = 'text-right';
@@ -78,7 +77,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
         else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
 
-        // EXTRAIR ESTILOS DE BOTÕES/CAIXAS (Paddings, Sombras, Bordas, Arredondamento)
         let paddingX = '', paddingY = '', shadow = '', rounded = '', borderW = '';
         elSelecionado.classList.forEach(c => {
             if(c.startsWith('px-') || c === 'w-full') paddingX += c + ' ';
@@ -90,7 +88,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(c === 'border') borderW = c;
         });
 
-        // CAPTURAR LINK
         let href = elSelecionado.getAttribute('href') || '';
         if (!href && elSelecionado.parentElement && elSelecionado.parentElement.tagName === 'A') {
             href = elSelecionado.parentElement.getAttribute('href') || '';
@@ -158,6 +155,24 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
+        if (event.data.type === 'MOVE_UP') {
+            let el = document.getElementById(event.data.id);
+            if(el && el.previousElementSibling) {
+                el.parentNode.insertBefore(el, el.previousElementSibling);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'MOVE_DOWN') {
+            let el = document.getElementById(event.data.id);
+            if(el && el.nextElementSibling) {
+                el.parentNode.insertBefore(el.nextElementSibling, el);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sendCleanHtml();
+            }
+        }
+
         if (event.data.type === 'DUPLICATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
@@ -181,9 +196,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Nova Imagem" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
-                    newHtml = \`<p class="text-slate-600 my-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. Clique aqui para selecionar e alterar o conteúdo pelo painel lateral.</p>\`;
+                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
                 } else if(event.data.elementType === 'button') {
                     newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
                 }
@@ -199,6 +214,49 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
+        if (event.data.type === 'INJECT_BLOCK') {
+            let el = document.getElementById(event.data.id);
+            // Se nenhum elemento estiver selecionado, injeta no final do body
+            let targetEl = el && el.tagName === 'SECTION' ? el : document.body;
+            
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = event.data.html;
+            
+            // Regenerar IDs do bloco
+            tempDiv.querySelectorAll('*').forEach(child => {
+                child.id = 'node_' + Math.random().toString(36).substr(2,9);
+            });
+
+            if (targetEl === document.body) {
+                document.body.appendChild(tempDiv.firstElementChild);
+            } else {
+                targetEl.insertAdjacentElement('afterend', tempDiv.firstElementChild);
+            }
+            sendCleanHtml();
+        }
+
+        if (event.data.type === 'UPDATE_FONT') {
+            let fontName = event.data.font;
+            let linkId = 'custom-google-font';
+            let fontLink = document.getElementById(linkId);
+            
+            if (!fontLink) {
+                fontLink = document.createElement('link');
+                fontLink.id = linkId;
+                fontLink.rel = 'stylesheet';
+                document.head.appendChild(fontLink);
+            }
+            
+            if (fontName !== 'sans-serif') {
+                fontLink.href = \`https://fonts.googleapis.com/css2?family=\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
+                document.body.style.fontFamily = \`'\${fontName}', sans-serif\`;
+            } else {
+                fontLink.href = '';
+                document.body.style.fontFamily = '';
+            }
+            sendCleanHtml();
+        }
+
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
@@ -209,7 +267,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
                 
-                // SISTEMA DE LINKS
                 if (event.data.href !== undefined) {
                     let parentIsA = el.parentElement && el.parentElement.tagName === 'A';
                     
@@ -233,12 +290,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
                 
                 if (event.data.opacity !== undefined) {
-                    if (isImg) {
-                        el.style.opacity = event.data.opacity;
-                    } else {
-                        el.dataset.bgOpacity = event.data.opacity;
-                        el.style.opacity = ''; 
-                    }
+                    if (isImg) { el.style.opacity = event.data.opacity; } 
+                    else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
                 }
 
                 if (!isImg) {
@@ -259,11 +312,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if (cBgColor.startsWith('#')) {
                         let hex = cBgColor.replace('#', '');
                         if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
-                        if (hex.length === 6) {
-                            r = parseInt(hex.substring(0,2), 16);
-                            g = parseInt(hex.substring(2,4), 16);
-                            b = parseInt(hex.substring(4,6), 16);
-                        }
+                        if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); }
                     }
 
                     let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
@@ -286,12 +335,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
                 }
 
-                // MOTOR DE BOTÕES: PADDINGS, SOMBRAS E BORDAS
                 if(event.data.paddingX !== undefined) {
                     el.className = el.className.replace(/\\bpx-\\d+\\b|\\bw-full\\b|\\btext-center\\b/g, '').trim();
-                    if(event.data.paddingX && event.data.paddingX !== 'none') {
-                        event.data.paddingX.split(' ').forEach(cls => el.classList.add(cls));
-                    }
+                    if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(cls)); }
                 }
                 if(event.data.paddingY !== undefined) {
                     el.className = el.className.replace(/\\bpy-\\d+\\b/g, '').trim();
@@ -303,15 +349,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
                 if(event.data.shadow !== undefined) {
                     el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
-                    if(event.data.shadow && event.data.shadow !== 'none') {
-                        event.data.shadow.split(' ').forEach(cls => el.classList.add(cls));
-                    }
+                    if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
                 }
                 if(event.data.borderW !== undefined) {
                     el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
-                    if(event.data.borderW && event.data.borderW !== 'none') {
-                        el.classList.add(event.data.borderW);
-                    }
+                    if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
                 }
 
                 if(event.data.textAlign !== undefined) {
@@ -341,34 +383,22 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                 if(event.data.imgFormat !== undefined) {
                     if (event.data.imgFormat === '') {
-                        el.style.aspectRatio = '';
-                        el.style.height = '';
-                        el.classList.remove('object-cover', 'w-full', 'h-auto');
+                        el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
                     } else {
                         el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
-                        el.style.aspectRatio = event.data.imgFormat;
-                        el.style.height = 'auto'; 
-                        el.classList.add('object-cover', 'w-full');
+                        el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
                     }
                 }
                 
                 if(event.data.imgRounded !== undefined) {
-                    const allClassesToRemove = [
-                        'rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full',
-                        'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl',
-                        'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500',
-                        'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'
-                    ];
+                    const allClassesToRemove = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500', 'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'];
                     el.classList.remove(...allClassesToRemove);
                     if (event.data.imgRounded) { event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); }); }
                 }
 
                 if(event.data.imgBorder !== undefined) {
-                    if (event.data.imgBorder) { 
-                        el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
-                    } else { 
-                        el.style.borderWidth = '0px'; el.classList.remove('shadow-xl');
-                    }
+                    if (event.data.imgBorder) { el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
+                    } else { el.style.borderWidth = '0px'; el.classList.remove('shadow-xl'); }
                 }
                 if(event.data.borderColor !== undefined) el.style.borderColor = event.data.borderColor;
 
@@ -411,10 +441,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 setTimeout(() => selectElement(summary), 10);
                 return; 
             }
-
             e.preventDefault(); 
             e.stopPropagation();
-
             selectElement(e.target);
             return;
         }
@@ -425,15 +453,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if (href === '/' || href === '' || href === '#') e.preventDefault(); 
                 return; 
             }
-            
             e.preventDefault();
             e.stopPropagation();
-            
             if(href.startsWith('#') && href.length > 1) {
-                try { 
-                    var tEl = document.querySelector(href); 
-                    if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
-                } catch(err) {}
+                try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
             } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
                 window.open(href, '_blank'); 
             }
@@ -443,6 +466,94 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (btn && btn.type === 'submit') { e.preventDefault(); e.stopPropagation(); return; }
     }, true); 
 </script>`;
+
+// BLOCOS PRONTOS (UI KIT DE ALTA CONVERSÃO COM FOTOGRAFIA REAL E ESPAÇAMENTOS EXATOS)
+const UI_BLOCKS = {
+    faq: `
+    <section class="py-20 px-8 bg-slate-50" id="block-faq">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2>
+            <p class="text-center text-slate-600 mb-12">Tire suas dúvidas e comece sua jornada com confiança.</p>
+            
+            <details class="mb-4 bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100 hover:border-indigo-300 transition-colors">
+                <summary class="font-bold text-slate-800 outline-none">Por quanto tempo tenho acesso?</summary>
+                <p class="mt-4 text-slate-600 leading-relaxed">Você terá acesso vitalício a todo o conteúdo, incluindo todas as atualizações futuras que fizermos no material.</p>
+            </details>
+            
+            <details class="mb-4 bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100 hover:border-indigo-300 transition-colors">
+                <summary class="font-bold text-slate-800 outline-none">Como funciona o suporte?</summary>
+                <p class="mt-4 text-slate-600 leading-relaxed">Nosso suporte funciona de segunda a sexta, em horário comercial. Temos uma equipe de especialistas pronta para te atender via e-mail ou WhatsApp.</p>
+            </details>
+
+            <details class="mb-4 bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100 hover:border-indigo-300 transition-colors">
+                <summary class="font-bold text-slate-800 outline-none">E se eu não gostar do conteúdo?</summary>
+                <p class="mt-4 text-slate-600 leading-relaxed">Oferecemos uma garantia incondicional de 7 dias. Basta nos enviar um e-mail que devolveremos 100% do seu investimento sem fazer perguntas.</p>
+            </details>
+        </div>
+    </section>`,
+    
+    garantia: `
+    <section class="py-20 px-8 bg-white" id="block-garantia">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
+            <div class="flex-1 w-full relative">
+                <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
+                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional realista garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-square md:aspect-[4/3]" />
+            </div>
+            <div class="flex-1 w-full text-center md:text-left">
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Risco Zero: Garantia Incondicional de 7 Dias</h2>
+                <p class="text-slate-600 leading-relaxed mb-4 text-lg">Nós confiamos tanto na qualidade do nosso material que vamos assumir todo o risco por você.</p>
+                <p class="text-slate-600 leading-relaxed mb-8 text-lg">Experimente na prática. Se no período de 7 dias você achar que o conteúdo não é para você, basta solicitar o reembolso. Devolveremos centavo por centavo, sem letras miúdas.</p>
+                <button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-lg w-full md:w-auto">Sim, Quero Testar Sem Riscos</button>
+            </div>
+        </div>
+    </section>`,
+
+    depoimentos: `
+    <section class="py-20 px-8 bg-slate-900" id="block-depoimentos">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-white mb-4">O Que Dizem Nossos Clientes</h2>
+            <p class="text-center text-slate-400 mb-12 text-lg">Pessoas reais que transformaram suas vidas com nosso método.</p>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"A didática é impecável. Consegui aplicar no mesmo dia e já vi os primeiros resultados aparecendo."</p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente realista" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <div>
+                            <p class="text-white font-bold text-sm mb-1">Marina Costa</p>
+                            <p class="text-slate-400 text-xs">Empreendedora</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"O melhor investimento que fiz este ano. Material direto ao ponto, sem enrolação e focado na prática."</p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente realista" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <div>
+                            <p class="text-white font-bold text-sm mb-1">Roberto Mendes</p>
+                            <p class="text-slate-400 text-xs">Consultor de Vendas</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Me surpreendi com a qualidade do suporte e com a profundidade do conteúdo entregue. Recomendo de olhos fechados."</p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente realista" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <div>
+                            <p class="text-white font-bold text-sm mb-1">Carla Dias</p>
+                            <p class="text-slate-400 text-xs">Especialista de Marketing</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>`
+};
 
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -456,20 +567,82 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
-  const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'refinar'>('gerar');
+  const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
   
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
+  // ESTADOS DA NOVA FUNÇÃO DE IMPORTAR HTML
   const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
   const [codigoExterno, setCodigoExterno] = useState('');
+
+  // ESTADOS PARA RESPONSIVIDADE, FONTES E SEO
+  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [fontFamily, setFontFamily] = useState('sans-serif');
+  const [modalSEO, setModalSEO] = useState(false);
+  const [seoData, setSeoData] = useState({ title: 'Meu Site Incrível', description: 'Descrição focada em conversão para indexar.', headScripts: '', bodyScripts: '' });
 
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [heroLayout, setHeroLayout] = useState('auto');
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
+  const executarRefinamentoGlobal = async () => {
+  const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+  const currentHtml = codEl?.value || '';
+    
+    if (!currentHtml || currentHtml.length < 100) {
+        (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error");
+        return;
+    }
 
+    const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
+    const comando = promptInput?.value.trim();
+    if (!comando) {
+        (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error");
+        return;
+    }
+
+    setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
+
+    try {
+        const response = await fetch('/api/gerar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
+                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
+                isSiteRefinement: true, 
+                isGeminiForced: true 
+            })
+        });
+        
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            if (response.status === 413 || response.status === 429 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
+                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
+            }
+            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
+        }
+
+        if (!data.success) throw new Error(data.error);
+        
+        if (data.html && data.html.length > 50) {
+            processarRespostaDOM(data);
+            promptInput.value = '';
+            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        } else {
+            throw new Error("A IA falhou ao processar a modificação global.");
+        }
+
+    } catch (err: any) {
+        (window as any).showNotification(err.message || "Erro na modificação do site.", "error");
+    } finally {
+        setStatusApis({ texto: 'Aguardando Operação', processing: false });
+    }
+  };
   // FAXINA FINAL DO HTML
   const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
@@ -547,22 +720,76 @@ export default function Home() {
       (window as any).showNotification("Novo elemento inserido!", "success");
   };
 
+  const moverElemento = (direcao: 'UP' | 'DOWN') => {
+      if(!elementoSelecionado) return;
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*');
+  };
+
+  const injetarBlocoPronto = (tipo: keyof typeof UI_BLOCKS) => {
+      const htmlBloco = UI_BLOCKS[tipo];
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      // Injeta enviando ID atual (se houver, injeta abaixo dele, senão injeta no fim do body)
+      iframe.contentWindow?.postMessage({ type: 'INJECT_BLOCK', id: elementoSelecionado?.id, html: htmlBloco }, '*');
+      (window as any).showNotification("Bloco inserido com sucesso!", "success");
+  };
+
+  const aplicarFonte = (fonte: string) => {
+      setFontFamily(fonte);
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: 'UPDATE_FONT', font: fonte }, '*');
+  };
+
+  const salvarConfiguracoesSEO = () => {
+      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+      if(codEl) {
+          let htmlAtual = codEl.value;
+          
+          // Atualizar Title
+          if(htmlAtual.includes('<title>')) {
+              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, `<title>${seoData.title}</title>`);
+          } else {
+              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <title>${seoData.title}</title>`);
+          }
+
+          // Atualizar Description
+          if(htmlAtual.includes('name="description"')) {
+              htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, `<meta name="description" content="${seoData.description}">`);
+          } else {
+              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <meta name="description" content="${seoData.description}">`);
+          }
+
+          // Injetar Scripts
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\s\S]*?<!-- END_HEAD -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\s\S]*?<!-- END_BODY -->/gi, '');
+
+          if(seoData.headScripts.trim()) {
+              htmlAtual = htmlAtual.replace('</head>', `<!-- INJECT_HEAD -->\n${seoData.headScripts}\n<!-- END_HEAD -->\n</head>`);
+          }
+          if(seoData.bodyScripts.trim()) {
+              htmlAtual = htmlAtual.replace('</body>', `<!-- INJECT_BODY -->\n${seoData.bodyScripts}\n<!-- END_BODY -->\n</body>`);
+          }
+
+          codEl.value = htmlAtual;
+          const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+          if (iframe) iframe.srcdoc = htmlAtual + SCRIPT_PREVIEW;
+      }
+      setModalSEO(false);
+      (window as any).showNotification("Configurações de SEO e Scripts salvas!", "success");
+  };
+
   const desfazerCodigo = () => {
     if (historicoCodigo.length === 0) {
         (window as any).showNotification("Nenhuma alteração para desfazer.", "error");
         return;
     }
-    
     const novoHistorico = [...historicoCodigo];
     const estadoAnterior = novoHistorico.pop();
     setHistoricoCodigo(novoHistorico);
-    
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    
     if (codEl) codEl.value = estadoAnterior || '';
     if (prevEl) prevEl.srcdoc = (estadoAnterior || '') + SCRIPT_PREVIEW; 
-    
     setElementoSelecionado(null);
     (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
@@ -582,8 +809,9 @@ export default function Home() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>${seoData.title}</title>
 </head>
-<body class="antialiased text-slate-800 bg-white">
+<body class="antialiased text-slate-800 bg-white" style="font-family: '${fontFamily}', sans-serif;">
     ${htmlFinal}
 </body>
 </html>`;
@@ -618,29 +846,6 @@ export default function Home() {
           if(promptInput) promptInput.value = '';
           (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
       }
-  };
-
-  const executarRefinamentoGlobal = async () => {
-    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-    const currentHtml = codEl?.value || '';
-    if (!currentHtml || currentHtml.length < 100) { (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error"); return; }
-    const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
-    const comando = promptInput?.value.trim();
-    if (!comando) { (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error"); return; }
-    setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
-    try {
-        const response = await fetch('/api/gerar', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], isSiteRefinement: true, isGeminiForced: true })
-        });
-        const responseText = await response.text();
-        let data;
-        try { data = JSON.parse(responseText); } catch (e) { throw new Error("Ocorreu um erro no servidor de IA."); }
-        if (!data.success) throw new Error(data.error);
-        if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data); promptInput.value = ''; (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else { throw new Error("A IA falhou ao processar a modificação global."); }
-    } catch (err: any) { (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); } finally { setStatusApis({ texto: 'Aguardando Operação', processing: false }); }
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
@@ -688,17 +893,27 @@ export default function Home() {
     if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error'); return; }
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema.\n\n";
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n";
     if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
         commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
+    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
     const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
-    if (data) processarRespostaDOM(data);
+    
+    // Injetar Font e SEO base antes de exibir
+    if (data && data.html) {
+        let hHtml = data.html;
+        if(fontFamily !== 'sans-serif') {
+            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
+            hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
+        }
+        data.html = hHtml;
+        processarRespostaDOM(data);
+    }
   };
 
   function processarRespostaDOM(data: any) {
@@ -742,7 +957,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=${w}&q=80`;
+          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; // Fotorrealista padrão
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -879,7 +1094,7 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-      {/* MODAL DE IMPORTAR CÓDIGO */}
+      {/* MODAIS (SEO E IMPORTAÇÃO) */}
       {modalImportarCodigo && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
@@ -901,6 +1116,42 @@ export default function Home() {
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
                       <button onClick={() => setModalImportarCodigo(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition">Cancelar</button>
                       <button onClick={injetarCodigoExterno} disabled={!codigoExterno.trim()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition shadow-md flex items-center gap-2 disabled:opacity-50"><i className="fas fa-magic"></i> Processar e Editar</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {modalSEO && (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+                  <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <h2 className="text-lg font-black text-slate-800"><i className="fas fa-search-dollar text-indigo-500 mr-2"></i> SEO & Configurações de Rastreio</h2>
+                      <button onClick={() => setModalSEO(false)} className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition font-bold shadow-sm"><i className="fas fa-times"></i></button>
+                  </div>
+                  <div className="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+                      <div className="space-y-4">
+                          <div>
+                              <label className="input-label">Título da Página no Navegador</label>
+                              <input type="text" value={seoData.title} onChange={e => setSeoData({...seoData, title: e.target.value})} className="input-standard text-sm font-bold" placeholder="Ex: Método Seca Rápido - Site Oficial" />
+                          </div>
+                          <div>
+                              <label className="input-label">Descrição para o Google (Meta Description)</label>
+                              <textarea rows={2} value={seoData.description} onChange={e => setSeoData({...seoData, description: e.target.value})} className="input-standard resize-none text-sm" placeholder="Resumo atrativo para aumentar os cliques no Google..."></textarea>
+                          </div>
+                          <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl mt-4">
+                              <label className="input-label text-orange-800"><i className="fas fa-code text-orange-500 mr-1"></i> Scripts do Cabeçalho (Head)</label>
+                              <p className="text-[10px] text-orange-700 mb-2">Cole aqui o Pixel do Facebook, Google Tag Manager, Google Analytics, etc.</p>
+                              <textarea rows={3} value={seoData.headScripts} onChange={e => setSeoData({...seoData, headScripts: e.target.value})} className="w-full p-3 font-mono text-[11px] bg-white border border-orange-300 rounded-lg outline-none custom-scrollbar" placeholder="<!-- Códigos do <head> aqui -->"></textarea>
+                          </div>
+                          <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                              <label className="input-label text-indigo-800"><i className="fas fa-code text-indigo-500 mr-1"></i> Scripts do Corpo (Body)</label>
+                              <p className="text-[10px] text-indigo-700 mb-2">Cole aqui scripts de WhatsApp Flutuante, Chatbots, VLibras, etc.</p>
+                              <textarea rows={3} value={seoData.bodyScripts} onChange={e => setSeoData({...seoData, bodyScripts: e.target.value})} className="w-full p-3 font-mono text-[11px] bg-white border border-indigo-300 rounded-lg outline-none custom-scrollbar" placeholder="<!-- Códigos do <body> aqui -->"></textarea>
+                          </div>
+                      </div>
+                  </div>
+                  <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
+                      <button onClick={salvarConfiguracoesSEO} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg transition-all hover:-translate-y-0.5"><i className="fas fa-save mr-2"></i> Salvar e Aplicar</button>
                   </div>
               </div>
           </div>
@@ -978,11 +1229,18 @@ export default function Home() {
                                   </div>
                               </div>
 
-                              {/* PAINEL GLOBAL DE LINKS */}
+                              {/* PAINEL GLOBAL DE LINKS E ORDENAMENTO */}
                               <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
-                                  <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Inserir Link no Elemento</label>
+                                  <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Link de Destino</label>
                                   <input type="text" placeholder="Cole o link (Deixe vazio para remover)" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
-                                  <p className="text-[9px] text-emerald-600 mt-1.5 leading-relaxed">Você pode tornar textos, botões ou caixas inteiras clicáveis.</p>
+                              </div>
+
+                              <div className="panel-section border-t border-slate-100 flex justify-between items-center mt-2">
+                                  <label className="input-label mb-0 text-[10px]">Reordenar (Mover)</label>
+                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                      <button onClick={() => moverElemento('UP')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-up mr-1"></i> Subir</button>
+                                      <button onClick={() => moverElemento('DOWN')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-down mr-1"></i> Descer</button>
+                                  </div>
                               </div>
 
                               {elementoSelecionado.tagName === 'img' ? (
@@ -997,11 +1255,11 @@ export default function Home() {
                                       </div>
                                       
                                       <div className="panel-section border-t border-slate-100">
-                                          <label className="input-label mb-2 text-[9px]">Mover Imagem</label>
+                                          <label className="input-label mb-2 text-[9px]">Alinhar Imagem</label>
                                           <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Esquerda"><i className="fas fa-chevron-left"></i></button>
-                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centralizar Caixa"><i className="fas fa-minus"></i></button>
-                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Direita"><i className="fas fa-chevron-right"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Esquerda"><i className="fas fa-align-left"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centro"><i className="fas fa-align-center"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Direita"><i className="fas fa-align-right"></i></button>
                                           </div>
                                       </div>
 
@@ -1052,7 +1310,6 @@ export default function Home() {
                                               </div>
                                           )}
 
-                                          {/* PAINEL DE ALINHAMENTO GLOBAL (TEXTO + CAIXA) */}
                                           <div className="grid grid-cols-2 gap-4">
                                               <div>
                                                   <label className="input-label mb-2 text-[9px]">Alinhar Texto</label>
@@ -1063,17 +1320,17 @@ export default function Home() {
                                                   </div>
                                               </div>
                                               <div>
-                                                  <label className="input-label mb-2 text-[9px]">Mover Elemento</label>
+                                                  <label className="input-label mb-2 text-[9px]">Alinhar Bloco</label>
                                                   <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Esquerda"><i className="fas fa-chevron-left"></i></button>
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centralizar Caixa"><i className="fas fa-minus"></i></button>
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Direita"><i className="fas fa-chevron-right"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Esquerda"><i className="fas fa-align-left"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centralizar Caixa"><i className="fas fa-align-center"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Direita"><i className="fas fa-align-right"></i></button>
                                                   </div>
                                               </div>
                                           </div>
                                       </div>
 
-                                      {/* NOVO: FORMATADOR DE BOTÕES, LINKS E CAIXAS */}
+                                      {/* FORMATADOR DE BOTÕES, LINKS E CAIXAS */}
                                       {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button' || elementoSelecionado.tagName === 'div') && (
                                           <div className="panel-section border-t border-slate-100 bg-slate-50/30">
                                               <label className="input-label mb-2"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Tamanho e Estrutura</label>
@@ -1085,7 +1342,7 @@ export default function Home() {
                                                           <option value="px-4">Pequena</option>
                                                           <option value="px-8">Média</option>
                                                           <option value="px-12">Grande</option>
-                                                          <option value="w-full text-center">Largura Total da Tela</option>
+                                                          <option value="w-full text-center">Largura Total (Cheia)</option>
                                                       </select>
                                                   </div>
                                                   <div>
@@ -1105,17 +1362,17 @@ export default function Home() {
                                                       <label className="text-[9px] text-slate-500 mb-1 block">Arredondamento</label>
                                                       <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('rounded', e.target.value)} className="input-standard">
                                                           <option value="none">Reto (Quadrado)</option>
-                                                          <option value="rounded-md">Levemente Redondo</option>
-                                                          <option value="rounded-xl">Arredondado Padrão</option>
-                                                          <option value="rounded-full">Pílula (Total)</option>
+                                                          <option value="rounded-md">Leve</option>
+                                                          <option value="rounded-xl">Arredondado</option>
+                                                          <option value="rounded-full">Pílula</option>
                                                       </select>
                                                   </div>
                                                   <div>
                                                       <label className="text-[9px] text-slate-500 mb-1 block">Espessura da Borda</label>
                                                       <select value={elementoSelecionado.borderW || 'none'} onChange={(e) => atualizarElemento('borderW', e.target.value)} className="input-standard">
                                                           <option value="none">Sem Borda</option>
-                                                          <option value="border-2">Borda Fina</option>
-                                                          <option value="border-4">Borda Grossa</option>
+                                                          <option value="border-2">Fina</option>
+                                                          <option value="border-4">Grossa</option>
                                                       </select>
                                                   </div>
                                               </div>
@@ -1123,10 +1380,10 @@ export default function Home() {
                                               <div>
                                                   <label className="text-[9px] text-slate-500 mb-1 block">Sombra</label>
                                                   <select value={elementoSelecionado.shadow || 'none'} onChange={(e) => atualizarElemento('shadow', e.target.value)} className="input-standard">
-                                                      <option value="none">Sem Sombra (Plano)</option>
+                                                      <option value="none">Plano</option>
                                                       <option value="shadow-md">Sombra Suave</option>
-                                                      <option value="shadow-xl">Sombra Projetada (Flutuante)</option>
-                                                      <option value="shadow-2xl shadow-indigo-500/50">Brilho Colorido (Glow Elegante)</option>
+                                                      <option value="shadow-xl">Sombra Projetada</option>
+                                                      <option value="shadow-2xl shadow-indigo-500/50">Brilho Colorido (Glow)</option>
                                                   </select>
                                               </div>
                                           </div>
@@ -1204,33 +1461,75 @@ export default function Home() {
                   </div>
               ) : (
                   
-                  <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white">
+                  <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
                       
                       {/* NOVAS ABAS DE NAVEGAÇÃO */}
-                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar">
+                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
                           <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
-                          <button onClick={() => setAbaAtiva('refinar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'refinar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-code-branch mr-1.5"></i> Modificar</button>
+                          <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-cubes mr-1.5"></i> Blocos Prontos</button>
                       </div>
 
-                      {abaAtiva === 'refinar' ? (
-                          <div className="p-5 space-y-6">
+                      {abaAtiva === 'blocos' ? (
+                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                               <div>
-                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-magic"></i></span> Refatoração Global</h3>
-                                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">Adicione blocos inteiros, links no rodapé ou botões extras no site sem precisar recriar tudo do zero.</p>
-                                  <textarea id="refineGlobalContent" className="input-standard h-36 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Adicione um link para 'Blog' no menu superior, ou crie um botão flutuante de WhatsApp no canto da tela..."></textarea>
+                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-layer-group"></i></span> UI Kit de Alta Conversão</h3>
+                                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">Adicione seções completas prontas para converter, usando fotografia real. Elas serão inseridas abaixo do elemento que você estiver selecionando na tela (ou no final da página).</p>
                                   
-                                  <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                      <i className="fas fa-code-branch text-yellow-300 text-lg"></i> Aplicar Modificação (IA)
-                                  </button>
+                                  <div className="space-y-4">
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                          <div>
+                                              <p className="font-bold text-sm text-slate-800">FAQ (Perguntas)</p>
+                                              <p className="text-[10px] text-slate-500">Sanfonas interativas de dúvidas</p>
+                                          </div>
+                                          <button onClick={() => injetarBlocoPronto('faq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                      </div>
+
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                          <div>
+                                              <p className="font-bold text-sm text-slate-800">Garantia 7 Dias</p>
+                                              <p className="text-[10px] text-slate-500">Quebra de objeção com foto</p>
+                                          </div>
+                                          <button onClick={() => injetarBlocoPronto('garantia')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                      </div>
+
+                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                          <div>
+                                              <p className="font-bold text-sm text-slate-800">Depoimentos</p>
+                                              <p className="text-[10px] text-slate-500">Cards escuros de prova social</p>
+                                          </div>
+                                          <button onClick={() => injetarBlocoPronto('depoimentos')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                      </div>
+                                  </div>
+
+                                  <div className="mt-8 pt-6 border-t border-slate-100">
+                                      <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-code-branch"></i></span> Refatoração Global (IA)</h3>
+                                      <p className="text-xs text-slate-500 mb-4 leading-relaxed">Deixe a IA modificar toda a estrutura para você (ex: Adicionar rodapé, trocar todas as cores).</p>
+                                      <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Crie um botão de WhatsApp flutuante no canto da tela..."></textarea>
+                                      <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                          <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar Modificação
+                                      </button>
+                                  </div>
                               </div>
                           </div>
                       ) : (
-                          <div className="p-5 space-y-6">
+                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo</h3>
                                   <div className="space-y-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
                                       
                                       <div>
+                                          <label className="input-label mb-2">Tipografia (Estúdio de Fontes)</label>
+                                          <select value={fontFamily} onChange={(e) => aplicarFonte(e.target.value)} className="input-standard font-medium text-slate-800">
+                                              <option value="sans-serif">Padrão do Sistema</option>
+                                              <option value="Inter">Inter (Moderna e Limpa)</option>
+                                              <option value="Montserrat">Montserrat (Acolhedora e Larga)</option>
+                                              <option value="Playfair Display">Playfair Display (Premium Serifada)</option>
+                                              <option value="Roboto">Roboto (Clássica e Neutra)</option>
+                                              <option value="Lora">Lora (Leitura Longa Clássica)</option>
+                                          </select>
+                                      </div>
+
+                                      <div className="pt-2 border-t border-slate-100">
                                           <label className="input-label mb-2">Paleta de Cores</label>
                                           <div className="flex flex-wrap gap-2.5">
                                               {[
@@ -1262,7 +1561,7 @@ export default function Home() {
                                           )}
                                       </div>
 
-                                      <div className="pt-2">
+                                      <div className="pt-2 border-t border-slate-100">
                                           <label htmlFor="nichoEstilo" className="input-label">Aparência do Site</label>
                                           <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700">
                                               <option value="minimalista">Clean e Moderno</option>
@@ -1352,21 +1651,31 @@ export default function Home() {
                       <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
                   </div>
                   
-                  {/* BOTÃO MÁGICO DE IMPORTAR HTML DA INTERNET */}
+                  {/* SIMULADOR DE DISPOSITIVOS RESPONSIVOS */}
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="hidden md:flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-indigo-50 border border-indigo-200 bg-indigo-50/50 shadow-sm">
-                      <i className="fas fa-file-import"></i> Importar HTML Externo
+                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <button onClick={() => setDeviceView('desktop')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Computador"><i className="fas fa-desktop text-xs"></i></button>
+                      <button onClick={() => setDeviceView('tablet')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
+                      <button onClick={() => setDeviceView('mobile')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Celular"><i className="fas fa-mobile-alt text-xs"></i></button>
+                  </div>
+
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-file-import"></i> Importar HTML
+                  </button>
+                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-search-dollar"></i> SEO & Scripts
                   </button>
                   
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden md:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer Erro</button>
+                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
+                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
 
               <div className="flex items-center gap-3 md:gap-4">
                   <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-th-large mr-1.5"></i> Meus Projetos</button>
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                   
-                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden lg:flex">
+                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
                       <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Arquivo para o Computador"><i className="fas fa-download"></i></button>
                       <button onClick={() => (window as any).copiarCodigo()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 transition" title="Copiar todo o Código HTML"><i className="fas fa-copy"></i></button>
                   </div>
@@ -1382,16 +1691,16 @@ export default function Home() {
               </div>
           </div>
           
-          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center">
+          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center custom-scrollbar">
               {modoInspetor && (
                   <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl shadow-indigo-500/50 font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400 animate-bounce pointer-events-none">
                       <i className="fas fa-mouse-pointer text-yellow-300"></i> Pode Clicar e Editar o Site!
                   </div>
               )}
               
-              <div className={`w-full h-full max-w-[1440px] bg-white mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-300 ${modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'rounded-none md:rounded-2xl border border-slate-300'}`}>
+              <div className={`h-full bg-white mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 ${modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'rounded-none md:rounded-2xl border border-slate-300'} ${deviceView === 'mobile' ? 'w-full max-w-[400px]' : deviceView === 'tablet' ? 'w-full max-w-[800px]' : 'w-full max-w-[1440px]'}`}>
                   {modoInspetor && (
-                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
+                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5 flex-shrink-0">
                           <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
                           <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
