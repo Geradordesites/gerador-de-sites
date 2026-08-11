@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO TURBO, SANFONAS, LINKS GLOBAIS, ELEMENTOS, SUPER ESTILOS E INJEÇÃO INTELIGENTE
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE PRECISA, ALINHAMENTO, SANFONAS, LINKS E BLOCOS
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -60,10 +60,25 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let aspect = elSelecionado.style.aspectRatio || '';
         let objOpacity = 1;
         
+        // ENGENHARIA REVERSA DE OPACIDADE E GRADIENTES
         if (isImg) { 
             objOpacity = parseFloat(compStyle.opacity); 
         } else { 
-            objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
+            if (elSelecionado.dataset.bgOpacity !== undefined) {
+                objOpacity = parseFloat(elSelecionado.dataset.bgOpacity);
+            } else {
+                let bgCol = compStyle.backgroundColor;
+                if (bgCol.startsWith('rgba')) {
+                    let parts = bgCol.match(/[\\d.]+/g);
+                    if (parts && parts.length === 4) objOpacity = parseFloat(parts[3]);
+                } else if (elSelecionado.style.backgroundImage.includes('linear-gradient')) {
+                    let alphaMatch = elSelecionado.style.backgroundImage.match(/rgba\\(\\d+,\\s*\\d+,\\s*\\d+,\\s*([0-9.]+)\\)/);
+                    if (alphaMatch) objOpacity = parseFloat(alphaMatch[1]);
+                } else if (compStyle.opacity !== '1') {
+                    objOpacity = parseFloat(compStyle.opacity);
+                }
+                elSelecionado.dataset.bgOpacity = objOpacity;
+            }
         }
         if (isNaN(objOpacity)) objOpacity = 1;
 
@@ -196,9 +211,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Fotografia profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
-                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
+                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. Lembre-se do espaçamento perfeito entre títulos e parágrafos para uma leitura profissional.</p>\`;
                 } else if(event.data.elementType === 'button') {
                     newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
                 }
@@ -214,25 +229,19 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
-        // INJEÇÃO INTELIGENTE DE BLOCOS (Onde o usuário quiser)
         if (event.data.type === 'INJECT_BLOCK') {
             let el = document.getElementById(event.data.id);
-            
-            // Tenta achar a seção "Pai" mais próxima do elemento clicado.
-            // Se não tiver nada selecionado, vai pro fim da página (document.body)
             let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
             
             let tempDiv = document.createElement('div');
             tempDiv.innerHTML = event.data.html;
             let newBlock = tempDiv.firstElementChild;
             
-            // Regenerar IDs para não conflitar com nada
             newBlock.querySelectorAll('*').forEach(child => {
                 if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
             });
             newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
 
-            // Injeta EXATAMENTE após a seção selecionada
             if (targetEl && targetEl !== document.body) {
                 targetEl.insertAdjacentElement('afterend', newBlock);
                 newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -240,7 +249,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 document.body.appendChild(newBlock);
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }
-            
             sendCleanHtml();
         }
 
@@ -476,7 +484,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true); 
 </script>`;
 
-// BLOCOS PRONTOS ATUALIZADOS (ÉTICOS, FATOR CONVERSÃO E CONTROLE DE IMAGEM)
 const UI_BLOCKS = {
     faq: `
     <section class="py-20 px-8 bg-slate-50" id="block-faq">
@@ -634,6 +641,7 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
   const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
+  const [aiSearchType, setAiSearchType] = useState('human');
   
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
@@ -734,7 +742,6 @@ export default function Home() {
       iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*');
   };
 
-  // INJETAR BLOCO (Controlado pelo iframe para colocar abaixo da seção)
   const injetarBlocoPronto = (tipo: keyof typeof UI_BLOCKS) => {
       const htmlBloco = UI_BLOCKS[tipo];
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -964,15 +971,23 @@ export default function Home() {
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
+      
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let orientation = 'landscape'; let w = 1280, h = 720;
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
+      
       let termoContexto = elementoSelecionado.text || productContent || "business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
+      // APLICA O FILTRO DO SELETOR DE IMAGENS (Sempre Realista)
+      let contextModifier = "people person realistic photography";
+      if(aiSearchType === 'texture') contextModifier = "texture abstract background realistic";
+      if(aiSearchType === 'environment') contextModifier = "interior design architecture realistic";
+      if(aiSearchType === 'nature') contextModifier = "nature landscape real photography";
+
       try {
-          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
+          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
           const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false }) });
           const iaData = await iaRes.json();
           let keywordFinal = "professional business";
@@ -1276,6 +1291,14 @@ export default function Home() {
                                           <label className="input-label">Mudar Imagem</label>
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
                                           <div className="flex gap-2">
+                                              <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
+                                                  <option value="human">Fotografia: Humana</option>
+                                                  <option value="texture">Textura / Fundo Real</option>
+                                                  <option value="environment">Ambiente Corporativo</option>
+                                                  <option value="nature">Natureza Realista</option>
+                                              </select>
+                                          </div>
+                                          <div className="flex gap-2 mt-2">
                                               <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 rounded-lg transition border border-indigo-100"><i className="fas fa-robot mr-1.5"></i> Usar Inteligência</button>
                                               <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition"><i className="fas fa-upload mr-1.5"></i> Do Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
                                           </div>
@@ -1448,6 +1471,14 @@ export default function Home() {
                                               <input type="text" placeholder="Link direto da imagem..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 text-[10px]" />
                                           </div>
                                           <div className="flex gap-2">
+                                              <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
+                                                  <option value="human">Fotografia: Humana</option>
+                                                  <option value="texture">Textura / Fundo Real</option>
+                                                  <option value="environment">Ambiente Corporativo</option>
+                                                  <option value="nature">Natureza Realista</option>
+                                              </select>
+                                          </div>
+                                          <div className="flex gap-2 mt-2">
                                               <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-robot mr-1"></i> Inteligência Artificial</button>
                                               <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-desktop mr-1"></i> Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
                                           </div>
