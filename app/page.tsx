@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE PRECISA, ALINHAMENTO, SANFONAS, LINKS E BLOCOS
+// SCRIPT DO IFRAME
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -60,25 +60,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let aspect = elSelecionado.style.aspectRatio || '';
         let objOpacity = 1;
         
-        // ENGENHARIA REVERSA DE OPACIDADE E GRADIENTES
         if (isImg) { 
             objOpacity = parseFloat(compStyle.opacity); 
         } else { 
-            if (elSelecionado.dataset.bgOpacity !== undefined) {
-                objOpacity = parseFloat(elSelecionado.dataset.bgOpacity);
-            } else {
-                let bgCol = compStyle.backgroundColor;
-                if (bgCol.startsWith('rgba')) {
-                    let parts = bgCol.match(/[\\d.]+/g);
-                    if (parts && parts.length === 4) objOpacity = parseFloat(parts[3]);
-                } else if (elSelecionado.style.backgroundImage.includes('linear-gradient')) {
-                    let alphaMatch = elSelecionado.style.backgroundImage.match(/rgba\\(\\d+,\\s*\\d+,\\s*\\d+,\\s*([0-9.]+)\\)/);
-                    if (alphaMatch) objOpacity = parseFloat(alphaMatch[1]);
-                } else if (compStyle.opacity !== '1') {
-                    objOpacity = parseFloat(compStyle.opacity);
-                }
-                elSelecionado.dataset.bgOpacity = objOpacity;
-            }
+            objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
         }
         if (isNaN(objOpacity)) objOpacity = 1;
 
@@ -88,13 +73,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
 
         let bAlign = '';
-        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center';
-        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
-        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
+        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center';
+        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
+        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
 
         let paddingX = '', paddingY = '', shadow = '', rounded = '', borderW = '';
         elSelecionado.classList.forEach(c => {
-            if(c.startsWith('px-') || c === 'w-full') paddingX += c + ' ';
+            if(c.startsWith('px-') || c === 'w-full') paddingX = c; 
+            if(c === 'text-center' && elSelecionado.classList.contains('w-full')) paddingX += ' text-center';
             if(c.startsWith('py-')) paddingY = c;
             if(c.startsWith('shadow-') && !c.includes('hover:')) shadow += c + ' ';
             if(c === 'shadow') shadow += c + ' ';
@@ -188,6 +174,38 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
+        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let sec = el.closest('section, header, footer') || el;
+                if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) {
+                    sec.parentNode.insertBefore(sec, sec.previousElementSibling);
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) {
+                    sec.parentNode.insertBefore(sec.nextElementSibling, sec);
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'REVERSE_FLEX') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div'));
+                if(target) {
+                    if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) {
+                        target.classList.remove('md:flex-row-reverse', 'flex-row-reverse');
+                        target.classList.add('md:flex-row');
+                    } else {
+                        target.classList.remove('md:flex-row', 'flex-row');
+                        target.classList.add('md:flex-row-reverse');
+                    }
+                    sendCleanHtml();
+                }
+            }
+        }
+
         if (event.data.type === 'DUPLICATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
@@ -211,9 +229,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Fotografia profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
-                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. Lembre-se do espaçamento perfeito entre títulos e parágrafos para uma leitura profissional.</p>\`;
+                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
                 } else if(event.data.elementType === 'button') {
                     newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
                 }
@@ -242,7 +260,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             });
             newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
 
-            if (targetEl && targetEl !== document.body) {
+            if (targetEl && targetEl !== document.body && targetEl.tagName !== 'HTML') {
                 targetEl.insertAdjacentElement('afterend', newBlock);
                 newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
@@ -278,15 +296,21 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let el = document.getElementById(event.data.id);
             if(el) {
                 let isImg = el.tagName === 'IMG';
+                let p = event.data.device === 'mobile' ? 'max-md:' : '';
+                let escP = p ? 'max-md\\\\:' : '';
 
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
-                if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
+                
+                if(event.data.fontSize !== undefined) {
+                    el.style.fontSize = ''; 
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + 'text-\\\\[\\\\d+px\\\\]\\\\b', 'g'), '').trim();
+                    if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
+                }
                 
                 if (event.data.href !== undefined) {
                     let parentIsA = el.parentElement && el.parentElement.tagName === 'A';
-                    
                     if (el.tagName === 'A') {
                         if (event.data.href.trim() === '') el.removeAttribute('href');
                         else el.setAttribute('href', event.data.href);
@@ -294,18 +318,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         if (event.data.href.trim() === '') el.parentElement.removeAttribute('href');
                         else el.parentElement.setAttribute('href', event.data.href);
                     } else if (event.data.href.trim() !== '') {
-                        let a = document.createElement('a');
-                        a.href = event.data.href;
-                        a.className = "inline-block cursor-pointer transition-all hover:opacity-90";
+                        let a = document.createElement('a'); a.href = event.data.href; a.className = "inline-block cursor-pointer transition-all hover:opacity-90";
                         if (el.classList.contains('w-full') || isImg) a.classList.add('w-full', 'block');
-                        el.parentNode.insertBefore(a, el);
-                        a.appendChild(el);
+                        el.parentNode.insertBefore(a, el); a.appendChild(el);
                     }
                 }
 
                 if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
                 if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
-                
                 if (event.data.opacity !== undefined) {
                     if (isImg) { el.style.opacity = event.data.opacity; } 
                     else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
@@ -314,16 +334,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if (!isImg) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
                     if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
-
                     let cBgImage = el.dataset.rawBgImage;
-                    if (cBgImage === undefined) {
-                        let rawBg = el.style.backgroundImage || '';
-                        let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
-                        cBgImage = match ? match[1] : '';
-                    }
-                    
-                    let cOpacity = parseFloat(el.dataset.bgOpacity);
-                    if (isNaN(cOpacity)) cOpacity = 1;
+                    if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
+                    let cOpacity = parseFloat(el.dataset.bgOpacity); if (isNaN(cOpacity)) cOpacity = 1;
 
                     let r = 255, g = 255, b = 255;
                     if (cBgColor.startsWith('#')) {
@@ -338,12 +351,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if (cBgImage && cBgImage !== 'none') {
                         el.style.backgroundColor = 'transparent';
                         el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
-                        el.style.backgroundSize = "cover"; 
-                        el.style.backgroundPosition = "center";
-                        el.style.backgroundRepeat = "no-repeat";
+                        el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat";
                     } else {
-                        el.style.backgroundImage = "none";
-                        el.style.backgroundColor = rgbaStr;
+                        el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
                     }
 
                     if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
@@ -353,12 +363,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.paddingX !== undefined) {
-                    el.className = el.className.replace(/\\bpx-\\d+\\b|\\bw-full\\b|\\btext-center\\b/g, '').trim();
-                    if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(cls)); }
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(px-\\\\d+|px-\\\\[.*?\\\\]|w-full|text-center)\\\\b', 'g'), '').trim();
+                    if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
                 }
                 if(event.data.paddingY !== undefined) {
-                    el.className = el.className.replace(/\\bpy-\\d+\\b/g, '').trim();
-                    if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(event.data.paddingY);
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(py-\\\\d+|py-\\\\[.*?\\\\])\\\\b', 'g'), '').trim();
+                    if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
                 }
                 if(event.data.rounded !== undefined) {
                     el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
@@ -374,21 +384,21 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.textAlign !== undefined) {
-                    el.classList.remove('text-left', 'text-center', 'text-right', 'text-justify');
-                    if(event.data.textAlign) el.classList.add(event.data.textAlign);
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(text-left|text-center|text-right|text-justify)\\\\b', 'g'), '').trim();
+                    if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
                 }
 
                 if(event.data.boxAlign !== undefined) {
-                    el.classList.remove('mx-auto', 'ml-auto', 'mr-auto', 'self-center', 'self-start', 'self-end', 'justify-self-center', 'justify-self-start', 'justify-self-end');
-                    if(event.data.boxAlign === 'center') el.classList.add('mx-auto', 'self-center', 'justify-self-center');
-                    if(event.data.boxAlign === 'right') el.classList.add('ml-auto', 'self-end', 'justify-self-end');
-                    if(event.data.boxAlign === 'left') el.classList.add('mr-auto', 'self-start', 'justify-self-start');
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\\\b', 'g'), '').trim();
+                    if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
+                    if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
+                    if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
                     
                     if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
-                        el.classList.remove('justify-start', 'justify-center', 'justify-end');
-                        if(event.data.boxAlign === 'center') el.classList.add('justify-center');
-                        if(event.data.boxAlign === 'right') el.classList.add('justify-end');
-                        if(event.data.boxAlign === 'left') el.classList.add('justify-start');
+                        el.className = el.className.replace(new RegExp('\\\\b' + escP + '(justify-start|justify-center|justify-end)\\\\b', 'g'), '').trim();
+                        if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
+                        if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
+                        if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
                     }
                 }
 
@@ -464,23 +474,23 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             return;
         }
 
-        if (link) {
-            let href = link.getAttribute('href') || '';
-            if (link.hasAttribute('onclick')) { 
-                if (href === '/' || href === '' || href === '#') e.preventDefault(); 
-                return; 
-            }
+        if (link || btn) {
             e.preventDefault();
             e.stopPropagation();
-            if(href.startsWith('#') && href.length > 1) {
-                try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
-            } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
-                window.open(href, '_blank'); 
+            if(link) {
+                let href = link.getAttribute('href') || '';
+                if(href.startsWith('#') && href.length > 1) {
+                    try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
+                } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
+                    let a = document.createElement('a');
+                    a.href = href;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.click();
+                }
             }
             return;
         }
-        
-        if (btn && btn.type === 'submit') { e.preventDefault(); e.stopPropagation(); return; }
     }, true); 
 </script>`;
 
@@ -513,7 +523,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
-                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional realista garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-square md:aspect-[4/3]" />
+                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-square md:aspect-[4/3]" />
             </div>
             <div class="flex-1 w-full text-center md:text-left">
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Risco Zero: Garantia Incondicional de 7 Dias</h2>
@@ -605,8 +615,8 @@ const UI_BLOCKS = {
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Conheça Sua História</h2>
-                <p class="text-slate-600 leading-relaxed mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
-                <p class="text-slate-600 leading-relaxed text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
+                <p class="text-slate-600 mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
+                <p class="text-slate-600 text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
             </div>
         </div>
     </section>`,
@@ -621,8 +631,8 @@ const UI_BLOCKS = {
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Conheça Sua História</h2>
-                <p class="text-slate-600 leading-relaxed mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
-                <p class="text-slate-600 leading-relaxed text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
+                <p class="text-slate-600 mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
+                <p class="text-slate-600 text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
             </div>
         </div>
     </section>`
@@ -641,7 +651,7 @@ export default function Home() {
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
   const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
-  const [aiSearchType, setAiSearchType] = useState('human');
+  const [aiSearchType, setAiSearchType] = useState('realista');
   
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
@@ -710,7 +720,7 @@ export default function Home() {
   const atualizarElemento = (field: string, value: string | number | boolean, forceTextUpdate = false) => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate }, '*');
+      iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate, device: deviceView }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
 
@@ -740,6 +750,19 @@ export default function Home() {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*');
+  };
+
+  const moverSecaoInteira = (direcao: 'UP' | 'DOWN') => {
+      if(!elementoSelecionado) return;
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_SECTION_UP' : 'MOVE_SECTION_DOWN', id: elementoSelecionado.id }, '*');
+      (window as any).showNotification(direcao === 'UP' ? "Seção movida para cima!" : "Seção movida para baixo!", "success");
+  };
+
+  const inverterLayoutBox = () => {
+      if(!elementoSelecionado) return;
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: 'REVERSE_FLEX', id: elementoSelecionado.id }, '*');
   };
 
   const injetarBlocoPronto = (tipo: keyof typeof UI_BLOCKS) => {
@@ -980,11 +1003,10 @@ export default function Home() {
       let termoContexto = elementoSelecionado.text || productContent || "business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
-      // APLICA O FILTRO DO SELETOR DE IMAGENS (Sempre Realista)
-      let contextModifier = "people person realistic photography";
-      if(aiSearchType === 'texture') contextModifier = "texture abstract background realistic";
-      if(aiSearchType === 'environment') contextModifier = "interior design architecture realistic";
-      if(aiSearchType === 'nature') contextModifier = "nature landscape real photography";
+      let contextModifier = "realistic photography, candid, natural";
+      if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
+      if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
+      if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
 
       try {
           const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
@@ -999,7 +1021,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`;
+          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; // Fotorrealista padrão
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -1263,22 +1285,29 @@ export default function Home() {
                               </div>
 
                               <div className="panel-section bg-slate-50/50 border-t border-slate-100">
-                                  <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo ou Dentro)</label>
-                                  <div className="flex gap-2">
+                                  <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo/Dentro)</label>
+                                  <div className="flex gap-2 mb-3">
                                       <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
                                       <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
                                       <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
+                                  
+                                  {/* CONTROLES DE SEÇÃO E FLEX */}
+                                  <div className="flex gap-2 border-t border-slate-200 pt-3">
+                                      <button onClick={() => moverSecaoInteira('UP')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover Seção para Cima"><i className="fas fa-level-up-alt"></i> Subir Seção</button>
+                                      <button onClick={() => moverSecaoInteira('DOWN')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover Seção para Baixo"><i className="fas fa-level-down-alt"></i> Descer Seção</button>
+                                      <button onClick={inverterLayoutBox} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Inverter Imagem/Texto de Lado"><i className="fas fa-exchange-alt"></i> Inverter</button>
+                                  </div>
                               </div>
 
-                              {/* PAINEL GLOBAL DE LINKS E ORDENAMENTO */}
+                              {/* PAINEL GLOBAL DE LINKS E ORDENAMENTO SIMPLES */}
                               <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
                                   <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Link de Destino</label>
                                   <input type="text" placeholder="Cole o link (Deixe vazio para remover)" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
                               </div>
 
                               <div className="panel-section border-t border-slate-100 flex justify-between items-center mt-2">
-                                  <label className="input-label mb-0 text-[10px]">Reordenar (Mover)</label>
+                                  <label className="input-label mb-0 text-[10px]">Reordenar (Apenas Elemento)</label>
                                   <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
                                       <button onClick={() => moverElemento('UP')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-up mr-1"></i> Subir</button>
                                       <button onClick={() => moverElemento('DOWN')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-down mr-1"></i> Descer</button>
@@ -1292,10 +1321,10 @@ export default function Home() {
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
                                           <div className="flex gap-2">
                                               <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
-                                                  <option value="human">Fotografia: Humana</option>
-                                                  <option value="texture">Textura / Fundo Real</option>
-                                                  <option value="environment">Ambiente Corporativo</option>
-                                                  <option value="nature">Natureza Realista</option>
+                                                  <option value="realista">Fotografia Realista</option>
+                                                  <option value="cinematografica">Cinematográfica (Filme)</option>
+                                                  <option value="estudio">Estúdio / Editorial</option>
+                                                  <option value="minimalista">Minimalista / Clean</option>
                                               </select>
                                           </div>
                                           <div className="flex gap-2 mt-2">
@@ -1383,26 +1412,51 @@ export default function Home() {
                                       {/* FORMATADOR DE BOTÕES, LINKS E CAIXAS */}
                                       {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button' || elementoSelecionado.tagName === 'div') && (
                                           <div className="panel-section border-t border-slate-100 bg-slate-50/30">
-                                              <label className="input-label mb-2"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Tamanho e Estrutura</label>
+                                              <label className="input-label mb-3"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Tamanho e Estrutura</label>
+                                              
                                               <div className="grid grid-cols-2 gap-4 mb-4">
                                                   <div>
-                                                      <label className="text-[9px] text-slate-500 mb-1 block">Largura (Padding Lateral)</label>
-                                                      <select value={elementoSelecionado.paddingX || 'none'} onChange={(e) => atualizarElemento('paddingX', e.target.value)} className="input-standard">
+                                                      <div className="flex justify-between items-center mb-1">
+                                                          <label className="text-[9px] text-slate-500">Largura (Lateral)</label>
+                                                          {elementoSelecionado.paddingX?.startsWith('px-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingX.match(/\d+/)?.[0]}px</span>}
+                                                      </div>
+                                                      <select value={elementoSelecionado.paddingX?.startsWith('px-[') ? 'custom' : (elementoSelecionado.paddingX || 'none')} onChange={(e) => {
+                                                          if(e.target.value === 'custom') { atualizarElemento('paddingX', 'px-[40px]'); }
+                                                          else { atualizarElemento('paddingX', e.target.value); }
+                                                      }} className="input-standard">
                                                           <option value="none">Padrão</option>
                                                           <option value="px-4">Pequena</option>
                                                           <option value="px-8">Média</option>
                                                           <option value="px-12">Grande</option>
+                                                          <option value="px-16">Extra Grande</option>
+                                                          <option value="px-24">Gigante</option>
                                                           <option value="w-full text-center">Largura Total (Cheia)</option>
+                                                          <option value="custom">Personalizado (Slider)</option>
                                                       </select>
+                                                      {elementoSelecionado.paddingX?.startsWith('px-[') && (
+                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', `px-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                      )}
                                                   </div>
                                                   <div>
-                                                      <label className="text-[9px] text-slate-500 mb-1 block">Altura (Padding Vertical)</label>
-                                                      <select value={elementoSelecionado.paddingY || 'none'} onChange={(e) => atualizarElemento('paddingY', e.target.value)} className="input-standard">
+                                                      <div className="flex justify-between items-center mb-1">
+                                                          <label className="text-[9px] text-slate-500">Altura (Vertical)</label>
+                                                          {elementoSelecionado.paddingY?.startsWith('py-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingY.match(/\d+/)?.[0]}px</span>}
+                                                      </div>
+                                                      <select value={elementoSelecionado.paddingY?.startsWith('py-[') ? 'custom' : (elementoSelecionado.paddingY || 'none')} onChange={(e) => {
+                                                          if(e.target.value === 'custom') { atualizarElemento('paddingY', 'py-[16px]'); }
+                                                          else { atualizarElemento('paddingY', e.target.value); }
+                                                      }} className="input-standard">
                                                           <option value="none">Padrão</option>
                                                           <option value="py-2">Fino</option>
                                                           <option value="py-4">Médio</option>
                                                           <option value="py-6">Grosso</option>
+                                                          <option value="py-8">Extra Grosso</option>
+                                                          <option value="py-12">Gigante</option>
+                                                          <option value="custom">Personalizado (Slider)</option>
                                                       </select>
+                                                      {elementoSelecionado.paddingY?.startsWith('py-[') && (
+                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', `py-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                      )}
                                                   </div>
                                               </div>
                                               
@@ -1472,10 +1526,10 @@ export default function Home() {
                                           </div>
                                           <div className="flex gap-2">
                                               <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
-                                                  <option value="human">Fotografia: Humana</option>
-                                                  <option value="texture">Textura / Fundo Real</option>
-                                                  <option value="environment">Ambiente Corporativo</option>
-                                                  <option value="nature">Natureza Realista</option>
+                                                  <option value="realista">Fotografia Realista</option>
+                                                  <option value="cinematografica">Cinematográfica (Filme)</option>
+                                                  <option value="estudio">Estúdio / Editorial</option>
+                                                  <option value="minimalista">Minimalista / Clean</option>
                                               </select>
                                           </div>
                                           <div className="flex gap-2 mt-2">
