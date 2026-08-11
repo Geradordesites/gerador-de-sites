@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO, SANFONAS, DELETAR, DUPLICAR E ADICIONAR ELEMENTOS
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO TURBO, SANFONAS, LINKS GLOBAIS, ELEMENTOS E SUPER ESTILOS DE BOTÃO
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -74,9 +74,27 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
 
         let bAlign = '';
-        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-self-center')) bAlign = 'center';
-        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-self-end')) bAlign = 'right';
-        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-self-start')) bAlign = 'left';
+        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center';
+        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
+        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
+
+        // EXTRAIR ESTILOS DE BOTÕES/CAIXAS (Paddings, Sombras, Bordas, Arredondamento)
+        let paddingX = '', paddingY = '', shadow = '', rounded = '', borderW = '';
+        elSelecionado.classList.forEach(c => {
+            if(c.startsWith('px-') || c === 'w-full') paddingX += c + ' ';
+            if(c.startsWith('py-')) paddingY = c;
+            if(c.startsWith('shadow-') && !c.includes('hover:')) shadow += c + ' ';
+            if(c === 'shadow') shadow += c + ' ';
+            if(c.startsWith('rounded')) rounded = c;
+            if(c.startsWith('border-') && !isNaN(c.split('-')[1])) borderW = c;
+            if(c === 'border') borderW = c;
+        });
+
+        // CAPTURAR LINK
+        let href = elSelecionado.getAttribute('href') || '';
+        if (!href && elSelecionado.parentElement && elSelecionado.parentElement.tagName === 'A') {
+            href = elSelecionado.parentElement.getAttribute('href') || '';
+        }
 
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
@@ -84,7 +102,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             tagName: elSelecionado.tagName.toLowerCase(),
             text: elSelecionado.innerText || '',
             src: elSelecionado.src || '',
-            href: elSelecionado.getAttribute('href') || '',
+            href: href,
             className: elSelecionado.className,
             bgColor: cColor,
             textColor: rgbToHex(compStyle.color),
@@ -96,6 +114,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             bloqueiaTexto: bloqueiaTexto,
             textAlign: tAlign,
             boxAlign: bAlign,
+            paddingX: paddingX.trim(),
+            paddingY: paddingY,
+            shadow: shadow.trim(),
+            rounded: rounded,
+            borderW: borderW,
             outerHTML: elSelecionado.outerHTML
         }, '*');
     }
@@ -139,12 +162,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let el = document.getElementById(event.data.id);
             if(el) {
                 let clone = el.cloneNode(true);
-                // Regenerar IDs para não conflitar
                 clone.id = 'node_' + Math.random().toString(36).substr(2,9);
                 clone.querySelectorAll('[id]').forEach(child => {
                     child.id = 'node_' + Math.random().toString(36).substr(2,9);
                 });
-                // Remove outline temporário do clone se existir
                 clone.style.outline = '';
                 clone.style.outlineOffset = '';
                 
@@ -167,8 +188,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
                 }
                 
-                // Se a caixa selecionada for um container grande, adiciona DENTRO no final.
-                // Se for um texto ou imagem pequeno, adiciona LOGO ABAIXO dele.
                 let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
                 
                 if (isContainer) {
@@ -187,10 +206,29 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
-                if(event.data.href !== undefined) el.setAttribute('href', event.data.href);
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 if(event.data.fontSize !== undefined) el.style.fontSize = event.data.fontSize + 'px';
                 
+                // SISTEMA DE LINKS
+                if (event.data.href !== undefined) {
+                    let parentIsA = el.parentElement && el.parentElement.tagName === 'A';
+                    
+                    if (el.tagName === 'A') {
+                        if (event.data.href.trim() === '') el.removeAttribute('href');
+                        else el.setAttribute('href', event.data.href);
+                    } else if (parentIsA) {
+                        if (event.data.href.trim() === '') el.parentElement.removeAttribute('href');
+                        else el.parentElement.setAttribute('href', event.data.href);
+                    } else if (event.data.href.trim() !== '') {
+                        let a = document.createElement('a');
+                        a.href = event.data.href;
+                        a.className = "inline-block cursor-pointer transition-all hover:opacity-90";
+                        if (el.classList.contains('w-full') || isImg) a.classList.add('w-full', 'block');
+                        el.parentNode.insertBefore(a, el);
+                        a.appendChild(el);
+                    }
+                }
+
                 if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
                 if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
                 
@@ -229,7 +267,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     }
 
                     let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
-
                     el.style.setProperty('--tw-bg-opacity', '1');
 
                     if (cBgImage && cBgImage !== 'none') {
@@ -245,9 +282,36 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                     if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
                     else el.classList.remove('backdrop-blur-md');
-                    
                 } else {
                     if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
+                }
+
+                // MOTOR DE BOTÕES: PADDINGS, SOMBRAS E BORDAS
+                if(event.data.paddingX !== undefined) {
+                    el.className = el.className.replace(/\\bpx-\\d+\\b|\\bw-full\\b|\\btext-center\\b/g, '').trim();
+                    if(event.data.paddingX && event.data.paddingX !== 'none') {
+                        event.data.paddingX.split(' ').forEach(cls => el.classList.add(cls));
+                    }
+                }
+                if(event.data.paddingY !== undefined) {
+                    el.className = el.className.replace(/\\bpy-\\d+\\b/g, '').trim();
+                    if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(event.data.paddingY);
+                }
+                if(event.data.rounded !== undefined) {
+                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
+                    if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
+                }
+                if(event.data.shadow !== undefined) {
+                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
+                    if(event.data.shadow && event.data.shadow !== 'none') {
+                        event.data.shadow.split(' ').forEach(cls => el.classList.add(cls));
+                    }
+                }
+                if(event.data.borderW !== undefined) {
+                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
+                    if(event.data.borderW && event.data.borderW !== 'none') {
+                        el.classList.add(event.data.borderW);
+                    }
                 }
 
                 if(event.data.textAlign !== undefined) {
@@ -255,16 +319,23 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.textAlign) el.classList.add(event.data.textAlign);
                 }
 
-                // ALINHAMENTO TURBO: Aborda todas as frentes (Block, Flex e Grid)
                 if(event.data.boxAlign !== undefined) {
                     el.classList.remove('mx-auto', 'ml-auto', 'mr-auto', 'self-center', 'self-start', 'self-end', 'justify-self-center', 'justify-self-start', 'justify-self-end');
                     if(event.data.boxAlign === 'center') el.classList.add('mx-auto', 'self-center', 'justify-self-center');
                     if(event.data.boxAlign === 'right') el.classList.add('ml-auto', 'self-end', 'justify-self-end');
                     if(event.data.boxAlign === 'left') el.classList.add('mr-auto', 'self-start', 'justify-self-start');
+                    
+                    if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
+                        el.classList.remove('justify-start', 'justify-center', 'justify-end');
+                        if(event.data.boxAlign === 'center') el.classList.add('justify-center');
+                        if(event.data.boxAlign === 'right') el.classList.add('justify-end');
+                        if(event.data.boxAlign === 'left') el.classList.add('justify-start');
+                    }
                 }
 
                 if(event.data.animationClass !== undefined) {
-                    el.classList.remove('animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:scale-110', 'transition-transform', 'transition-all', 'duration-300', 'hover:-translate-y-2');
+                    const animClasses = ['animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:-translate-y-2', 'hover:-translate-y-1', 'hover:shadow-2xl', 'hover:shadow-indigo-500/50', 'hover:rotate-3', 'transition-transform', 'transition-all', 'transition-shadow', 'duration-300'];
+                    el.classList.remove(...animClasses);
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
@@ -391,7 +462,6 @@ export default function Home() {
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
 
-  // ESTADOS DA NOVA FUNÇÃO DE IMPORTAR HTML
   const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
   const [codigoExterno, setCodigoExterno] = useState('');
 
@@ -497,23 +567,13 @@ export default function Home() {
     (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
 
-  // MÁQUINA DE IMPORTAÇÃO INTELIGENTE BLINDADA CONTRA FRAMEBUSTING
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
-
     let htmlFinal = codigoExterno;
-
-    // 🛡️ FILTRO ANTI-BLOQUEIO: Remove tags maliciosas e redirecionamentos
-    // 1. Remove qualquer script externo (que causa o bloqueio "X-Frame-Options")
     htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    
-    // 2. Remove redirecionamentos forçados via meta tag
     htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
-    
-    // 3. Substitui iframes perigosos por um bloco editável inofensivo
     htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
 
-    // Se for apenas um pedaço de código solto, envelopamos com a base HTML
     if(!htmlFinal.toLowerCase().includes('<body')) {
         htmlFinal = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -528,7 +588,6 @@ export default function Home() {
 </body>
 </html>`;
     } else {
-        // Como removemos todos os scripts por segurança, reinjetamos o motor do Tailwind e Ícones
         if(htmlFinal.includes('</head>')) {
             htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
         } else if(htmlFinal.includes('<body')) {
@@ -538,17 +597,10 @@ export default function Home() {
 
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    
-    if (codEl) { 
-        setHistoricoCodigo(prev => [...prev, codEl.value]);
-        codEl.value = htmlFinal; 
-    }
+    if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
     if (prevEl) prevEl.srcdoc = htmlFinal + SCRIPT_PREVIEW; 
-    
-    setCodigoExterno('');
-    setModalImportarCodigo(false);
+    setCodigoExterno(''); setModalImportarCodigo(false);
     (window as any).showNotification("Código importado e blindado contra bloqueios!", "success");
-    
     if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
   };
 
@@ -556,12 +608,9 @@ export default function Home() {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
       const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
-
       const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
       REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
-      
       const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
-      
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -574,96 +623,41 @@ export default function Home() {
   const executarRefinamentoGlobal = async () => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
-    
-    if (!currentHtml || currentHtml.length < 100) {
-        (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error");
-        return;
-    }
-
+    if (!currentHtml || currentHtml.length < 100) { (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error"); return; }
     const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
     const comando = promptInput?.value.trim();
-    if (!comando) {
-        (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error");
-        return;
-    }
-
+    if (!comando) { (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error"); return; }
     setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
-
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas, cobrindo o fluxo de conversão detalhado.", 
-                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
-                isSiteRefinement: true, 
-                isGeminiForced: true 
-            })
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], isSiteRefinement: true, isGeminiForced: true })
         });
-        
         const responseText = await response.text();
         let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (e) {
-            if (response.status === 413 || response.status === 429 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
-                throw new Error("O site atual é muito extenso para esta modificação de uma só vez.");
-            }
-            throw new Error("Ocorreu um erro no servidor de IA. Tente reescrever a sua instrução.");
-        }
-
+        try { data = JSON.parse(responseText); } catch (e) { throw new Error("Ocorreu um erro no servidor de IA."); }
         if (!data.success) throw new Error(data.error);
-        
         if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data);
-            promptInput.value = '';
-            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else {
-            throw new Error("A IA falhou ao processar a modificação global.");
-        }
-
-    } catch (err: any) {
-        (window as any).showNotification(err.message || "Erro na modificação do site.", "error");
-    } finally {
-        setStatusApis({ texto: 'Aguardando Operação', processing: false });
-    }
+            processarRespostaDOM(data); promptInput.value = ''; (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        } else { throw new Error("A IA falhou ao processar a modificação global."); }
+    } catch (err: any) { (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); } finally { setStatusApis({ texto: 'Aguardando Operação', processing: false }); }
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
     setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
-
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-
-      const response = await fetch('/api/gerar', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement })
-      });
-      
+      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement }) });
       const responseText = await response.text();
       let data;
-      try {
-          data = JSON.parse(responseText);
-      } catch (err) {
-          if (response.status === 413 || responseText.includes('Too Large') || responseText.startsWith('Request')) {
-              throw new Error("A sua imagem de referência é muito pesada para a IA ler.");
-          }
-          throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial.");
-      }
-
+      try { data = JSON.parse(responseText); } catch (err) { throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial."); }
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
       return data;
     } catch (err: any) {
       let errorMsg = err.message;
-      if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) {
-          errorMsg = "Servidor da IA ocupado. Por favor, aguarde cerca de um minuto e tente novamente.";
-      } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {
-          errorMsg = "Verifique sua conexão de internet e tente novamente.";
-      }
-      (window as any).showNotification(errorMsg, 'error');
-      return null;
-    } finally {
-      setStatusApis({ texto: 'Aguardando Ação', processing: false });
-    }
+      if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) { errorMsg = "Servidor da IA ocupado. Aguarde cerca de um minuto."; }
+      (window as any).showNotification(errorMsg, 'error'); return null;
+    } finally { setStatusApis({ texto: 'Aguardando Ação', processing: false }); }
   };
 
   const getMegaPromptEstilo = () => {
@@ -678,19 +672,7 @@ export default function Home() {
     const cor = corSelecionada;
     if (cor === 'personalizada') return `CORES DO SITE: Use ${(document.getElementById('corFundo') as HTMLInputElement)?.value} como fundo principal e ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value} para botões e destaques.`;
     if (cor === 'auto') return "CORES DO SITE: Copie fielmente as cores da imagem que o usuário anexou.";
-    
-    const mapaCores:any = {
-        'dark': 'Modo Escuro Profundo (Fundos em tons de Chumbo/Preto com texto claro e alto contraste)',
-        'azul': 'Tons de Azul (Transmite profissionalismo, segurança e tecnologia)',
-        'verde': 'Tons de Verde (Transmite saúde, sucesso financeiro e natureza)',
-        'roxo': 'Tons de Roxo (Transmite inovação, criatividade e luxo)',
-        'terracota': 'Tons Terrosos e Terracota (Transmite elegância, conforto e sofisticação)',
-        'rosa': 'Tons de Rosa e Suaves (Transmite delicadeza, cuidado e modernidade)',
-        'vermelho': 'Vermelho Alerta (Tons de alto impacto, urgência e excitação)',
-        'amarelo': 'Amarelo Otimista (Fundo escuro contrastando com amarelo energia/sol)',
-        'laranja': 'Laranja Criativo (Tons quentes, amigáveis, com muita energia e estímulo)',
-        'cinza': 'Cinza Monocromático (Estilo limpo, prata, ultra minimalista e focado na estrutura)'
-    };
+    const mapaCores:any = { 'dark': 'Modo Escuro Profundo', 'azul': 'Tons de Azul', 'verde': 'Tons de Verde', 'roxo': 'Tons de Roxo', 'terracota': 'Tons Terrosos', 'rosa': 'Tons de Rosa', 'vermelho': 'Vermelho Alerta', 'amarelo': 'Amarelo Energia', 'laranja': 'Laranja Criativo', 'cinza': 'Cinza Monocromático' };
     return `CORES DO SITE: A paleta principal de cores deve ser baseada em: ${mapaCores[cor] || 'Cores neutras'}.`;
   };
 
@@ -703,30 +685,18 @@ export default function Home() {
 
   const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
-    if (uploadedImages.length === 0 && !content) {
-        (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error');
-        return;
-    }
-
+    if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error'); return; }
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
-
     let promptParts: any[] = [];
     let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos e os parágrafos deve ser exato. Respeite as regras restritas do sistema.\n\n";
-
-    if (content) {
-        commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`;
-    }
+    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
         commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
-
     promptParts.unshift({ text: commandText });
-
     const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use espaçamentos precisos, tipografia legível e cores consistentes.`;
-
     const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     if (data) processarRespostaDOM(data);
   };
@@ -734,10 +704,7 @@ export default function Home() {
   function processarRespostaDOM(data: any) {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { 
-          setHistoricoCodigo(prev => [...prev, codEl.value]);
-          codEl.value = purificarHTML(data.html); 
-      }
+      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
       if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
       (window as any).showNotification(`Pronto! Operação concluída com sucesso.`, 'success');
       if (modoInspetor) toggleInspetor(); 
@@ -755,46 +722,28 @@ export default function Home() {
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
-      
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
-      let orientation = 'landscape'; 
-      let w = 1280, h = 720;
-      
+      let orientation = 'landscape'; let w = 1280, h = 720;
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
-
       let termoContexto = elementoSelecionado.text || productContent || "business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
       try {
           const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
-          const iaRes = await fetch('/api/gerar', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false })
-          });
+          const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false }) });
           const iaData = await iaRes.json();
           let keywordFinal = "professional business";
-          
           if(iaData && iaData.html) {
-              try {
-                  const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim());
-                  if (kwJson.keyword) keywordFinal = kwJson.keyword;
-              } catch(e) {}
+              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
           }
-
           const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
           const data = await res.json();
-          
-          if(data && data.url) { 
-              atualizarElemento(isBackground ? 'bgImage' : 'src', data.url);
-              (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
-          } else {
-              throw new Error("API não retornou foto");
-          }
+          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
+          } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
           const fallback = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=${w}&q=80`;
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback);
-          (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
 
@@ -825,33 +774,17 @@ export default function Home() {
   };
 
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-        (window as any).showNotification('Por favor, envie apenas arquivos de imagem.', 'error');
-        return;
-    }
-    
+    if (!file.type.startsWith('image/')) { (window as any).showNotification('Por favor, envie apenas arquivos de imagem.', 'error'); return; }
     const reader = new FileReader();
     reader.onload = (e: any) => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            let w = img.width;
-            let h = img.height;
-            const maxDim = 1400; 
-
-            if (w > maxDim || h > maxDim) {
-                if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
-                else { w = Math.round((w * maxDim) / h); h = maxDim; }
-            }
-
+            let w = img.width; let h = img.height; const maxDim = 1400; 
+            if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
             canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, w, h);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                const base64Data = dataUrl.split(',')[1];
-                setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]);
-            }
+            if (ctx) { ctx.drawImage(img, 0, 0, w, h); const dataUrl = canvas.toDataURL('image/jpeg', 0.8); const base64Data = dataUrl.split(',')[1]; setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]); }
         };
         img.src = e.target.result;
     };
@@ -866,11 +799,8 @@ export default function Home() {
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].kind === 'file' && items[i].type.startsWith('image/')) processFile(items[i].getAsFile()!);
-      }
+      const items = e.clipboardData?.items; if (!items) return;
+      for (let i = 0; i < items.length; i++) { if (items[i].kind === 'file' && items[i].type.startsWith('image/')) processFile(items[i].getAsFile()!); }
     };
     document.body.addEventListener('paste', handlePaste);
     return () => document.body.removeEventListener('paste', handlePaste);
@@ -887,15 +817,12 @@ export default function Home() {
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast'); if(exist) exist.remove();
       const div = document.createElement('div'); div.id = 'custom-toast';
-      
       div.className = type === 'error' 
       ? `fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-start gap-3 text-sm font-semibold max-w-lg w-full break-words` 
       : `fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-center gap-3 text-sm font-semibold`;
-      
       div.innerHTML = type === 'error' 
       ? `<i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-lg shrink-0"></i> <span class="flex-1">${msg}</span>` 
       : `<i class="fas fa-check-circle text-emerald-400 text-lg shrink-0"></i> <span>${msg}</span>`;
-      
       document.body.appendChild(div);
       setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 4000); }, 4000);
     };
@@ -915,9 +842,7 @@ export default function Home() {
     (window as any).handlePublicarSite = async () => {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!htmlContent) { (window as any).showNotification('Você precisa criar um site primeiro.', 'error'); return; }
-      
       let cleanHtml = purificarHTML(htmlContent);
-
       if (siteEditando) { await supabase.from('sites_gerados').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Seu site foi atualizado na internet!', 'success'); return; }
       const nome = prompt('Qual será o nome do seu site? (Vai aparecer no Link):'); if (!nome) return; 
       let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
@@ -1034,7 +959,6 @@ export default function Home() {
                                               <i className="fas fa-level-up-alt mr-1"></i> Pai
                                           </button>
                                           
-                                          {/* BOTOES DE AÇÃO RÁPIDA: DUPLICAR E EXCLUIR */}
                                           <button onClick={duplicarElementoSelecionado} className="text-[9px] font-bold text-blue-600 hover:text-blue-800 transition flex items-center bg-blue-50 border border-blue-200 hover:border-blue-400 px-2 py-1 rounded shadow-sm" title="Clonar Elemento">
                                               <i className="fas fa-copy"></i>
                                           </button>
@@ -1045,7 +969,6 @@ export default function Home() {
                                   </div>
                               </div>
 
-                              {/* NOVO: ADICIONAR ELEMENTOS DENTRO OU ABAIXO */}
                               <div className="panel-section bg-slate-50/50 border-t border-slate-100">
                                   <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo ou Dentro)</label>
                                   <div className="flex gap-2">
@@ -1055,9 +978,16 @@ export default function Home() {
                                   </div>
                               </div>
 
+                              {/* PAINEL GLOBAL DE LINKS */}
+                              <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
+                                  <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Inserir Link no Elemento</label>
+                                  <input type="text" placeholder="Cole o link (Deixe vazio para remover)" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
+                                  <p className="text-[9px] text-emerald-600 mt-1.5 leading-relaxed">Você pode tornar textos, botões ou caixas inteiras clicáveis.</p>
+                              </div>
+
                               {elementoSelecionado.tagName === 'img' ? (
                                   <>
-                                      <div className="panel-section border-t border-slate-100">
+                                      <div className="panel-section border-t border-slate-100 mt-2">
                                           <label className="input-label">Mudar Imagem</label>
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
                                           <div className="flex gap-2">
@@ -1066,7 +996,6 @@ export default function Home() {
                                           </div>
                                       </div>
                                       
-                                      {/* ALINHAMENTO DA IMAGEM */}
                                       <div className="panel-section border-t border-slate-100">
                                           <label className="input-label mb-2 text-[9px]">Mover Imagem</label>
                                           <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
@@ -1094,14 +1023,11 @@ export default function Home() {
                                           </div>
                                           <div>
                                               <label className="input-label">Bordas da Foto</label>
-                                              <select onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
-                                                  <option value="rounded-none shadow-none">Retas (Simples)</option>
-                                                  <option value="rounded-md shadow-md">Suaves com Sombra</option>
-                                                  <option value="rounded-xl shadow-xl">Arredondadas (Premium)</option>
-                                                  <option value="rounded-full shadow-lg">Círculo Perfeito</option>
-                                                  <option value="rounded-xl shadow-2xl shadow-indigo-500/50">Brilho Colorido (Glow)</option>
-                                                  <option value="rounded-lg border-4 border-white shadow-xl">Cartão Polaroid</option>
-                                                  <option value="rounded-full border-4 border-emerald-500 shadow-lg">Círculo com Borda (Status)</option>
+                                              <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
+                                                  <option value="none">Retas (Simples)</option>
+                                                  <option value="rounded-md">Suaves</option>
+                                                  <option value="rounded-xl">Arredondadas</option>
+                                                  <option value="rounded-full">Círculo Perfeito</option>
                                               </select>
                                           </div>
                                       </div>
@@ -1110,18 +1036,10 @@ export default function Home() {
                                           <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
                                           <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
-
                                   </>
                               ) : (
                                   <>
-                                      {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button') && (
-                                          <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
-                                              <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Para onde este botão leva?</label>
-                                              <input type="text" placeholder="Cole o link aqui (ex: whatsapp, instagram, etc)" value={elementoSelecionado.href} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
-                                          </div>
-                                      )}
-
-                                      <div className="panel-section border-t border-slate-100">
+                                      <div className="panel-section border-t border-slate-100 mt-2">
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800 mb-4">
                                                   <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
@@ -1154,8 +1072,67 @@ export default function Home() {
                                               </div>
                                           </div>
                                       </div>
+
+                                      {/* NOVO: FORMATADOR DE BOTÕES, LINKS E CAIXAS */}
+                                      {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button' || elementoSelecionado.tagName === 'div') && (
+                                          <div className="panel-section border-t border-slate-100 bg-slate-50/30">
+                                              <label className="input-label mb-2"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Tamanho e Estrutura</label>
+                                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                                  <div>
+                                                      <label className="text-[9px] text-slate-500 mb-1 block">Largura (Padding Lateral)</label>
+                                                      <select value={elementoSelecionado.paddingX || 'none'} onChange={(e) => atualizarElemento('paddingX', e.target.value)} className="input-standard">
+                                                          <option value="none">Padrão</option>
+                                                          <option value="px-4">Pequena</option>
+                                                          <option value="px-8">Média</option>
+                                                          <option value="px-12">Grande</option>
+                                                          <option value="w-full text-center">Largura Total da Tela</option>
+                                                      </select>
+                                                  </div>
+                                                  <div>
+                                                      <label className="text-[9px] text-slate-500 mb-1 block">Altura (Padding Vertical)</label>
+                                                      <select value={elementoSelecionado.paddingY || 'none'} onChange={(e) => atualizarElemento('paddingY', e.target.value)} className="input-standard">
+                                                          <option value="none">Padrão</option>
+                                                          <option value="py-2">Fino</option>
+                                                          <option value="py-4">Médio</option>
+                                                          <option value="py-6">Grosso</option>
+                                                      </select>
+                                                  </div>
+                                              </div>
+                                              
+                                              <label className="input-label mb-2"><i className="fas fa-shapes text-slate-400"></i> Estilo e Profundidade</label>
+                                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                                  <div>
+                                                      <label className="text-[9px] text-slate-500 mb-1 block">Arredondamento</label>
+                                                      <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('rounded', e.target.value)} className="input-standard">
+                                                          <option value="none">Reto (Quadrado)</option>
+                                                          <option value="rounded-md">Levemente Redondo</option>
+                                                          <option value="rounded-xl">Arredondado Padrão</option>
+                                                          <option value="rounded-full">Pílula (Total)</option>
+                                                      </select>
+                                                  </div>
+                                                  <div>
+                                                      <label className="text-[9px] text-slate-500 mb-1 block">Espessura da Borda</label>
+                                                      <select value={elementoSelecionado.borderW || 'none'} onChange={(e) => atualizarElemento('borderW', e.target.value)} className="input-standard">
+                                                          <option value="none">Sem Borda</option>
+                                                          <option value="border-2">Borda Fina</option>
+                                                          <option value="border-4">Borda Grossa</option>
+                                                      </select>
+                                                  </div>
+                                              </div>
+
+                                              <div>
+                                                  <label className="text-[9px] text-slate-500 mb-1 block">Sombra</label>
+                                                  <select value={elementoSelecionado.shadow || 'none'} onChange={(e) => atualizarElemento('shadow', e.target.value)} className="input-standard">
+                                                      <option value="none">Sem Sombra (Plano)</option>
+                                                      <option value="shadow-md">Sombra Suave</option>
+                                                      <option value="shadow-xl">Sombra Projetada (Flutuante)</option>
+                                                      <option value="shadow-2xl shadow-indigo-500/50">Brilho Colorido (Glow Elegante)</option>
+                                                  </select>
+                                              </div>
+                                          </div>
+                                      )}
                                       
-                                      <div className="panel-section grid grid-cols-2 gap-5">
+                                      <div className="panel-section grid grid-cols-2 gap-5 border-t border-slate-100">
                                           <div>
                                               <label className="input-label flex justify-between">Tamanho da Letra <span>{elementoSelecionado.fontSize}px</span></label>
                                               <input type="range" min="10" max="120" value={elementoSelecionado.fontSize || 16} onChange={(e) => atualizarElemento('fontSize', parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-3" />
@@ -1166,18 +1143,22 @@ export default function Home() {
                                                   <input type="color" value={elementoSelecionado.bgColor || '#ffffff'} onChange={(e) => atualizarElemento('bgColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" />
                                               </div>
                                               <div className="flex justify-between items-center">
+                                                  <label className="text-[10px] font-bold text-slate-600 uppercase">Cor da Borda</label>
+                                                  <input type="color" value={elementoSelecionado.borderColor || '#cccccc'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" />
+                                              </div>
+                                              <div className="flex justify-between items-center">
                                                   <label className="text-[10px] font-bold text-slate-600 uppercase">Cor da Letra</label>
                                                   <input type="color" value={elementoSelecionado.textColor || '#000000'} onChange={(e) => atualizarElemento('textColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" />
                                               </div>
                                           </div>
                                       </div>
 
-                                      <div className="panel-section">
+                                      <div className="panel-section border-t border-slate-100">
                                           <label className="input-label flex justify-between">Opacidade da Cor (Película) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
                                           <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
 
-                                      <div className="panel-section">
+                                      <div className="panel-section border-t border-slate-100">
                                           <label className="input-label flex items-center gap-1.5"><i className="fas fa-image text-slate-400"></i> Imagem de Fundo (Seção)</label>
                                           <div className="flex gap-2 mb-2">
                                               <input type="text" placeholder="Link direto da imagem..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 text-[10px]" />
@@ -1188,13 +1169,16 @@ export default function Home() {
                                           </div>
                                       </div>
 
-                                      <div className="panel-section bg-slate-50/50">
+                                      <div className="panel-section bg-slate-50/50 border-t border-slate-100">
                                           <label className="input-label">Efeitos Interativos (Ao passar o mouse)</label>
                                           <select onChange={(e) => atualizarElemento('animationClass', e.target.value)} className="input-standard font-medium">
-                                              <option value="">Sem Efeito</option>
-                                              <option value="hover:scale-105 transition-transform duration-300">Dar Zoom (Crescer)</option>
-                                              <option value="hover:-translate-y-2 transition-transform duration-300">Levantar Levemente</option>
-                                              <option value="animate-pulse">Pulsar sem parar (Atenção)</option>
+                                              <option value="">Nenhum</option>
+                                              <option value="hover:scale-105 transition-transform duration-300">Aumentar Suavemente (Zoom In)</option>
+                                              <option value="hover:-translate-y-2 transition-transform duration-300">Levantar Levemente (Flutuar)</option>
+                                              <option value="hover:shadow-2xl hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all duration-300">Levantar com Brilho Colorido</option>
+                                              <option value="hover:rotate-3 transition-transform duration-300">Inclinação Dinâmica</option>
+                                              <option value="animate-pulse">Pulsar sem parar (Atenção Máxima)</option>
+                                              <option value="animate-bounce">Balançar (Tremidinha)</option>
                                           </select>
                                       </div>
                                   </>
