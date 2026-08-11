@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO, SANFONAS + DELETAR ELEMENTO
+// SCRIPT DO IFRAME: BLINDAGEM, OPACIDADE, ALINHAMENTO, SANFONAS, DELETAR, DUPLICAR E ADICIONAR ELEMENTOS
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -74,9 +74,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
 
         let bAlign = '';
-        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center')) bAlign = 'center';
-        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end')) bAlign = 'right';
-        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start')) bAlign = 'left';
+        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-self-center')) bAlign = 'center';
+        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-self-end')) bAlign = 'right';
+        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-self-start')) bAlign = 'left';
 
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
@@ -131,6 +131,51 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 el.remove();
                 elSelecionado = null;
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'DUPLICATE_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let clone = el.cloneNode(true);
+                // Regenerar IDs para não conflitar
+                clone.id = 'node_' + Math.random().toString(36).substr(2,9);
+                clone.querySelectorAll('[id]').forEach(child => {
+                    child.id = 'node_' + Math.random().toString(36).substr(2,9);
+                });
+                // Remove outline temporário do clone se existir
+                clone.style.outline = '';
+                clone.style.outlineOffset = '';
+                
+                el.parentNode.insertBefore(clone, el.nextSibling);
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'ADD_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let newHtml = '';
+                let newId = 'node_' + Math.random().toString(36).substr(2,9);
+                
+                if(event.data.elementType === 'image') {
+                    newHtml = \`<img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Nova Imagem" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                } else if(event.data.elementType === 'text') {
+                    newHtml = \`<p class="text-slate-600 my-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. Clique aqui para selecionar e alterar o conteúdo pelo painel lateral.</p>\`;
+                } else if(event.data.elementType === 'button') {
+                    newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
+                }
+                
+                // Se a caixa selecionada for um container grande, adiciona DENTRO no final.
+                // Se for um texto ou imagem pequeno, adiciona LOGO ABAIXO dele.
+                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
+                
+                if (isContainer) {
+                    el.insertAdjacentHTML('beforeend', newHtml);
+                } else {
+                    el.insertAdjacentHTML('afterend', newHtml);
+                }
                 sendCleanHtml();
             }
         }
@@ -210,11 +255,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.textAlign) el.classList.add(event.data.textAlign);
                 }
 
+                // ALINHAMENTO TURBO: Aborda todas as frentes (Block, Flex e Grid)
                 if(event.data.boxAlign !== undefined) {
-                    el.classList.remove('mx-auto', 'ml-auto', 'mr-auto', 'self-center', 'self-start', 'self-end');
-                    if(event.data.boxAlign === 'center') el.classList.add('mx-auto', 'self-center');
-                    if(event.data.boxAlign === 'right') el.classList.add('ml-auto', 'self-end');
-                    if(event.data.boxAlign === 'left') el.classList.add('mr-auto', 'self-start');
+                    el.classList.remove('mx-auto', 'ml-auto', 'mr-auto', 'self-center', 'self-start', 'self-end', 'justify-self-center', 'justify-self-start', 'justify-self-end');
+                    if(event.data.boxAlign === 'center') el.classList.add('mx-auto', 'self-center', 'justify-self-center');
+                    if(event.data.boxAlign === 'right') el.classList.add('ml-auto', 'self-end', 'justify-self-end');
+                    if(event.data.boxAlign === 'left') el.classList.add('mr-auto', 'self-start', 'justify-self-start');
                 }
 
                 if(event.data.animationClass !== undefined) {
@@ -415,6 +461,20 @@ export default function Home() {
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: 'DELETE_ELEMENT', id: elementoSelecionado.id }, '*');
       setElementoSelecionado(null);
+  };
+
+  const duplicarElementoSelecionado = () => {
+      if(!elementoSelecionado) return;
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: 'DUPLICATE_ELEMENT', id: elementoSelecionado.id }, '*');
+      (window as any).showNotification("Elemento duplicado com sucesso!", "success");
+  };
+
+  const adicionarNovoElemento = (tipo: string) => {
+      if(!elementoSelecionado) return;
+      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      iframe.contentWindow?.postMessage({ type: 'ADD_ELEMENT', id: elementoSelecionado.id, elementType: tipo }, '*');
+      (window as any).showNotification("Novo elemento inserido!", "success");
   };
 
   const desfazerCodigo = () => {
@@ -965,7 +1025,7 @@ export default function Home() {
                           <div className="pb-10 bg-white">
                               <div className="panel-section bg-slate-50/50">
                                   <div className="flex justify-between items-center">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
                                           <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md shadow-sm">{elementoSelecionado.tagName}</span>
                                           <button onClick={() => {
                                               const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -974,19 +1034,30 @@ export default function Home() {
                                               <i className="fas fa-level-up-alt mr-1"></i> Pai
                                           </button>
                                           
-                                          {/* BOTÃO DE DELETAR O ELEMENTO SELECIONADO */}
-                                          <button onClick={deletarElementoSelecionado} className="text-[9px] font-bold text-red-500 hover:text-red-700 transition flex items-center bg-white border border-red-100 hover:border-red-300 px-2 py-1 rounded shadow-sm">
-                                              <i className="fas fa-trash-alt mr-1"></i> Excluir
+                                          {/* BOTOES DE AÇÃO RÁPIDA: DUPLICAR E EXCLUIR */}
+                                          <button onClick={duplicarElementoSelecionado} className="text-[9px] font-bold text-blue-600 hover:text-blue-800 transition flex items-center bg-blue-50 border border-blue-200 hover:border-blue-400 px-2 py-1 rounded shadow-sm" title="Clonar Elemento">
+                                              <i className="fas fa-copy"></i>
                                           </button>
-
+                                          <button onClick={deletarElementoSelecionado} className="text-[9px] font-bold text-red-500 hover:text-red-700 transition flex items-center bg-red-50 border border-red-200 hover:border-red-400 px-2 py-1 rounded shadow-sm" title="Excluir Elemento">
+                                              <i className="fas fa-trash-alt"></i>
+                                          </button>
                                       </div>
-                                      <span className="text-[9px] font-bold text-slate-400">ID: {elementoSelecionado.id.substring(0,6)}</span>
+                                  </div>
+                              </div>
+
+                              {/* NOVO: ADICIONAR ELEMENTOS DENTRO OU ABAIXO */}
+                              <div className="panel-section bg-slate-50/50 border-t border-slate-100">
+                                  <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo ou Dentro)</label>
+                                  <div className="flex gap-2">
+                                      <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
+                                      <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
+                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                               </div>
 
                               {elementoSelecionado.tagName === 'img' ? (
                                   <>
-                                      <div className="panel-section">
+                                      <div className="panel-section border-t border-slate-100">
                                           <label className="input-label">Mudar Imagem</label>
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
                                           <div className="flex gap-2">
@@ -994,6 +1065,17 @@ export default function Home() {
                                               <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition"><i className="fas fa-upload mr-1.5"></i> Do Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
                                           </div>
                                       </div>
+                                      
+                                      {/* ALINHAMENTO DA IMAGEM */}
+                                      <div className="panel-section border-t border-slate-100">
+                                          <label className="input-label mb-2 text-[9px]">Mover Imagem</label>
+                                          <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
+                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Esquerda"><i className="fas fa-chevron-left"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centralizar Caixa"><i className="fas fa-minus"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Direita"><i className="fas fa-chevron-right"></i></button>
+                                          </div>
+                                      </div>
+
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
                                               <label className="input-label">Proporção (Formato)</label>
@@ -1039,7 +1121,7 @@ export default function Home() {
                                           </div>
                                       )}
 
-                                      <div className="panel-section">
+                                      <div className="panel-section border-t border-slate-100">
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800 mb-4">
                                                   <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
