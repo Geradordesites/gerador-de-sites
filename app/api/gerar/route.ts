@@ -4,7 +4,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement } = body;
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, useGroq } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -96,7 +96,8 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
     let htmlCode = '';
     let provedorTextoUsado = 'Google Gemini (Pro)';
 
-    const usarGroq = isElementRefinement && !body.isGeminiForced && !isSiteRefinement;
+    // O Gemini é o padrão. O Groq só será ativado se o sistema pedir explicitamente (useGroq: true)
+const usarGroq = useGroq === true;
 
     if (!usarGroq) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -111,7 +112,6 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
             body: JSON.stringify({ 
                 model: "llama-3.3-70b-versatile", 
                 messages: [{ role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt }], 
-                response_format: { type: "json_object" }, 
                 temperature: 0.7,
                 max_tokens: 7500 // Garante que o Groq não corte textos longos
             })

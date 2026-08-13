@@ -666,6 +666,7 @@ export default function Home() {
   const [seoData, setSeoData] = useState({ title: 'Meu Site Incrível', description: 'Descrição focada em conversão para indexar.', headScripts: '', bodyScripts: '' });
 
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
+  const [textEngine, setTextEngine] = useState<'gemini' | 'groq'>('gemini');
   const [heroLayout, setHeroLayout] = useState('auto');
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
@@ -894,7 +895,7 @@ export default function Home() {
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], isSiteRefinement: true, isGeminiForced: true })
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], isSiteRefinement: true, useGroq: textEngine === 'groq' })
         });
         const responseText = await response.text();
         let data;
@@ -910,7 +911,7 @@ export default function Home() {
     setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement }) });
+      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, useGroq: textEngine === 'groq' }) });
       const responseText = await response.text();
       let data;
       try { data = JSON.parse(responseText); } catch (err) { throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial."); }
@@ -1010,7 +1011,7 @@ export default function Home() {
 
       try {
           const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
-          const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false }) });
+          const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, useGroq: textEngine === 'groq' }) });
           const iaData = await iaRes.json();
           let keywordFinal = "professional business";
           if(iaData && iaData.html) {
@@ -1576,78 +1577,23 @@ export default function Home() {
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
                       
                       {/* NOVAS ABAS DE NAVEGAÇÃO */}
-                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-                          <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
-                          <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-cubes mr-1.5"></i> Blocos Prontos</button>
-                      </div>
+<div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
+    <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
+    <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-pen mr-1.5"></i> Modificar</button>
+</div>
 
-                      {abaAtiva === 'blocos' ? (
-                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                              <div>
-                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-layer-group"></i></span> UI Kit de Alta Conversão</h3>
-                                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">Adicione seções completas prontas para converter. Elas serão inseridas <b>abaixo do elemento</b> que você estiver selecionando na tela (ou no final da página, se não houver seleção).</p>
-                                  
-                                  <div className="space-y-4">
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">FAQ (Perguntas)</p>
-                                              <p className="text-[10px] text-slate-500">Sanfonas interativas de dúvidas</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('faq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Garantia 7 Dias</p>
-                                              <p className="text-[10px] text-slate-500">Quebra de objeção com foto</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('garantia')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Depoimentos (Éticos)</p>
-                                              <p className="text-[10px] text-slate-500">Cards para provas sociais reais</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('depoimentos')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Preço (Checkout)</p>
-                                              <p className="text-[10px] text-slate-500">Plano único de alta conversão</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('precoDestaque')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Autor (Foto Esquerda)</p>
-                                              <p className="text-[10px] text-slate-500">Apresentação biográfica</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('autorEsq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Autor (Foto Direita)</p>
-                                              <p className="text-[10px] text-slate-500">Apresentação biográfica</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('autorDir')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-                                  </div>
-
-                                  <div className="mt-8 pt-6 border-t border-slate-100">
-                                      <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-code-branch"></i></span> Refatoração Global (IA)</h3>
-                                      <p className="text-xs text-slate-500 mb-4 leading-relaxed">Deixe a IA modificar toda a estrutura para você (ex: Adicionar rodapé, trocar todas as cores).</p>
-                                      <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Crie um botão de WhatsApp flutuante no canto da tela..."></textarea>
-                                      <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                          <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar Modificação
-                                      </button>
-                                  </div>
-                              </div>
-                          </div>
-                      ) : (
+{abaAtiva === 'blocos' ? (
+    <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+        <div>
+            <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-wand-magic-sparkles"></i></span> Modificar Site (IA)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Descreva o que deseja alterar no site (ex: "Adicione um rodapé", "Mude todas as cores para vermelho"). A IA fará o trabalho pesado.</p>
+            <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Crie um botão de WhatsApp flutuante no canto da tela..."></textarea>
+            <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar Modificação
+            </button>
+        </div>
+    </div>
+) : (
                           <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo</h3>
@@ -1705,6 +1651,13 @@ export default function Home() {
                                               <option value="agressivo">Venda Agressiva (Lançamentos)</option>
                                               <option value="terapia">Acolhedor e Suave (Saúde)</option>
                                           </select>
+                                          <div className="pt-4 mt-4 border-t border-slate-100">
+    <label className="input-label mb-2">Motor de Inteligência (IA)</label>
+    <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700">
+        <option value="gemini">Google Gemini (Qualidade Alta)</option>
+        <option value="groq">Groq Llama 3 (Ultra Rápido)</option>
+    </select>
+</div>
                                       </div>
                                   </div>
                               </div>
