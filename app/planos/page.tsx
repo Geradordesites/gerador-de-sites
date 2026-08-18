@@ -89,9 +89,9 @@ export default function PlanosPage() {
             </div>
 
             <ul className="space-y-4 mb-8 flex-1">
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Gerador de Sites e E-books</li>
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Imagens Fotorealistas (FLUX)</li>
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Acesso ao Editor Visual</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Gerador de Sites e Landing Pages</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Imagens Fotorealistas exclusivas (FLUX)</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Acesso total ao Editor Visual</li>
             </ul>
 
             <button 
@@ -129,7 +129,7 @@ export default function PlanosPage() {
             <ul className="space-y-4 mb-8 flex-1">
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Tudo do plano Iniciante</li>
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Créditos suficientes para ~18 sites</li>
-              <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Refinamento de Copy com IA</li>
+              <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Refinamento de Copy (Textos) com IA</li>
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Suporte Prioritário</li>
             </ul>
 
@@ -164,7 +164,7 @@ export default function PlanosPage() {
             <ul className="space-y-4 mb-8 flex-1">
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Tudo do plano Profissional</li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Créditos suficientes para ~60 sites</li>
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Alta escala de imagens FLUX</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Alta escala de geração de imagens</li>
             </ul>
 
             <button 
