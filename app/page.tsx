@@ -643,12 +643,14 @@ export default function Home() {
   const [apiKey, setApiKey] = useState('');
   const [userByok, setUserByok] = useState(false);
   const [userId, setUserId] = useState('');
+  const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
     const carregarConfiguracoesESessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUserId(session.user.id);
+        setUserEmail(session.user.email || '');
         const { data: profile } = await supabase.from('profiles').select('user_api_key, allow_byok').eq('id', session.user.id).single();
         if (profile) {
             if (profile.user_api_key) setApiKey(profile.user_api_key);
@@ -931,7 +933,8 @@ export default function Home() {
                 promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
                 isSiteRefinement: true, 
                 clientApiKey: apiKey,
-                userId: userId
+                userId: userId,
+                userEmail: userEmail
             })
         });
         const responseText = await response.text();
@@ -958,7 +961,8 @@ export default function Home() {
               dinamica: dinamicaStyle, 
               isElementRefinement,
               clientApiKey: apiKey,
-              userId: userId
+              userId: userId,
+              userEmail: userEmail
           }) 
       });
       const responseText = await response.text();
@@ -1070,7 +1074,8 @@ export default function Home() {
                   promptParts: [{text: jsonPrompt}], 
                   isElementRefinement: true,
                   clientApiKey: apiKey,
-                  userId: userId 
+                  userId: userId,
+                  userEmail: userEmail
               }) 
           });
           const iaData = await iaRes.json();
