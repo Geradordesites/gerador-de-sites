@@ -11,12 +11,8 @@ const MODELOS_GEMINI = [
   "gemini-3-flash-preview"
 ];
 
-// TABELA DE PREÇOS / CUSTO DE CRÉDITOS POR AÇÃO
-const CUSTOS = {
-    GERACAO_COMPLETA: 20,   // Criar site do zero
-    REFINAMENTO_GLOBAL: 10, // Modificar estrutura global
-    REFINAMENTO_ELEMENTO: 2 // Modificar elemento ou bloco isolado
-};
+// CUSTO FIXO ÚNICO PARA TODAS AS OPERAÇÕES (Geração ou Edição)
+const CUSTO_POR_ACAO = 10; 
 
 export async function POST(req: Request) {
   try {
@@ -87,8 +83,27 @@ O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:
 ${regraImagens}
 ${instrucaoDinamica}
 
-=== COMPLIANCE: RODAPÉ JURÍDICO EM SANFONA ===
-Sempre finalize o </body> com um rodapé estruturado profissionalmente utilizando a mesma identidade visual, paleta de cores e harmonia estética do restante do site gerado (nunca utilize cores fixas que destoem do tema). Ele deve conter obrigatoriamente as sanfonas (details/summary) interativas contendo Termos de Uso e Política de Privacidade reais e detalhados.
+=== COMPLIANCE: RODAPÉ JURÍDICO E CORES HARMONIOSAS ===
+🚨 REGRA VITAL DE CORES: O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de texto do restante do site. É ESTRITAMENTE PROIBIDO gerar rodapés neutros, azuis ou escuros se o site tiver outra identidade. Mantenha a harmonia de 100%.
+
+Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta do site):
+<footer class="w-full font-sans py-16 mt-12 border-t">
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-10"><h3 class="text-xl font-bold mb-4">Informações Legais Importantes</h3><p class="text-sm">Clique nos links abaixo para ler a íntegra de cada política.</p></div>
+        <div class="space-y-4 max-w-4xl mx-auto mb-12" id="rodape-sanfonas">
+            <details id="det-privacidade" class="rounded-2xl border transition-colors cursor-pointer" onclick="const e = document.getElementById('det-termos'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
+                <summary class="p-6 font-bold text-lg outline-none select-none flex items-center justify-between">Política de Privacidade <i class="fas fa-chevron-down text-sm opacity-60"></i></summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t opacity-90"><p class="mb-4"><strong>1. Coleta e Uso de Dados:</strong> Em conformidade com a LGPD, coletamos informações de navegação exclusivamente para otimizar sua experiência neste site e melhorar o direcionamento dos nossos anúncios.</p><p class="mb-4"><strong>2. Segurança:</strong> Seus dados de pagamento (se houver transação) são processados diretamente pelas plataformas de pagamento certificadas. Nós não temos acesso aos dados do seu cartão.</p><p><strong>3. Contato:</strong> Para requisições de exclusão de dados ou dúvidas legais, utilize nosso e-mail oficial de suporte.</p></div>
+            </details>
+            <details id="det-termos" class="rounded-2xl border transition-colors cursor-pointer" onclick="const e = document.getElementById('det-privacidade'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
+                <summary class="p-6 font-bold text-lg outline-none select-none flex items-center justify-between">Termos de Uso <i class="fas fa-chevron-down text-sm opacity-60"></i></summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t opacity-90"><p class="mb-4"><strong>1. Isenção de Responsabilidade:</strong> Os resultados obtidos dependem do esforço individual de cada usuário e da correta aplicação do método. Casos de sucesso relatados não configuram garantia de ganhos idênticos.</p><p class="mb-4"><strong>2. Redes Sociais:</strong> Este portal não é endossado, administrado ou patrocinado por plataformas de terceiros.</p><p><strong>3. Direitos Autorais:</strong> É terminantemente proibida a cópia, pirataria, rateio ou distribuição ilegal de qualquer conteúdo desta página sob pena de processos judiciais severos.</p></div>
+            </details>
+        </div>
+        <div class="text-center pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4"><p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p><div class="flex gap-4 text-xl opacity-80"><i class="fab fa-cc-visa"></i><i class="fab fa-cc-mastercard"></i><i class="fas fa-lock"></i></div></div>
+    </div>
+    <script>document.querySelectorAll('#rodape-sanfonas summary').forEach(s => { s.style.listStyle = 'none'; if(s.childNodes[0] && s.childNodes[0].nodeName === "#text" && s.childNodes[0].nodeValue.includes('▶')) s.childNodes[0].nodeValue = ''; });</script>
+</footer>
 `;
     }
 
@@ -116,35 +131,27 @@ Sempre finalize o </body> com um rodapé estruturado profissionalmente utilizand
         }
     }
 
-    // DEFINIÇÃO DO CUSTO DA AÇÃO ATUAL
-    let custoOperacao = CUSTOS.GERACAO_COMPLETA;
-    if (isSiteRefinement) custoOperacao = CUSTOS.REFINAMENTO_GLOBAL;
-    else if (isElementRefinement || isBlockRefinement) custoOperacao = CUSTOS.REFINAMENTO_ELEMENTO;
-
     const chavePropriaAutorizada = isByokEnabled || userByokAllowed;
     let chaveParaUsar = "";
     let isUsingCredits = false;
 
+    // LÓGICA DE COBRANÇA FIXA (10 CRÉDITOS)
     if (isAdmin) {
-        // ADMIN: Usa sempre a chave pessoal de testes de graça
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
-        // MODO MENSALIDADE (CHAVE PRÓPRIA DO CLIENTE): Checa validade e NÃO gasta créditos
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
     } else if (allowAdminTestKey) {
-        // MODO TESTE ADMIN: Usa a chave admin do sistema, mas DESCONTA os créditos do cliente
-        if (userCredits < custoOperacao) {
-            throw new Error(`Saldo insuficiente: Esta operação requer ${custoOperacao} créditos. Você tem apenas ${userCredits}.`);
+        if (userCredits < CUSTO_POR_ACAO) {
+            throw new Error(`Saldo insuficiente: Cada operação consome ${CUSTO_POR_ACAO} créditos. Você tem apenas ${userCredits}.`);
         }
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else {
-        // MODO PAGO OFICIAL (CRÉDITOS COM CHAVE CENTRAL PAGA)
-        if (userCredits < custoOperacao) {
-            throw new Error(`Saldo insuficiente: Esta operação requer ${custoOperacao} créditos. Você tem apenas ${userCredits}. Adquira mais créditos.`);
+        if (userCredits < CUSTO_POR_ACAO) {
+            throw new Error(`Saldo insuficiente: Cada operação consome ${CUSTO_POR_ACAO} créditos. Você tem apenas ${userCredits}. Adquira mais créditos.`);
         }
         isUsingCredits = true;
         if (isAdminKeyEnabled && process.env.GEMINI_API_KEY_CLIENTES) {
@@ -192,13 +199,13 @@ Sempre finalize o </body> com um rodapé estruturado profissionalmente utilizand
     }
 
     if (!geracaoSucesso) {
-        throw new Error("Nossos motores de IA estão temporariamente congestionados devido a alta demanda. Aguarde 30 segundos e tente novamente.");
+        throw new Error("Nossos motores de IA estão temporariamente congestionados ou retornaram erro. Tente novamente.");
     }
 
-    // DESCONTO FINANCEIRO DE CRÉDITO VARIÁVEL APÓS SUCESSO
+    // DESCONTO FIXO (10 CRÉDITOS) APÓS SUCESSO COMPROVADO
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try {
-            await supabaseAdmin.from('profiles').update({ credits: userCredits - custoOperacao }).eq('id', userId);
+            await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId);
         } catch (e) { console.error("Falha ao descontar crédito", e); }
     }
 
