@@ -15,10 +15,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // RECEBE A CHAVE DO CLIENTE E O ID DO USUÁRIO
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId } = body;
+    // RECEBE OS DADOS, INCLUINDO O EMAIL PARA SABER SE É VOCÊ
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
+    const MEU_EMAIL_ADMIN = 'josevg10@gmail.com';
+    const isAdmin = userEmail === MEU_EMAIL_ADMIN;
 
     const safetySettings = [
       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -140,7 +142,7 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
-    // === LÓGICA DE AUTORIZAÇÃO DE CHAVES HÍBRIDA ===
+    // === NOVA LÓGICA DE SEPARAÇÃO ADMIN VS CLIENTES ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     
     // 1. Checa as regras globais
@@ -148,23 +150,31 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
     let isByokEnabled = settings?.byok_enabled ?? true;
     const isAdminKeyEnabled = settings?.admin_paid_key_enabled ?? true;
 
-    // 2. Checa a regra individual do usuário (se houver)
+    // 2. Checa a regra individual do usuário
     let userByokAllowed = false;
     if (userId) {
         const { data: profile } = await supabaseAdmin.from('profiles').select('allow_byok').eq('id', userId).single();
         if (profile && profile.allow_byok) userByokAllowed = true;
     }
 
-    // A Chave Própria é permitida se: O Admin ativou o Global OU se o Admin liberou esse usuário específico!
     const chavePropriaAutorizada = isByokEnabled || userByokAllowed;
-
     let chaveParaUsar = "";
-    if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
-        chaveParaUsar = clientApiKey; // Usa a do cliente
+
+    if (isAdmin) {
+        // SE FOR VOCÊ (ADMIN): Usa sempre a sua chave GEMINI_API_KEY para trabalhar e testar de graça.
+        chaveParaUsar = process.env.GEMINI_API_KEY!;
+    } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
+        // SE FOR CLIENTE (COM CHAVE): Usa a chave que ele colou na tela.
+        chaveParaUsar = clientApiKey;
     } else if (isAdminKeyEnabled) {
-        chaveParaUsar = process.env.GEMINI_API_KEY!; // Usa a sua paga central
+        // SE FOR CLIENTE (SEM CHAVE): O sistema vai tentar usar a chave de clientes paga que você vai criar no futuro.
+        if (process.env.GEMINI_API_KEY_CLIENTES) {
+            chaveParaUsar = process.env.GEMINI_API_KEY_CLIENTES;
+        } else {
+            throw new Error("Geração bloqueada: O Administrador ainda não configurou a API Paga para os clientes. Utilize sua própria chave Gemini para gerar sites.");
+        }
     } else {
-        throw new Error("Geração bloqueada: O uso da API central está desativado e você não configurou (ou não tem permissão para usar) sua própria chave Gemini.");
+        throw new Error("Geração bloqueada: O uso de créditos do sistema está desativado. Insira sua própria chave Gemini.");
     }
 
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
