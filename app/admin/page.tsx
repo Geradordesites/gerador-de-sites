@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Users, Shield, Zap, Key, PlusCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Users, Shield, Zap, Key, PlusCircle, CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
   const [usuarios, setUsuarios] = useState<any[]>([])
   const [config, setConfig] = useState<any>({ byok_enabled: true, admin_paid_key_enabled: true })
+  const [apiLogs, setApiLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [salvandoConfig, setSalvandoConfig] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState(false)
@@ -43,6 +44,7 @@ export default function AdminPage() {
   }
 
   const carregarDadosAdmin = async () => {
+    // Busca usuários
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
@@ -50,6 +52,7 @@ export default function AdminPage() {
 
     if (!error) setUsuarios(profiles || [])
 
+    // Busca configurações globais
     const { data: settings } = await supabase
       .from('system_settings')
       .select('*')
@@ -57,6 +60,15 @@ export default function AdminPage() {
       .single()
 
     if (settings) setConfig(settings)
+
+    // Busca os Logs de Falhas de IA (Últimos 20)
+    const { data: logs } = await supabase
+      .from('api_logs')
+      .select('*')
+      .order('data_hora', { ascending: false })
+      .limit(20)
+    
+    if (logs) setApiLogs(logs)
 
     setLoading(false)
   }
@@ -167,7 +179,7 @@ export default function AdminPage() {
         </div>
 
         {/* TABELA DE CLIENTES */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden mb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <Users className="size-5 text-indigo-600" /> Clientes Cadastrados ({usuarios.length})
@@ -226,6 +238,57 @@ export default function AdminPage() {
                 ))}
                 {usuarios.length === 0 && (
                   <tr><td colSpan={5} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* LOGS DE FALHAS DA API */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <AlertTriangle className="size-5 text-amber-500" /> Relatório de Falhas da IA (Últimos Logs)
+            </h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                  <th className="py-4 px-4 font-bold">Data / Hora</th>
+                  <th className="py-4 px-4 font-bold">Status Final</th>
+                  <th className="py-4 px-4 font-bold">Tentativas / Motivos de Falha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {apiLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-4 whitespace-nowrap text-slate-600 font-medium text-xs">
+                      {new Date(log.data_hora).toLocaleString('pt-BR')}
+                    </td>
+                    
+                    <td className="py-4 px-4">
+                      {log.sucesso_final ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                          Recuperado
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border bg-rose-50 text-rose-700 border-rose-200">
+                          Falha Total
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-4 px-4">
+                      <pre className="bg-slate-100 p-3 rounded-lg text-[10px] text-slate-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto border border-slate-200 custom-scrollbar">
+                        {log.modelos_falhos}
+                      </pre>
+                    </td>
+                  </tr>
+                ))}
+                {apiLogs.length === 0 && (
+                  <tr><td colSpan={3} className="py-16 text-center text-slate-500 font-medium">Nenhum registro de falha recente. A API está rodando 100% lisa.</td></tr>
                 )}
               </tbody>
             </table>
