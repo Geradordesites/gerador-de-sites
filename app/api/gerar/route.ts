@@ -14,8 +14,6 @@ const MODELOS_GEMINI = [
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
-    // RECEBE OS DADOS, INCLUINDO O EMAIL PARA SABER SE É VOCÊ
     const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
@@ -31,7 +29,6 @@ export async function POST(req: Request) {
 
     let temImagem = false;
     let textoDoPrompt = "";
-    
     for (const part of promptParts) {
         if (part.inlineData) temImagem = true;
         if (part.text) textoDoPrompt += part.text + "\n";
@@ -54,7 +51,6 @@ Tamanhos Obrigatórios de Resolução:
 - 1280x720 (Paisagem/Landscape): Para fundos largos, Hero Section e Banners.
 - 800x1200 (Retrato/Portrait): Para fotos de pessoas, equipe, mentores ou cards verticais.
 - 800x800 (Quadrado/Squarish): Para ícones, logos, serviços ou avatares pequenos.
-
 Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto.
 Exemplo: <img src="[UNSPLASH: 800x1200: confident business professional]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Profissional" />
 `;
@@ -64,7 +60,6 @@ Exemplo: <img src="[UNSPLASH: 800x1200: confident business professional]" class=
     else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e hover:scale-105 nos botões.";
 
     let regrasObrigatorias = "";
-    
     if (isSiteRefinement) {
         regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML estruturado no JSON. NÃO CORTE O CÓDIGO DO SITE.`;
     } else if (isElementRefinement) {
@@ -73,108 +68,90 @@ Exemplo: <img src="[UNSPLASH: 800x1200: confident business professional]" class=
         regrasObrigatorias = `
 === REGRA DE OURO 1: ARQUITETURA LONGA E COMPLETA ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 ATENÇÃO: GERE UMA LANDING PAGE EXTENSA E PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES (Ex: Hero, Dores/Problemas, Benefícios, Sobre o Especialista, Prova Social/Depoimentos, CTA Final, FAQ). NÃO faça um site curto. NÃO corte o código pela metade. O valor DEVE conter do <!DOCTYPE html> até o fechamento </html>.
+🚨 ATENÇÃO: GERE UMA LANDING PAGE EXTENSA E PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES. NÃO corte o código pela metade. O valor DEVE conter do <!DOCTYPE html> até o fechamento </html>.
 Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
 
-🚨 PROIBIÇÃO DE FORMULÁRIOS: É ESTRITAMENTE PROIBIDO gerar qualquer tipo de formulário, campos de captura, tags <form>, <input> ou <textarea> no corpo do site. No lugar de formulários, você DEVE usar APENAS Botões de Ação (CTA) diretos.
+🚨 PROIBIÇÃO DE FORMULÁRIOS: É ESTRITAMENTE PROIBIDO gerar formulários, campos de captura, tags <form>, <input> ou <textarea> no corpo. Use APENAS Botões de Ação (CTA) diretos.
 
 ${regraMenu}
 
 === REGRA DE OURO 2: MOBILE-FIRST RESPONSIVO ===
-O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:flex-row para parear no PC. Espaçamentos menores no mobile (p-4, py-10) e maiores no desktop (md:p-8, lg:py-20). Menus devem quebrar adequadamente.
-
+O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:flex-row para parear no PC.
 ${regraImagens}
 ${instrucaoDinamica}
 
 === COMPLIANCE: RODAPÉ JURÍDICO EM SANFONA ===
-Sempre finalize o </body> com este exato rodapé, copiando o código inteiro abaixo. Ele contém "sanfonas" que abrem e fecham de forma excludente (uma fecha a outra). Não abrevie o texto:
+Sempre finalize o </body> com este exato rodapé, copiando o código inteiro abaixo. Não abrevie o texto:
 <footer class="bg-slate-950 text-slate-400 py-16 mt-12 border-t border-slate-900 w-full font-sans">
     <div class="max-w-5xl mx-auto px-6">
-        <div class="text-center mb-10">
-            <h3 class="text-white text-xl font-bold mb-4">Informações Legais Importantes</h3>
-            <p class="text-sm">Clique nos links abaixo para ler a íntegra de cada política.</p>
-        </div>
-
+        <div class="text-center mb-10"><h3 class="text-white text-xl font-bold mb-4">Informações Legais Importantes</h3><p class="text-sm">Clique nos links abaixo para ler a íntegra de cada política.</p></div>
         <div class="space-y-4 max-w-4xl mx-auto mb-12" id="rodape-sanfonas">
-            <!-- SANFONA: Política de Privacidade -->
             <details id="det-privacidade" class="bg-slate-900 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors" onclick="const e = document.getElementById('det-termos'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
-                <summary class="p-6 cursor-pointer font-bold text-white text-lg outline-none select-none hover:text-indigo-400 transition-colors flex items-center justify-between">
-                    Política de Privacidade <i class="fas fa-chevron-down text-slate-500 text-sm"></i>
-                </summary>
-                <div class="p-6 pt-2 text-sm leading-relaxed border-t border-slate-800">
-                    <p class="mb-4"><strong>1. Coleta e Uso de Dados:</strong> Em conformidade com a LGPD, coletamos informações de navegação exclusivamente para otimizar sua experiência neste site e melhorar o direcionamento dos nossos anúncios.</p>
-                    <p class="mb-4"><strong>2. Segurança:</strong> Seus dados de pagamento (se houver transação) são processados diretamente pelas plataformas de pagamento certificadas (Hotmart, Eduzz, etc.). Nós não temos acesso aos dados do seu cartão.</p>
-                    <p><strong>3. Contato:</strong> Para requisições de exclusão de dados ou dúvidas legais, utilize nosso e-mail oficial de suporte.</p>
-                </div>
+                <summary class="p-6 cursor-pointer font-bold text-white text-lg outline-none select-none hover:text-indigo-400 transition-colors flex items-center justify-between">Política de Privacidade <i class="fas fa-chevron-down text-slate-500 text-sm"></i></summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t border-slate-800"><p class="mb-4"><strong>1. Coleta e Uso de Dados:</strong> Em conformidade com a LGPD, coletamos informações de navegação exclusivamente para otimizar sua experiência neste site e melhorar o direcionamento dos nossos anúncios.</p><p class="mb-4"><strong>2. Segurança:</strong> Seus dados de pagamento (se houver transação) são processados diretamente pelas plataformas de pagamento certificadas. Nós não temos acesso aos dados do seu cartão.</p><p><strong>3. Contato:</strong> Para requisições de exclusão de dados ou dúvidas legais, utilize nosso e-mail oficial de suporte.</p></div>
             </details>
-
-            <!-- SANFONA: Termos de Uso -->
             <details id="det-termos" class="bg-slate-900 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors" onclick="const e = document.getElementById('det-privacidade'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
-                <summary class="p-6 cursor-pointer font-bold text-white text-lg outline-none select-none hover:text-indigo-400 transition-colors flex items-center justify-between">
-                    Termos de Uso <i class="fas fa-chevron-down text-slate-500 text-sm"></i>
-                </summary>
-                <div class="p-6 pt-2 text-sm leading-relaxed border-t border-slate-800">
-                    <p class="mb-4"><strong>1. Isenção de Responsabilidade:</strong> Os resultados obtidos dependem do esforço individual de cada usuário e da correta aplicação do método. Casos de sucesso relatados não configuram garantia de ganhos idênticos.</p>
-                    <p class="mb-4"><strong>2. Redes Sociais:</strong> Este portal não é endossado, administrado ou patrocinado por plataformas como Facebook, Instagram, Google ou TikTok. O uso dessas marcas registradas pertence aos seus respectivos donos.</p>
-                    <p><strong>3. Direitos Autorais:</strong> É terminantemente proibida a cópia, pirataria, rateio ou distribuição ilegal de qualquer conteúdo desta página sob pena de processos judiciais severos.</p>
-                </div>
+                <summary class="p-6 cursor-pointer font-bold text-white text-lg outline-none select-none hover:text-indigo-400 transition-colors flex items-center justify-between">Termos de Uso <i class="fas fa-chevron-down text-slate-500 text-sm"></i></summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t border-slate-800"><p class="mb-4"><strong>1. Isenção de Responsabilidade:</strong> Os resultados obtidos dependem do esforço individual de cada usuário e da correta aplicação do método. Casos de sucesso relatados não configuram garantia de ganhos idênticos.</p><p class="mb-4"><strong>2. Redes Sociais:</strong> Este portal não é endossado, administrado ou patrocinado por plataformas de terceiros.</p><p><strong>3. Direitos Autorais:</strong> É terminantemente proibida a cópia, pirataria, rateio ou distribuição ilegal de qualquer conteúdo desta página sob pena de processos judiciais severos.</p></div>
             </details>
         </div>
-        
-        <div class="text-center pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p>
-            <div class="flex gap-4 text-slate-600 text-xl">
-                <i class="fab fa-cc-visa" title="Visa"></i>
-                <i class="fab fa-cc-mastercard" title="Mastercard"></i>
-                <i class="fas fa-lock" title="Site Seguro"></i>
-            </div>
-        </div>
+        <div class="text-center pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4"><p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p><div class="flex gap-4 text-slate-600 text-xl"><i class="fab fa-cc-visa" title="Visa"></i><i class="fab fa-cc-mastercard" title="Mastercard"></i><i class="fas fa-lock" title="Site Seguro"></i></div></div>
     </div>
-    <script>
-      document.querySelectorAll('#rodape-sanfonas summary').forEach(s => {
-          s.style.listStyle = 'none';
-          if(s.childNodes[0] && s.childNodes[0].nodeName === "#text" && s.childNodes[0].nodeValue.includes('▶')) s.childNodes[0].nodeValue = '';
-      });
-    </script>
+    <script>document.querySelectorAll('#rodape-sanfonas summary').forEach(s => { s.style.listStyle = 'none'; if(s.childNodes[0] && s.childNodes[0].nodeName === "#text" && s.childNodes[0].nodeValue.includes('▶')) s.childNodes[0].nodeValue = ''; });</script>
 </footer>
 `;
     }
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
-    // === NOVA LÓGICA DE SEPARAÇÃO ADMIN VS CLIENTES ===
+    // === LÓGICA DE NEGÓCIOS E FINANCEIRA ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    
-    // 1. Checa as regras globais
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
+    
     let isByokEnabled = settings?.byok_enabled ?? true;
     const isAdminKeyEnabled = settings?.admin_paid_key_enabled ?? true;
 
-    // 2. Checa a regra individual do usuário
     let userByokAllowed = false;
+    let userCredits = 0;
+    let userPlanExpiration: Date | null = null;
+    let allowAdminTestKey = false;
+
     if (userId) {
-        const { data: profile } = await supabaseAdmin.from('profiles').select('allow_byok').eq('id', userId).single();
-        if (profile && profile.allow_byok) userByokAllowed = true;
+        const { data: profile } = await supabaseAdmin.from('profiles').select('allow_byok, credits, plan_expiration, allow_admin_test_key').eq('id', userId).single();
+        if (profile) {
+            userByokAllowed = profile.allow_byok;
+            userCredits = profile.credits || 0;
+            allowAdminTestKey = profile.allow_admin_test_key || false;
+            if (profile.plan_expiration) userPlanExpiration = new Date(profile.plan_expiration);
+        }
     }
 
     const chavePropriaAutorizada = isByokEnabled || userByokAllowed;
     let chaveParaUsar = "";
+    let isUsingCredits = false;
 
     if (isAdmin) {
-        // SE FOR VOCÊ (ADMIN): Usa sempre a sua chave GEMINI_API_KEY para trabalhar e testar de graça.
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
-        // SE FOR CLIENTE (COM CHAVE): Usa a chave que ele colou na tela.
-        chaveParaUsar = clientApiKey;
-    } else if (isAdminKeyEnabled) {
-        // SE FOR CLIENTE (SEM CHAVE): O sistema vai tentar usar a chave de clientes paga que você vai criar no futuro.
-        if (process.env.GEMINI_API_KEY_CLIENTES) {
-            chaveParaUsar = process.env.GEMINI_API_KEY_CLIENTES;
-        } else {
-            throw new Error("Geração bloqueada: O Administrador ainda não configurou a API Paga para os clientes. Utilize sua própria chave Gemini para gerar sites.");
+        // MODO MENSALIDADE (BYOK)
+        if (!userPlanExpiration || userPlanExpiration < new Date()) {
+            throw new Error("Assinatura Expirada: O seu plano mensal venceu. Renove sua assinatura para continuar usando o sistema com sua própria chave.");
         }
+        chaveParaUsar = clientApiKey;
     } else {
-        throw new Error("Geração bloqueada: O uso de créditos do sistema está desativado. Insira sua própria chave Gemini.");
+        // MODO CRÉDITOS (CHAVE DO SISTEMA)
+        if (userCredits <= 0) {
+            throw new Error("Saldo Insuficiente: Você não possui créditos para gerar sites. Adquira um pacote de créditos ou use sua própria chave Gemini.");
+        }
+        
+        isUsingCredits = true;
+        if (allowAdminTestKey) {
+            chaveParaUsar = process.env.GEMINI_API_KEY!; // Acesso VIP temporário à chave do Admin para testes
+        } else if (isAdminKeyEnabled && process.env.GEMINI_API_KEY_CLIENTES) {
+            chaveParaUsar = process.env.GEMINI_API_KEY_CLIENTES; // Chave oficial paga dos clientes
+        } else {
+            throw new Error("Geração bloqueada: O Administrador ainda não configurou a API Paga para clientes no servidor.");
+        }
     }
 
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
@@ -185,7 +162,6 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
 
     for (const modelName of MODELOS_GEMINI) {
         if (geracaoSucesso) break; 
-
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
             try {
                 const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
@@ -201,35 +177,32 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
                     provedorTextoUsado = `Google Gemini (${modelName})`;
                     break; 
                 } else {
-                    throw new Error("HTML gerado foi bloqueado, está muito curto ou inválido.");
+                    throw new Error("HTML gerado foi bloqueado, curto ou inválido.");
                 }
             } catch (error: any) {
-                historicoErros.push({
-                    modelo: modelName,
-                    tentativa: tentativa,
-                    erro: error.message || "Erro desconhecido",
-                    hora: new Date().toISOString()
-                });
+                historicoErros.push({ modelo: modelName, tentativa: tentativa, erro: error.message || "Erro desconhecido", hora: new Date().toISOString() });
             }
         }
     }
 
     if (historicoErros.length > 0) {
         try {
-            await supabaseAdmin.from('api_logs').insert([{
-                modelos_falhos: JSON.stringify(historicoErros, null, 2),
-                sucesso_final: geracaoSucesso,
-                data_hora: new Date().toISOString()
-            }]);
-        } catch (e) {
-            console.error("Falha ao gravar no Supabase", e);
-        }
+            await supabaseAdmin.from('api_logs').insert([{ modelos_falhos: JSON.stringify(historicoErros, null, 2), sucesso_final: geracaoSucesso, data_hora: new Date().toISOString() }]);
+        } catch (e) { console.error("Falha ao gravar log no Supabase", e); }
     }
 
     if (!geracaoSucesso) {
-        throw new Error("Nossos motores de Inteligência Artificial estão temporariamente congestionados devido a alta demanda. Por favor, aguarde 30 segundos e tente gerar novamente.");
+        throw new Error("Nossos motores de IA estão temporariamente congestionados devido a alta demanda. Aguarde 30 segundos e tente novamente.");
     }
 
+    // DESCONTO FINANCEIRO (Se usou chave do sistema e deu sucesso, consome 1 crédito)
+    if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
+        try {
+            await supabaseAdmin.from('profiles').update({ credits: userCredits - 1 }).eq('id', userId);
+        } catch (e) { console.error("Falha ao descontar crédito", e); }
+    }
+
+    // INJEÇÕES E MOTOR UNSPLASH...
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement && !isSiteRefinement) {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
@@ -240,40 +213,29 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
     let match;
     let urlsToReplace = [];
-    
-    while ((match = regexImgReq.exec(htmlCode)) !== null) {
-        urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] });
-    }
+    while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
 
     if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
         for (const item of urlsToReplace) {
             let orient = 'landscape';
             if (item.dimensao === '800x1200') orient = 'portrait';
             if (item.dimensao === '800x800') orient = 'squarish';
-            
             const kwFormatada = encodeURIComponent(item.keywords.trim());
             let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
-
             try {
                 const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
                 if (uRes.ok) {
                     const uData = await uRes.json();
-                    if (uData.results && uData.results.length > 0) {
-                        imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                    }
+                    if (uData.results && uData.results.length > 0) imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
                 }
-            } catch (e) {
-                console.log("Falha ao comunicar com Unsplash API.");
-            }
+            } catch (e) { console.log("Falha ao comunicar com Unsplash."); }
             htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     } else {
         htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
     }
 
-    htmlCode = htmlCode.replace(/https:\/\/source\.unsplash\.com\/random\/\d+x\d+\/\?([^"&<>\s']+)/g, (match, keyword) => {
-        return `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`;
-    });
+    htmlCode = htmlCode.replace(/https:\/\/source\.unsplash\.com\/random\/\d+x\d+\/\?([^"&<>\s']+)/g, () => `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`);
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
 

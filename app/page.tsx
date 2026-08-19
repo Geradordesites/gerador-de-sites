@@ -644,7 +644,8 @@ export default function Home() {
   const [userByok, setUserByok] = useState(false);
   const [userId, setUserId] = useState('');
   const [userEmail, setUserEmail] = useState('');
-
+  const [userCredits, setUserCredits] = useState<number | null>(null);
+  const [userExpiration, setUserExpiration] = useState<string | null>(null);  
   useEffect(() => {
     const carregarConfiguracoesESessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1835,7 +1836,27 @@ export default function Home() {
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
                   <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
-
+{/* ---> ADICIONE ESTE BLOCO NOVO AQUI: O SELO DE CRÉDITOS/VALIDADE */}
+        <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200">
+            <div className="flex flex-col text-right">
+                {userByok ? (
+                    <>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Assinatura BYOK</span>
+                        <span className="text-xs font-bold text-indigo-600 flex items-center justify-end gap-1.5">
+                            <i className="fas fa-calendar-check"></i> {userExpiration ? new Date(userExpiration).toLocaleDateString('pt-BR') : 'Sem Validade'}
+                        </span>
+                    </>
+                ) : (
+                    <>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Seus Créditos</span>
+                        <span className={`text-xs font-bold flex items-center justify-end gap-1.5 ${(userCredits || 0) < 5 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
+                            <i className="fas fa-bolt"></i> {userCredits !== null ? userCredits : '0'} Saldo
+                        </span>
+                    </>
+                )}
+            </div>
+        </div>
+        {/* ---> FIM DO BLOCO NOVO */}
               <div className="flex items-center gap-3 md:gap-4">
                   <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-th-large mr-1.5"></i> Meus Projetos</button>
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
