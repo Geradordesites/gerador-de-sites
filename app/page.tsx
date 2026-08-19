@@ -1860,7 +1860,7 @@ export default function Home() {
               <div className="flex items-center gap-3 md:gap-4">
                   
                   {/* SELO DE CRÉDITOS / VALIDADE (EXIBIDO PARA TODOS) */}
-                  <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200">
+                  <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200 gap-3">
                       <div className="flex flex-col text-right">
                           {userByok ? (
                               <>
@@ -1872,12 +1872,19 @@ export default function Home() {
                           ) : (
                               <>
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Seus Créditos</span>
-                                  <span className={`text-xs font-bold flex items-center justify-end gap-1.5 ${(userCredits || 0) < 5 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
+                                  <span className={`text-xs font-bold flex items-center justify-end gap-1.5 ${(userCredits || 0) < 15 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
                                       <i className="fas fa-bolt"></i> {userCredits !== null ? userCredits : '0'} Saldo
                                   </span>
                               </>
                           )}
                       </div>
+
+                      {/* BOTÃO PARA COMPRAR MAIS CRÉDITOS (Só aparece para quem usa Saldo) */}
+                      {!userByok && (
+                          <a href="/planos" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5" title="Comprar pacote de créditos">
+                              <i className="fas fa-plus"></i> Saldo
+                          </a>
+                      )}
                   </div>
 
                   {/* BOTÕES EXCLUSIVOS DO ADMINISTRADOR (MEUS PROJETOS E PUBLICAR) */}
