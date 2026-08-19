@@ -3,8 +3,6 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { createClient } from '@supabase/supabase-js';
 
 // LISTA DE MODELOS (ROTAÇÃO AUTOMÁTICA)
-// Você pode alterar a ordem, remover ou adicionar novos modelos aqui facilmente.
-// O sistema tenta o primeiro; se falhar, tenta o segundo, e assim por diante.
 const MODELOS_GEMINI = [
   "gemini-3.7-flash",
   "gemini-3.6-flash",
@@ -17,8 +15,6 @@ const MODELOS_GEMINI = [
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
-    // Removida qualquer referência a 'useGroq' ou outras APIs
     const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement } = body;
 
     const anoAtual = new Date().getFullYear();
@@ -33,13 +29,11 @@ export async function POST(req: Request) {
     let temImagem = false;
     let textoDoPrompt = "";
     
-    // Junta todo o texto enviado para análise
     for (const part of promptParts) {
         if (part.inlineData) temImagem = true;
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
-    // 1. DETECTOR INFALÍVEL DE MENU
     let regraMenu = "";
     if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
         regraMenu = "🚨 REGRA FATAL: O HTML DEVE OBRIGATORIAMENTE INICIAR COM UMA TAG <nav> CONTENDO UM MENU FIXO, LOGOTIPO, LINKS DE ÂNCORA E UM BOTÃO CTA. SE VOCÊ NÃO CRIAR O MENU, O SISTEMA IRÁ FALHAR.";
@@ -47,11 +41,10 @@ export async function POST(req: Request) {
         regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>. O site deve começar diretamente no conteúdo (Hero Section).";
     }
 
-    // 2. DIRETRIZ DE MÍDIA PROFISSIONAL
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
-🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr, ou tags genéricas.
-Você DEVE utilizar a nossa tag de requisição para TODAS as imagens geradas.
+🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr, desenhos, vetores ou ilustrações sci-fi.
+Você DEVE utilizar a nossa tag de requisição para TODAS as imagens geradas. Use APENAS fotografias realistas de humanos em situações cotidianas ou de negócios.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 
 Tamanhos Obrigatórios de Resolução:
@@ -59,8 +52,8 @@ Tamanhos Obrigatórios de Resolução:
 - 800x1200 (Retrato/Portrait): Para fotos de pessoas, equipe, mentores ou cards verticais.
 - 800x800 (Quadrado/Squarish): Para ícones, logos, serviços ou avatares pequenos.
 
-Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto (ex: business meeting, confident therapist, modern clinic).
-Exemplo: <img src="[UNSPLASH: 800x1200: confident business woman]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Profissional" />
+Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto.
+Exemplo: <img src="[UNSPLASH: 800x1200: confident business professional]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Profissional" />
 `;
     
     let instrucaoDinamica = "";
@@ -80,6 +73,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ATENÇÃO: GERE UMA LANDING PAGE EXTENSA E PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES (Ex: Hero, Dores/Problemas, Benefícios, Sobre o Especialista, Prova Social/Depoimentos, CTA Final, FAQ). NÃO faça um site curto. NÃO corte o código pela metade. O valor DEVE conter do <!DOCTYPE html> até o fechamento </html>.
 Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
 
+🚨 PROIBIÇÃO DE FORMULÁRIOS: É ESTRITAMENTE PROIBIDO gerar qualquer tipo de formulário, campos de captura, tags <form>, <input> ou <textarea> no corpo do site. No lugar de formulários, você DEVE usar APENAS Botões de Ação (CTA) diretos.
+
 ${regraMenu}
 
 === REGRA DE OURO 2: MOBILE-FIRST RESPONSIVO ===
@@ -88,39 +83,72 @@ O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:
 ${regraImagens}
 ${instrucaoDinamica}
 
-=== COMPLIANCE: RODAPÉ JURÍDICO FUNCIONAL ===
-Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
-<footer data-bloco="rodape" class="bg-slate-900 text-slate-300 py-12 text-center text-sm mt-12 border-t border-slate-800 w-full overflow-hidden">
-    <div class="w-full max-w-5xl mx-auto px-6">
-        <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-12 mb-8 font-medium">
-            <a href="#privacidade" onclick="toggleLegal(event, 'panel-privacidade')" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4 cursor-pointer">Política de Privacidade</a>
-            <a href="#termos" onclick="toggleLegal(event, 'panel-termos')" class="hover:text-white transition-colors underline decoration-slate-600 underline-offset-4 cursor-pointer">Termos de Uso</a>
+=== COMPLIANCE: RODAPÉ JURÍDICO EM SANFONA ===
+Sempre finalize o </body> com este exato rodapé, copiando o código inteiro abaixo. Ele contém "sanfonas" que abrem e fecham de forma excludente (uma fecha a outra). Não abrevie o texto:
+<footer class="bg-slate-950 text-slate-400 py-16 mt-12 border-t border-slate-900 w-full font-sans">
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-10">
+            <h3 class="text-white text-xl font-bold mb-4">Informações Legais Importantes</h3>
+            <p class="text-sm">Clique nos links abaixo para ler a íntegra de cada política.</p>
         </div>
-        <div id="legal-panels" class="text-left mb-10 text-slate-200 text-base leading-relaxed hidden bg-slate-800 p-6 md:p-8 rounded-2xl w-full max-w-4xl mx-auto border border-slate-700 shadow-xl transition-all duration-300">
-            <div id="panel-privacidade" class="legal-panel hidden space-y-4"><h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Política de Privacidade</h4><p>Coleta de dados em conformidade com as normas vigentes para otimização de atendimento.</p></div>
-            <div id="panel-termos" class="legal-panel hidden space-y-4"><h4 class="font-bold text-white text-xl border-b border-slate-600 pb-2">Termos de Uso</h4><p>Este portal não é afiliado a nenhuma rede social de terceiros. Resultados dependem do esforço individual.</p></div>
+
+        <div class="space-y-4 max-w-4xl mx-auto mb-12" id="rodape-sanfonas">
+            <!-- SANFONA: Política de Privacidade -->
+            <details id="det-privacidade" class="bg-slate-900 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors" onclick="const e = document.getElementById('det-termos'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
+                <summary class="p-6 cursor-pointer font-bold text-white text-lg outline-none select-none hover:text-indigo-400 transition-colors flex items-center justify-between">
+                    Política de Privacidade <i class="fas fa-chevron-down text-slate-500 text-sm"></i>
+                </summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t border-slate-800">
+                    <p class="mb-4"><strong>1. Coleta e Uso de Dados:</strong> Em conformidade com a LGPD, coletamos informações de navegação exclusivamente para otimizar sua experiência neste site e melhorar o direcionamento dos nossos anúncios.</p>
+                    <p class="mb-4"><strong>2. Segurança:</strong> Seus dados de pagamento (se houver transação) são processados diretamente pelas plataformas de pagamento certificadas (Hotmart, Eduzz, etc.). Nós não temos acesso aos dados do seu cartão.</p>
+                    <p><strong>3. Contato:</strong> Para requisições de exclusão de dados ou dúvidas legais, utilize nosso e-mail oficial de suporte.</p>
+                </div>
+            </details>
+
+            <!-- SANFONA: Termos de Uso -->
+            <details id="det-termos" class="bg-slate-900 rounded-2xl border border-slate-800 hover:border-slate-700 transition-colors" onclick="const e = document.getElementById('det-privacidade'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
+                <summary class="p-6 cursor-pointer font-bold text-white text-lg outline-none select-none hover:text-indigo-400 transition-colors flex items-center justify-between">
+                    Termos de Uso <i class="fas fa-chevron-down text-slate-500 text-sm"></i>
+                </summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t border-slate-800">
+                    <p class="mb-4"><strong>1. Isenção de Responsabilidade:</strong> Os resultados obtidos dependem do esforço individual de cada usuário e da correta aplicação do método. Casos de sucesso relatados não configuram garantia de ganhos idênticos.</p>
+                    <p class="mb-4"><strong>2. Redes Sociais:</strong> Este portal não é endossado, administrado ou patrocinado por plataformas como Facebook, Instagram, Google ou TikTok. O uso dessas marcas registradas pertence aos seus respectivos donos.</p>
+                    <p><strong>3. Direitos Autorais:</strong> É terminantemente proibida a cópia, pirataria, rateio ou distribuição ilegal de qualquer conteúdo desta página sob pena de processos judiciais severos.</p>
+                </div>
+            </details>
         </div>
-        <p class="text-slate-500 font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p>
+        
+        <div class="text-center pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p>
+            <div class="flex gap-4 text-slate-600 text-xl">
+                <i class="fab fa-cc-visa" title="Visa"></i>
+                <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+                <i class="fas fa-lock" title="Site Seguro"></i>
+            </div>
+        </div>
     </div>
-    <script>function toggleLegal(e, id) { if(e) e.preventDefault(); document.querySelectorAll('.legal-panel').forEach(p => p.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.getElementById('legal-panels').classList.remove('hidden'); }</script>
+    <script>
+      // Força a exibição do cursor e remove a marca padrão da sanfona (seta preta)
+      document.querySelectorAll('#rodape-sanfonas summary').forEach(s => {
+          s.style.listStyle = 'none';
+          if(s.childNodes[0] && s.childNodes[0].nodeName === "#text" && s.childNodes[0].nodeValue.includes('▶')) s.childNodes[0].nodeValue = '';
+      });
+    </script>
 </footer>
 `;
     }
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
-    // VARIÁVEIS DE CONTROLE DA ROTAÇÃO
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     let htmlCode = '';
     let provedorTextoUsado = '';
     let geracaoSucesso = false;
     let historicoErros: any[] = [];
 
-    // LÓGICA DE ROTAÇÃO DOS MODELOS GEMINI
     for (const modelName of MODELOS_GEMINI) {
-        if (geracaoSucesso) break; // Se já gerou com sucesso, ignora o resto da lista
+        if (geracaoSucesso) break; 
 
-        // 2 REQUISIÇÕES (TENTATIVAS) MÁXIMAS POR CADA MODELO
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
             try {
                 const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
@@ -134,12 +162,11 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
                 if (htmlCode && htmlCode.length >= 50) {
                     geracaoSucesso = true;
                     provedorTextoUsado = `Google Gemini (${modelName})`;
-                    break; // Sai do loop de tentativas deste modelo específico
+                    break; 
                 } else {
                     throw new Error("HTML gerado foi bloqueado, está muito curto ou inválido.");
                 }
             } catch (error: any) {
-                // Registra o erro de forma invisível para o cliente
                 historicoErros.push({
                     modelo: modelName,
                     tentativa: tentativa,
@@ -150,8 +177,6 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
         }
     }
 
-    // REGISTRO DE ERROS NO SEU ADMIN (SUPABASE)
-    // Se ocorreram falhas (mesmo que o último modelo tenha salvado o dia), nós logamos
     if (historicoErros.length > 0) {
         try {
             const supabaseAdmin = createClient(
@@ -168,12 +193,10 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
         }
     }
 
-    // A MENSAGEM QUE O CLIENTE VÊ SE TUDO FALHAR
     if (!geracaoSucesso) {
         throw new Error("Nossos motores de Inteligência Artificial estão temporariamente congestionados devido a alta demanda. Por favor, aguarde 30 segundos e tente gerar novamente.");
     }
 
-    // Injeta scripts de animação caso não existam
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement && !isSiteRefinement) {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
@@ -181,7 +204,6 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
         if (htmlCode.includes('</body>') && !htmlCode.includes('aos.js')) htmlCode = htmlCode.replace('</body>', `\n${aosJs}\n</body>`);
     }
 
-    // 3. MOTOR DE IMAGENS BLINDADO (Garante busca e inserção via Unsplash)
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
     let match;
     let urlsToReplace = [];
@@ -198,11 +220,9 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
             
             const kwFormatada = encodeURIComponent(item.keywords.trim());
             
-            // Link genérico super profissional de segurança
             let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
 
             try {
-                // Busca em alta definição na Unsplash
                 const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
                 if (uRes.ok) {
                     const uData = await uRes.json();
@@ -213,15 +233,12 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
             } catch (e) {
                 console.log("Falha ao comunicar com Unsplash API.");
             }
-            // Injeta a foto perfeita no código
             htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     } else {
-        // Fallback de limpeza caso a API key não exista
         htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
     }
 
-    // Corrige qualquer alucinação em que a IA tenta colocar um link fake da Unsplash diretamente
     htmlCode = htmlCode.replace(/https:\/\/source\.unsplash\.com\/random\/\d+x\d+\/\?([^"&<>\s']+)/g, (match, keyword) => {
         return `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`;
     });
@@ -233,7 +250,6 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
   }
 }
 
-// O NOVO EXTRATOR BLINDADO (Impede que a resposta da IA quebre a tela se tiver caracteres estranhos)
 function extrairHtmlDeJson(text: string): string {
   try {
       let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
