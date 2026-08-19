@@ -647,6 +647,16 @@ export default function Home() {
   const [userCredits, setUserCredits] = useState<number | null>(null);
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
 
+  // Função adicionada para recarregar o saldo do usuário
+  const recarregarDadosUsuario = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const { data } = await supabase.from('profiles').select('credits').eq('id', session.user.id).single();
+    if (data) {
+      setUserCredits(data.credits);
+    }
+  };
+
   useEffect(() => {
     const carregarConfiguracoesESessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1030,6 +1040,8 @@ export default function Home() {
         }
         data.html = hHtml;
         processarRespostaDOM(data);
+        // Atualiza o saldo do usuário após a geração
+        recarregarDadosUsuario();
     }
   };
 
