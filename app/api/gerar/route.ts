@@ -15,8 +15,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // RECEBE A CHAVE DO CLIENTE
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey } = body;
+    // RECEBE A CHAVE DO CLIENTE E O ID DO USUÁRIO
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -140,20 +140,31 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
-    // === LÓGICA DE AUTORIZAÇÃO DE CHAVES ===
+    // === LÓGICA DE AUTORIZAÇÃO DE CHAVES HÍBRIDA ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
-    const isByokEnabled = settings?.byok_enabled ?? true;
+    // 1. Checa as regras globais
+    const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
+    let isByokEnabled = settings?.byok_enabled ?? true;
     const isAdminKeyEnabled = settings?.admin_paid_key_enabled ?? true;
 
+    // 2. Checa a regra individual do usuário (se houver)
+    let userByokAllowed = false;
+    if (userId) {
+        const { data: profile } = await supabaseAdmin.from('profiles').select('allow_byok').eq('id', userId).single();
+        if (profile && profile.allow_byok) userByokAllowed = true;
+    }
+
+    // A Chave Própria é permitida se: O Admin ativou o Global OU se o Admin liberou esse usuário específico!
+    const chavePropriaAutorizada = isByokEnabled || userByokAllowed;
+
     let chaveParaUsar = "";
-    if (isByokEnabled && clientApiKey && clientApiKey.length > 10) {
+    if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
         chaveParaUsar = clientApiKey; // Usa a do cliente
     } else if (isAdminKeyEnabled) {
         chaveParaUsar = process.env.GEMINI_API_KEY!; // Usa a sua paga central
     } else {
-        throw new Error("Geração bloqueada: O uso da API central está desativado no painel Admin e você não configurou sua própria chave Gemini.");
+        throw new Error("Geração bloqueada: O uso da API central está desativado e você não configurou (ou não tem permissão para usar) sua própria chave Gemini.");
     }
 
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
@@ -231,7 +242,6 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
             if (item.dimensao === '800x800') orient = 'squarish';
             
             const kwFormatada = encodeURIComponent(item.keywords.trim());
-            
             let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
 
             try {
