@@ -1882,7 +1882,7 @@ export default function Home() {
                       {/* BOTÃO PARA COMPRAR MAIS CRÉDITOS (Só aparece para quem usa Saldo) */}
                       {!userByok && (
                           <a href="/planos" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5" title="Comprar pacote de créditos">
-                              <i className="fas fa-plus"></i> Saldo
+                              <i className="fas fa-plus"></i> Comprar Mais Saldo
                           </a>
                       )}
                   </div>
