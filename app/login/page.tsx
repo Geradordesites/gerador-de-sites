@@ -22,7 +22,6 @@ export default function LoginPage() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        // Após o login, manda para o painel principal (você pode mudar para a rota do gerador)
         router.push('/') 
       } else {
         const { error } = await supabase.auth.signUp({ email, password })
@@ -37,12 +36,32 @@ export default function LoginPage() {
     }
   }
 
+  const handleEsqueciSenha = async () => {
+    if (!email) {
+      setMensagem('Por favor, digite seu e-mail no campo acima primeiro para recuperar a senha.')
+      return
+    }
+    setLoading(true)
+    setMensagem('')
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://sites-flax.vercel.app/atualizar-senha',
+      })
+      if (error) throw error
+      setMensagem('E-mail de recuperação enviado! Verifique sua caixa de entrada e spam.')
+    } catch (error: any) {
+      setMensagem(error.message || 'Erro ao enviar e-mail de recuperação.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    // Fundo bg-slate-50 para combinar com a Página de Vendas e Planos
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 selection:bg-emerald-200 selection:text-emerald-900">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 selection:bg-emerald-200 selection:text-emerald-900 font-sans">
       
-      {/* Logo clicável que volta para a página de vendas (ajustado para /gerador) */}
-      <div className="flex items-center gap-2 mb-8 cursor-pointer hover:scale-105 transition-transform" onClick={() => router.push('/gerador')}>
+      {/* Logo clicável que volta para a página inicial */}
+      <div className="flex items-center gap-2 mb-8 cursor-pointer hover:scale-105 transition-transform" onClick={() => router.push('/')}>
         <div className="bg-emerald-600 p-2.5 rounded-xl shadow-lg shadow-emerald-600/20">
           <Sparkles className="size-6 text-white" />
         </div>
@@ -72,7 +91,18 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Senha</label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-sm font-bold text-slate-700">Senha</label>
+              {isLogin && (
+                <button 
+                  type="button" 
+                  onClick={handleEsqueciSenha}
+                  className="text-xs font-bold text-emerald-600 hover:underline transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
+              )}
+            </div>
             <input 
               type="password" 
               value={password}
