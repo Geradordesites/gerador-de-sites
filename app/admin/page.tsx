@@ -89,13 +89,24 @@ export default function AdminPage() {
 
   const salvarConfiguracoesGlobais = async (novaConfig: any) => {
     setSalvandoConfig(true)
-    // Alterado de .update para .upsert
-    const { error } = await supabase.from('system_settings').upsert({ id: 'global', ...novaConfig })
-    if (error) alert('Erro ao salvar configurações!')
-    else {
+    
+    // Atualiza apenas os campos exatos (evita conflito com o banco)
+    const { error } = await supabase
+      .from('system_settings')
+      .update({ 
+        byok_enabled: novaConfig.byok_enabled, 
+        admin_paid_key_enabled: novaConfig.admin_paid_key_enabled 
+      })
+      .eq('id', 'global')
+
+    if (error) {
+      console.error(error)
+      alert(`Erro ao salvar: ${error.message}`) // Agora ele mostra o motivo do erro!
+    } else {
       setConfig(novaConfig)
       alert('Configurações salvas com sucesso!')
     }
+    
     setSalvandoConfig(false)
   }
 
