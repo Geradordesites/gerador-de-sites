@@ -639,6 +639,24 @@ const UI_BLOCKS = {
 };
 
 export default function Home() {
+  const [byokEnabled, setByokEnabled] = useState(false);
+  const [apiKey, setApiKey] = useState(''); // Estado para a chave
+
+  useEffect(() => {
+    const carregarConfiguracoes = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('byok_enabled')
+        .eq('id', 'global')
+        .single()
+        
+      if (data) {
+        setByokEnabled(data.byok_enabled)
+      }
+    }
+    carregarConfiguracoes()
+  }, [])
+
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
   const [listaSites, setListaSites] = useState<any[]>([]);
   const [carregandoSites, setCarregandoSites] = useState(false);
@@ -676,11 +694,11 @@ export default function Home() {
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
-                   .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
-                   .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
-                   .replace(/outline-offset:\s*-[234]px;?/gi, '')
-                   .replace(/data-old-outline="[^"]*"/gi, '')
-                   .replace(/\s*style="\s*"/gi, ''); 
+                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
+                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
+                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
+                    .replace(/data-old-outline="[^"]*"/gi, '')
+                    .replace(/\s*style="\s*"/gi, ''); 
       clean = clean.replace(/ class="\s*"/gi, ''); 
       return clean;
   };
@@ -952,7 +970,10 @@ export default function Home() {
     if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error'); return; }
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n";
+    
+    // NOVO PROMPT ATUALIZADO (INCLUI A REGRA DA SANFONA E REMOÇÃO SCI-FI)
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
+    
     if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
         commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
@@ -1577,23 +1598,23 @@ export default function Home() {
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
                       
                       {/* NOVAS ABAS DE NAVEGAÇÃO */}
-<div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-    <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
-    <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-pen mr-1.5"></i> Modificar</button>
-</div>
+                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
+                          <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
+                          <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-pen mr-1.5"></i> Modificar</button>
+                      </div>
 
-{abaAtiva === 'blocos' ? (
-    <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-        <div>
-            <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-wand-magic-sparkles"></i></span> Modificar Site (IA)</h3>
-            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Descreva o que deseja alterar no site (ex: "Adicione um rodapé", "Mude todas as cores para vermelho"). A IA fará o trabalho pesado.</p>
-            <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Crie um botão de WhatsApp flutuante no canto da tela..."></textarea>
-            <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar Modificação
-            </button>
-        </div>
-    </div>
-) : (
+                      {abaAtiva === 'blocos' ? (
+                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                              <div>
+                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-wand-magic-sparkles"></i></span> Modificar Site (IA)</h3>
+                                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">Descreva o que deseja alterar no site (ex: "Adicione um rodapé", "Mude todas as cores para vermelho"). A IA fará o trabalho pesado.</p>
+                                  <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Crie um botão de WhatsApp flutuante no canto da tela..."></textarea>
+                                  <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                      <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar Modificação
+                                  </button>
+                              </div>
+                          </div>
+                      ) : (
                           <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo</h3>
@@ -1645,19 +1666,27 @@ export default function Home() {
 
                                       <div className="pt-2 border-t border-slate-100">
                                           <label htmlFor="nichoEstilo" className="input-label">Aparência do Site</label>
-                                          <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700">
+                                          <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700 mb-4">
                                               <option value="minimalista">Clean e Moderno</option>
                                               <option value="premium">Premium Elegante (Alto Padrão)</option>
                                               <option value="agressivo">Venda Agressiva (Lançamentos)</option>
                                               <option value="terapia">Acolhedor e Suave (Saúde)</option>
                                           </select>
-                                          <div className="pt-4 mt-4 border-t border-slate-100">
-    <label className="input-label mb-2">Motor de Inteligência (IA)</label>
-    <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700">
-        <option value="gemini">Google Gemini (Qualidade Alta)</option>
-        <option value="groq">Groq Llama 3 (Ultra Rápido)</option>
-    </select>
-</div>
+
+                                          {/* NOVA LÓGICA: SÓ APARECE SE ADMIN AUTORIZOU BYOK */}
+                                          {byokEnabled && (
+                                              <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
+                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave Gemini (Opcional)</label>
+                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria API Key do Google Gemini para ter geração ilimitada. Se deixar em branco, usará seus créditos do sistema.</p>
+                                                  <input 
+                                                    type="password" 
+                                                    value={apiKey}
+                                                    onChange={(e) => setApiKey(e.target.value)}
+                                                    placeholder="AIzaSy..." 
+                                                    className="input-standard font-mono text-xs" 
+                                                  />
+                                              </div>
+                                          )}
                                       </div>
                                   </div>
                               </div>
