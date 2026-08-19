@@ -927,7 +927,7 @@ export default function Home() {
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
           if(promptInput) promptInput.value = '';
-          recarregarDadosUsuario(); // <--- ADICIONE ESTA LINHA AQUI
+          recarregarDadosUsuario(); // <--- O SALDO ATUALIZA AQUI
           (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
       }
   };
@@ -958,7 +958,7 @@ export default function Home() {
         if (!data.success) throw new Error(data.error);
         if (data.html && data.html.length > 50) {
             processarRespostaDOM(data); 
-            recarregarDadosUsuario(); // <--- ADICIONE ESTA LINHA AQUI
+            recarregarDadosUsuario(); // <--- O SALDO ATUALIZA AQUI
             promptInput.value = ''; 
             (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
         } else { throw new Error("A IA falhou ao processar a modificação global."); }

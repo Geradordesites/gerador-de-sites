@@ -11,7 +11,6 @@ const MODELOS_GEMINI = [
   "gemini-3-flash-preview"
 ];
 
-// CUSTO FIXO ÚNICO PARA TODAS AS OPERAÇÕES (Geração ou Edição)
 const CUSTO_POR_ACAO = 10; 
 
 export async function POST(req: Request) {
@@ -110,7 +109,8 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
     // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
-    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    // IMPORTANTE: USAMOS A SERVICE_ROLE_KEY AQUI PARA O LOG DE ERROS GRAVAR MESMO SE A REQUISIÇÃO FALHAR
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
     let isByokEnabled = settings?.byok_enabled ?? true;
@@ -135,7 +135,7 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
     let chaveParaUsar = "";
     let isUsingCredits = false;
 
-    // LÓGICA DE COBRANÇA FIXA (10 CRÉDITOS)
+    // VERIFICA O SALDO E DEFINE A CHAVE
     if (isAdmin) {
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
@@ -145,13 +145,13 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
         chaveParaUsar = clientApiKey;
     } else if (allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) {
-            throw new Error(`Saldo insuficiente: Cada operação consome ${CUSTO_POR_ACAO} créditos. Você tem apenas ${userCredits}.`);
+            throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos. Seu saldo atual é ${userCredits}.`);
         }
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else {
         if (userCredits < CUSTO_POR_ACAO) {
-            throw new Error(`Saldo insuficiente: Cada operação consome ${CUSTO_POR_ACAO} créditos. Você tem apenas ${userCredits}. Adquira mais créditos.`);
+            throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos. Seu saldo atual é ${userCredits}.`);
         }
         isUsingCredits = true;
         if (isAdminKeyEnabled && process.env.GEMINI_API_KEY_CLIENTES) {
@@ -167,6 +167,7 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
     let geracaoSucesso = false;
     let historicoErros: any[] = [];
 
+    // TENTA GERAR O SITE. SE DER ERRO, GRAVA NO ARRAY historicoErros
     for (const modelName of MODELOS_GEMINI) {
         if (geracaoSucesso) break; 
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
@@ -192,17 +193,19 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
         }
     }
 
+    // REGISTRA OS ERROS NO SUPABASE MESMO SE A OPERAÇÃO FALHAR
     if (historicoErros.length > 0) {
         try {
             await supabaseAdmin.from('api_logs').insert([{ modelos_falhos: JSON.stringify(historicoErros, null, 2), sucesso_final: geracaoSucesso, data_hora: new Date().toISOString() }]);
-        } catch (e) { console.error("Falha ao gravar log", e); }
+        } catch (e) { console.error("Falha ao gravar log no Supabase", e); }
     }
 
+    // SE FALHOU COMPLETAMENTE, ABORTA TUDO (E NÃO DESCONTA CRÉDITO)
     if (!geracaoSucesso) {
-        throw new Error("Nossos motores de IA estão temporariamente congestionados ou retornaram erro. Tente novamente.");
+        throw new Error("Nossos motores de IA estão temporariamente congestionados ou retornaram erro. Nenhum crédito foi descontado. Tente novamente.");
     }
 
-    // DESCONTO FIXO (10 CRÉDITOS) APÓS SUCESSO COMPROVADO
+    // DESCONTO FIXO (10 CRÉDITOS) APENAS SE A GERAÇÃO DEU SUCESSO
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try {
             await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId);
