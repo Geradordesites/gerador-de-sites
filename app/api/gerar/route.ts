@@ -110,7 +110,7 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
     
     // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
     // IMPORTANTE: USAMOS A SERVICE_ROLE_KEY AQUI PARA O LOG DE ERROS GRAVAR MESMO SE A REQUISIÇÃO FALHAR
-    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
     let isByokEnabled = settings?.byok_enabled ?? true;
