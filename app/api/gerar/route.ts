@@ -102,7 +102,7 @@ const usarGroq = useGroq === true;
     if (!usarGroq) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
         // Aumentei levemente a temperatura (0.4) para o site não ficar genérico e forçar criatividade na copy B2B
-        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview", systemInstruction: systemInstructionFinal, safetySettings });
+        const model = genAI.getGenerativeModel({ model: "gemini-omni-flash-preview", systemInstruction: systemInstructionFinal, safetySettings });
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } });
         htmlCode = extrairHtmlDeJson(result.response.text());
     } else {
