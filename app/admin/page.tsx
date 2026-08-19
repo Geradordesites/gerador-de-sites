@@ -78,6 +78,14 @@ export default function AdminPage() {
     else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, credits: novoValor } : u))
   }
 
+  const definirCreditosManuais = async (userId: string, valorDigitado: string) => {
+    const novoValor = parseInt(valorDigitado);
+    if (isNaN(novoValor) || novoValor < 0) return;
+    const { error } = await supabase.from('profiles').update({ credits: novoValor }).eq('id', userId)
+    if (error) alert('Erro ao definir créditos!')
+    else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, credits: novoValor } : u))
+  }
+
   const adicionarTempoPlano = async (userId: string, dataAtual: string | null, diasParaAdicionar: number) => {
     let dataReferencia = dataAtual && new Date(dataAtual) > new Date() ? new Date(dataAtual) : new Date();
     dataReferencia.setDate(dataReferencia.getDate() + diasParaAdicionar);
@@ -202,9 +210,9 @@ export default function AdminPage() {
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
                   <th className="py-4 px-4 font-bold rounded-tl-lg">Cliente / E-mail</th>
-                  <th className="py-4 px-4 font-bold">Saldo de Créditos</th>
+                  <th className="py-4 px-4 font-bold">Gerenciar Créditos</th>
                   <th className="py-4 px-4 font-bold">Assinatura Mensal / Validade</th>
-                  <th className="py-4 px-4 font-bold">Chave Própria (BYOK)</th>
+                  <th className="py-4 px-4 font-bold">Chave Própria</th>
                   <th className="py-4 px-4 font-bold rounded-tr-lg">Permissões Especiais</th>
                 </tr>
               </thead>
@@ -231,7 +239,7 @@ export default function AdminPage() {
                           {user.nome || 'Sem Nome'}
                           {user.status === 'ativo' ? <CheckCircle className="size-3 text-emerald-500" /> : <XCircle className="size-3 text-rose-500" />}
                         </div>
-                        <div className="text-slate-600 font-medium text-xs mt-0.5">{user.email || 'E-mail não visível'}</div>
+                        <div className="text-indigo-600 font-bold text-xs mt-0.5">{user.email || 'E-mail não informado'}</div>
                         <div className="text-slate-400 text-[10px] font-mono mt-1 mb-3">{user.id}</div>
                         <button onClick={() => alternarStatus(user.id, user.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase shadow-sm transition-all ${user.status === 'ativo' ? 'bg-white border border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-600 text-white border border-transparent hover:bg-emerald-700'}`}>
                           {user.status === 'ativo' ? 'Bloquear Conta' : 'Ativar Conta'}
@@ -241,9 +249,19 @@ export default function AdminPage() {
                       {/* COLUNA: CRÉDITOS */}
                       <td className="py-5 px-4 align-top">
                         <div className="flex flex-col gap-2">
-                          <span className="flex items-center w-fit bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 font-black text-sm">
-                            <Zap className="size-4 fill-amber-500 mr-1.5" /> {user.credits || 0}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 text-amber-800 font-black text-sm">
+                              <Zap className="size-4 fill-amber-500 mr-1" /> {user.credits || 0}
+                            </span>
+                            <input 
+                              type="number" 
+                              defaultValue={user.credits || 0} 
+                              key={user.credits}
+                              onBlur={(e) => definirCreditosManuais(user.id, e.target.value)}
+                              className="w-20 px-2 py-1 text-xs font-bold border border-slate-200 rounded-lg bg-slate-50 focus:bg-white outline-none"
+                              title="Digite e clique fora para definir valor exato"
+                            />
+                          </div>
                           <div className="flex gap-1.5">
                             <button onClick={() => alterarCreditos(user.id, user.credits || 0, 100)} className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-200 shadow-sm">+100</button>
                             <button onClick={() => alterarCreditos(user.id, user.credits || 0, 500)} className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-200 shadow-sm">+500</button>
