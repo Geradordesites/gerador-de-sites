@@ -86,18 +86,29 @@ export default function AdminPage() {
     else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, credits: novoValor } : u))
   }
 
-  const adicionarTempoPlano = async (userId: string, dataAtual: string | null, diasParaAdicionar: number) => {
-    let dataReferencia = dataAtual && new Date(dataAtual) > new Date() ? new Date(dataAtual) : new Date();
-    dataReferencia.setDate(dataReferencia.getDate() + diasParaAdicionar);
+  // NOVA FUNÇÃO: Permite alterar dias livremente (somar ou subtrair) ou escolher pelo calendário
+  const alterarTempoPlanoDias = async (userId: string, dataAtual: string | null, diasParaSomarOuSubtrair: number) => {
+    let base = dataAtual && new Date(dataAtual) > new Date() ? new Date(dataAtual) : new Date();
+    base.setDate(base.getDate() + diasParaSomarOuSubtrair);
     
-    const novaDataIso = dataReferencia.toISOString();
+    const novaDataIso = base.toISOString();
     const { error } = await supabase.from('profiles').update({ plan_expiration: novaDataIso }).eq('id', userId);
     
     if (error) alert('Erro ao atualizar validade do plano!');
     else {
       setUsuarios(usuarios.map(u => u.id === userId ? { ...u, plan_expiration: novaDataIso } : u));
-      alert(`Plano estendido em ${diasParaAdicionar} dias com sucesso!`);
     }
+  }
+
+  // NOVA FUNÇÃO: Definir data exata escolhida pelo calendário ou zerar
+  const definirValidadeManual = async (userId: string, dataString: string) => {
+    let novaIso = null;
+    if (dataString) {
+      novaIso = new Date(dataString + 'T12:00:00Z').toISOString();
+    }
+    const { error } = await supabase.from('profiles').update({ plan_expiration: novaIso }).eq('id', userId);
+    if (error) alert('Erro ao atualizar validade!');
+    else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, plan_expiration: novaIso } : u));
   }
 
   const alternarStatus = async (userId: string, statusAtual: string) => {
@@ -226,7 +237,7 @@ export default function AdminPage() {
                     } else if (diffDias <= 5) {
                       badgeVencimento = <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 ml-2 animate-pulse" title="Vence em breve!">⚠️ Vence em {diffDias}d</span>;
                     } else {
-                      badgeVencimento = <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 ml-2">Ativo</span>;
+                      badgeVencimento = <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-rose-200 ml-2">Ativo</span>;
                     }
                   } else {
                     badgeVencimento = <span className="text-[10px] text-slate-400 italic ml-2">Sem plano</span>;
@@ -270,19 +281,23 @@ export default function AdminPage() {
                         </div>
                       </td>
 
-                      {/* COLUNA: ASSINATURA BYOK */}
+                      {/* COLUNA: ASSINATURA BYOK (COM CALENDÁRIO LIVRE E CONTROLES DE ADICIONAR/REDUZIR/ZERAR) */}
                       <td className="py-5 px-4 align-top bg-slate-50/50 border-l border-r border-slate-100">
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center flex-wrap gap-1">
-                            <span className="font-bold text-slate-700 flex items-center text-sm">
-                              <CalendarDays className="size-4 mr-1.5 text-indigo-500" />
-                              {user.plan_expiration ? new Date(user.plan_expiration).toLocaleDateString('pt-BR') : '--/--/----'}
-                            </span>
+                          <div className="flex items-center flex-wrap gap-2">
+                            <input 
+                              type="date"
+                              value={user.plan_expiration ? user.plan_expiration.split('T')[0] : ''}
+                              onChange={(e) => definirValidadeManual(user.id, e.target.value)}
+                              className="px-2 py-1 text-xs font-bold border border-slate-300 rounded-lg bg-white text-slate-700 focus:border-indigo-500 outline-none shadow-sm cursor-pointer"
+                              title="Clique para escolher a data exata de vencimento"
+                            />
                             {badgeVencimento}
                           </div>
-                          <div className="flex gap-1.5 mt-1">
-                            <button onClick={() => adicionarTempoPlano(user.id, user.plan_expiration, 30)} className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded border border-indigo-200 shadow-sm">+ 30 Dias</button>
-                            <button onClick={() => adicionarTempoPlano(user.id, user.plan_expiration, 365)} className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded border border-indigo-200 shadow-sm">+ 1 Ano</button>
+                          <div className="flex gap-1.5 mt-1 flex-wrap">
+                            <button onClick={() => alterarTempoPlanoDias(user.id, user.plan_expiration, 30)} className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded border border-indigo-200 shadow-sm" title="Adicionar 30 Dias">+ 30d</button>
+                            <button onClick={() => alterarTempoPlanoDias(user.id, user.plan_expiration, -30)} className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold rounded border border-rose-200 shadow-sm" title="Reduzir 30 Dias">- 30d</button>
+                            <button onClick={() => definirValidadeManual(user.id, '')} className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold rounded border border-slate-300 shadow-sm" title="Remover Plano">Zerar</button>
                           </div>
                         </div>
                       </td>
@@ -331,7 +346,7 @@ export default function AdminPage() {
         {/* LOGS DE FALHAS DA API */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
               <AlertTriangle className="size-5 text-amber-500" /> Relatório de Falhas da IA (Últimos Logs)
             </h2>
           </div>
