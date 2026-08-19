@@ -1851,9 +1851,9 @@ export default function Home() {
                   <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
                       <i className="fas fa-search-dollar"></i> SEO & Scripts
                   </button>
-                 <button onClick={() => window.location.href = '/hospedagem'} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm" title="Aprenda a colocar seu site no ar de graça">
-                  <i className="fas fa-globe"></i> Como Hospedar Grátis
-              </button> 
+                 <button onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm" title="Aprenda a colocar seu site no ar de graça">
+                  <i className="fas fa-globe"></i> Como Hospedar
+              </button>
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
                   <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
