@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, CheckCircle2, ArrowRight, Code } from 'lucide-react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code } from 'lucide-react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
@@ -29,7 +29,6 @@ export default function PaginaDeVendas() {
 
       {/* HERO SECTION (A Promessa Principal) */}
       <section className="pt-24 pb-32 px-4 text-center overflow-hidden relative">
-        {/* Efeitos de fundo */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-300/20 blur-[120px] rounded-full pointer-events-none -z-10" />
         
         <div className="max-w-4xl mx-auto relative z-10">
@@ -42,7 +41,7 @@ export default function PaginaDeVendas() {
           </h1>
           
           <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Esqueça horas de programação ou templates engessados. Nossa IA gera o código, escreve os textos persuasivos e cria imagens exclusivas para o seu negócio com um único clique.
+            Esqueça horas de programação ou templates engessados. Nossa IA constrói a estrutura visual, escreve os textos persuasivos e gera imagens exclusivas para o seu negócio com um único clique.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -79,7 +78,7 @@ export default function PaginaDeVendas() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">Design & Estrutura</h3>
               <p className="text-slate-600 leading-relaxed">
-                Nossa IA constrói a estrutura completa em HTML/Tailwind, organizando seções de venda, depoimentos e captura de leads com alta taxa de conversão.
+                Nossa IA constrói a estrutura visual completa, organizando seções de venda, depoimentos e captura de leads com foco total em conversão e responsividade.
               </p>
             </div>
 
@@ -90,7 +89,7 @@ export default function PaginaDeVendas() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">Copywriting Automático</h3>
               <p className="text-slate-600 leading-relaxed">
-                Títulos magnéticos e textos persuasivos gerados pelos modelos de linguagem mais avançados (Llama 3 e Gemini), prontos para vender seu produto.
+                Títulos magnéticos e textos persuasivos gerados por inteligência artificial avançada, formatados especificamente para vender o seu produto ou serviço.
               </p>
             </div>
 
@@ -101,9 +100,70 @@ export default function PaginaDeVendas() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">Imagens Fotorealistas</h3>
               <p className="text-slate-600 leading-relaxed">
-                Chega de banco de imagens clichês. Integrado com o poderoso motor FLUX, o sistema cria imagens exclusivas e de altíssima qualidade para ilustrar seu site.
+                Chega de banco de imagens clichês. Integrado com poderosos motores de imagem, o sistema cria artes exclusivas e de altíssima qualidade para o seu site.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SAMPLES SECTION (Amostras de Sites) */}
+      <section className="py-24 bg-slate-50 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold font-serif text-slate-900 mb-4">Veja o que a IA pode criar</h2>
+            <p className="text-lg text-slate-500">Exemplos reais de páginas geradas e prontas para uso.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            
+            {/* Amostra 1 */}
+            <div className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all">
+              <div className="aspect-[4/3] bg-slate-200 relative overflow-hidden flex flex-col items-center justify-center">
+                
+                {/* DICA: Para colocar sua imagem depois, apague a div abaixo e use a tag img assim: */}
+                {/* <img src="/caminho-da-sua-imagem1.jpg" alt="Modelo 1" className="w-full h-full object-cover" /> */}
+                
+                <ImageIcon className="size-12 text-slate-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-slate-500 font-medium text-sm">Insira sua Imagem de Exemplo 1</span>
+              
+              </div>
+              <div className="p-6">
+                <h3 className="font-bold text-lg text-slate-900 mb-1">Página de Vendas (Cursos)</h3>
+                <p className="text-slate-500 text-sm">Design otimizado com blocos de módulos, bônus e depoimentos em vídeo.</p>
+              </div>
+            </div>
+
+            {/* Amostra 2 */}
+            <div className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all">
+              <div className="aspect-[4/3] bg-emerald-50 relative overflow-hidden flex flex-col items-center justify-center">
+                
+                {/* DICA: Coloque a imagem 2 aqui */}
+                <ImageIcon className="size-12 text-emerald-300 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-emerald-600/70 font-medium text-sm">Insira sua Imagem de Exemplo 2</span>
+
+              </div>
+              <div className="p-6">
+                <h3 className="font-bold text-lg text-slate-900 mb-1">Landing Page Corporativa</h3>
+                <p className="text-slate-500 text-sm">Estrutura limpa ideal para agências, consultorias e prestação de serviços.</p>
+              </div>
+            </div>
+
+            {/* Amostra 3 */}
+            <div className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all">
+              <div className="aspect-[4/3] bg-indigo-50 relative overflow-hidden flex flex-col items-center justify-center">
+                
+                {/* DICA: Coloque a imagem 3 aqui */}
+                <ImageIcon className="size-12 text-indigo-300 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-indigo-600/70 font-medium text-sm">Insira sua Imagem de Exemplo 3</span>
+
+              </div>
+              <div className="p-6">
+                <h3 className="font-bold text-lg text-slate-900 mb-1">Página de Captura (Leads)</h3>
+                <p className="text-slate-500 text-sm">Foco absoluto na conversão de contatos com formulários em destaque.</p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -129,7 +189,7 @@ export default function PaginaDeVendas() {
                   <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">2</div>
                   <div>
                     <h4 className="text-xl font-bold mb-2">A IA cria tudo</h4>
-                    <p className="text-slate-400">O sistema escreve os textos, monta o código visual e desenha as imagens em tempo real.</p>
+                    <p className="text-slate-400">O sistema escreve os textos, monta a estrutura visual e desenha as imagens em tempo real.</p>
                   </div>
                 </div>
 
