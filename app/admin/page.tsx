@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Users, Shield, Zap, Key, CheckCircle, XCircle, Loader2, AlertTriangle, Eye, EyeOff, Clock, CalendarDays, FlaskConical } from 'lucide-react'
+import { Users, Shield, Zap, Key, CheckCircle, XCircle, Loader2, AlertTriangle, Eye, EyeOff, CalendarDays, FlaskConical } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -23,9 +23,13 @@ export default function AdminPage() {
     setLoading(true)
     const { data: { session } } = await supabase.auth.getSession()
 
-    if (!session) { router.push('/'); return; }
+    if (!session) {
+      router.push('/') 
+      return
+    }
 
     const MEU_EMAIL_ADMIN = 'josevg10@gmail.com'
+
     if (session.user.email !== MEU_EMAIL_ADMIN) {
       alert('Acesso negado. Área restrita para administradores.')
       router.push('/')
@@ -37,13 +41,31 @@ export default function AdminPage() {
   }
 
   const carregarDadosAdmin = async () => {
-    const { data: profiles, error } = await supabase.from('profiles').select('*').order('credits', { ascending: false })
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('credits', { ascending: false })
+
     if (!error) setUsuarios(profiles || [])
 
-    const { data: settings } = await supabase.from('system_settings').select('*').eq('id', 'global').single()
-    if (settings) { setConfig(settings) } else { await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: true, admin_paid_key_enabled: true }) }
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('*')
+      .eq('id', 'global')
+      .single()
 
-    const { data: logs } = await supabase.from('api_logs').select('*').order('data_hora', { ascending: false }).limit(20)
+    if (settings) {
+      setConfig(settings)
+    } else {
+      await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: true, admin_paid_key_enabled: true })
+    }
+
+    const { data: logs } = await supabase
+      .from('api_logs')
+      .select('*')
+      .order('data_hora', { ascending: false })
+      .limit(20)
+    
     if (logs) setApiLogs(logs)
 
     setLoading(false)
@@ -93,9 +115,21 @@ export default function AdminPage() {
 
   const salvarConfiguracoesGlobais = async (novaConfig: any) => {
     setSalvandoConfig(true)
-    const { error } = await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: novaConfig.byok_enabled, admin_paid_key_enabled: novaConfig.admin_paid_key_enabled })
-    if (error) { console.error(error); alert(`Erro ao salvar: ${error.message}`); } 
-    else { setConfig(novaConfig); alert('Configurações salvas com sucesso!'); }
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ 
+        id: 'global',
+        byok_enabled: novaConfig.byok_enabled, 
+        admin_paid_key_enabled: novaConfig.admin_paid_key_enabled 
+      })
+
+    if (error) {
+      console.error(error)
+      alert(`Erro ao salvar: ${error.message}`)
+    } else {
+      setConfig(novaConfig)
+      alert('Configurações salvas com sucesso!')
+    }
     setSalvandoConfig(false)
   }
 
@@ -164,44 +198,43 @@ export default function AdminPage() {
             </h2>
           </div>
           <div className="overflow-x-auto pb-4">
-            <table className="w-full text-left border-collapse min-w-[1000px]">
+            <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
-                  <th className="py-4 px-4 font-bold rounded-tl-lg">Cliente</th>
-                  <th className="py-4 px-4 font-bold">Saldo de Créditos (SaaS)</th>
-                  <th className="py-4 px-4 font-bold">Validade Mensal (BYOK)</th>
-                  <th className="py-4 px-4 font-bold">Chave API do Cliente</th>
-                  <th className="py-4 px-4 font-bold">Permissões de Acesso</th>
+                  <th className="py-4 px-4 font-bold rounded-tl-lg">Cliente / E-mail</th>
+                  <th className="py-4 px-4 font-bold">Saldo de Créditos</th>
+                  <th className="py-4 px-4 font-bold">Assinatura Mensal / Validade</th>
+                  <th className="py-4 px-4 font-bold">Chave Própria (BYOK)</th>
+                  <th className="py-4 px-4 font-bold rounded-tr-lg">Permissões Especiais</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {usuarios.map((user) => {
-                  
-                  // Lógica Visual de Vencimento do Plano
                   let badgeVencimento = null;
                   if (user.plan_expiration) {
                     const diffDias = Math.ceil((new Date(user.plan_expiration).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
                     if (diffDias < 0) {
-                      badgeVencimento = <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded border border-rose-200">Expirado</span>;
+                      badgeVencimento = <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded border border-rose-200 ml-2">Expirado</span>;
                     } else if (diffDias <= 5) {
-                      badgeVencimento = <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded border border-amber-200" title="Vence em breve!">Faltam {diffDias} dias</span>;
+                      badgeVencimento = <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 ml-2 animate-pulse" title="Vence em breve!">⚠️ Vence em {diffDias}d</span>;
                     } else {
-                      badgeVencimento = <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">Ativo</span>;
+                      badgeVencimento = <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 ml-2">Ativo</span>;
                     }
                   } else {
-                    badgeVencimento = <span className="text-[10px] text-slate-400 italic">Sem plano</span>;
+                    badgeVencimento = <span className="text-[10px] text-slate-400 italic ml-2">Sem plano</span>;
                   }
 
                   return (
                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-5 px-4 align-top">
-                        <div className="font-bold text-slate-900 flex items-center gap-2 mb-1">
-                          {user.nome || user.email || 'Sem Nome'}
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5 mb-1">
+                          {user.nome || 'Sem Nome'}
                           {user.status === 'ativo' ? <CheckCircle className="size-3 text-emerald-500" /> : <XCircle className="size-3 text-rose-500" />}
                         </div>
-                        <div className="text-slate-400 text-[10px] font-mono mb-3">{user.id}</div>
+                        <div className="text-slate-600 font-medium text-xs mt-0.5">{user.email || 'E-mail não visível'}</div>
+                        <div className="text-slate-400 text-[10px] font-mono mt-1 mb-3">{user.id}</div>
                         <button onClick={() => alternarStatus(user.id, user.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase shadow-sm transition-all ${user.status === 'ativo' ? 'bg-white border border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-600 text-white border border-transparent hover:bg-emerald-700'}`}>
-                          {user.status === 'ativo' ? 'Bloquear Acesso' : 'Ativar Conta'}
+                          {user.status === 'ativo' ? 'Bloquear Conta' : 'Ativar Conta'}
                         </button>
                       </td>
 
@@ -220,9 +253,9 @@ export default function AdminPage() {
                       </td>
 
                       {/* COLUNA: ASSINATURA BYOK */}
-                      <td className="py-5 px-4 align-top border-l border-r border-slate-100 bg-slate-50/50">
+                      <td className="py-5 px-4 align-top bg-slate-50/50 border-l border-r border-slate-100">
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center flex-wrap gap-1">
                             <span className="font-bold text-slate-700 flex items-center text-sm">
                               <CalendarDays className="size-4 mr-1.5 text-indigo-500" />
                               {user.plan_expiration ? new Date(user.plan_expiration).toLocaleDateString('pt-BR') : '--/--/----'}
@@ -240,8 +273,8 @@ export default function AdminPage() {
                       <td className="py-5 px-4 align-top">
                         {user.user_api_key ? (
                           <div className="flex items-center gap-2">
-                            <code className="bg-slate-100 text-slate-700 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-mono max-w-[150px] overflow-hidden truncate block">
-                              {chavesVisiveis[user.id] ? user.user_api_key : `${user.user_api_key.substring(0, 8)}••••••••`}
+                            <code className="bg-slate-100 text-slate-700 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-mono max-w-[130px] overflow-hidden truncate block">
+                              {chavesVisiveis[user.id] ? user.user_api_key : `${user.user_api_key.substring(0, 6)}••••••••`}
                             </code>
                             <button onClick={() => toggleVisibilidadeChave(user.id)} className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Mostrar/Ocultar Chave">
                               {chavesVisiveis[user.id] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -255,12 +288,12 @@ export default function AdminPage() {
                       {/* COLUNA: PERMISSÕES INDIVIDUAIS */}
                       <td className="py-5 px-4 align-top">
                         <div className="flex flex-col gap-2 w-fit">
-                          <button onClick={() => alternarByokIndividual(user.id, user.allow_byok)} className={`px-2.5 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_byok ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`} title="Permite o usuário colar e usar a chave Gemini dele">
+                          <button onClick={() => alternarByokIndividual(user.id, user.allow_byok)} className={`px-2.5 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_byok ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`} title="Permite o usuário colar e usar a chave própria dele">
                              <span className="flex items-center"><Key className="size-3 mr-1.5" /> Liberar BYOK</span>
                              <div className={`w-2 h-2 rounded-full ${user.allow_byok ? 'bg-indigo-500' : 'bg-slate-300'}`}></div>
                           </button>
                           
-                          <button onClick={() => alternarChaveTesteAdmin(user.id, user.allow_admin_test_key)} className={`px-2.5 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_admin_test_key ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`} title="VIP: Permite ele usar sua Chave Admin da Vercel consumindo os créditos dele.">
+                          <button onClick={() => alternarChaveTesteAdmin(user.id, user.allow_admin_test_key)} className={`px-2.5 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_admin_test_key ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`} title="VIP: Permite ele testar gastando créditos mas usando sua chave Admin">
                              <span className="flex items-center"><FlaskConical className="size-3 mr-1.5" /> Chave Teste Admin</span>
                              <div className={`w-2 h-2 rounded-full ${user.allow_admin_test_key ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
                           </button>
@@ -270,7 +303,7 @@ export default function AdminPage() {
                   )
                 })}
                 {usuarios.length === 0 && (
-                  <tr><td colSpan={5} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento. (Crie uma conta para testar)</td></tr>
+                  <tr><td colSpan={5} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento.</td></tr>
                 )}
               </tbody>
             </table>

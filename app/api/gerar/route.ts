@@ -104,7 +104,7 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
-    // === LÓGICA DE NEGÓCIOS E FINANCEIRA ===
+    // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
@@ -131,26 +131,32 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
     let isUsingCredits = false;
 
     if (isAdmin) {
+        // ADMIN: Usa sempre a chave pessoal de testes
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
-        // MODO MENSALIDADE (BYOK)
+        // MODO MENSALIDADE (CHAVE DE INTELIGÊNCIA ARTIFICIAL PRÓPRIA)
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
-            throw new Error("Assinatura Expirada: O seu plano mensal venceu. Renove sua assinatura para continuar usando o sistema com sua própria chave.");
+            throw new Error("Assinatura Expirada: O seu período de acesso mensal venceu. Renove sua assinatura para continuar.");
         }
         chaveParaUsar = clientApiKey;
-    } else {
-        // MODO CRÉDITOS (CHAVE DO SISTEMA)
+        // Não gasta créditos no modo mensalidade própria
+    } else if (allowAdminTestKey) {
+        // MODO TESTE ADMIN COM CRÉDITOS: Usa a chave admin mas desconta créditos do cliente
         if (userCredits <= 0) {
-            throw new Error("Saldo Insuficiente: Você não possui créditos para gerar sites. Adquira um pacote de créditos ou use sua própria chave Gemini.");
+            throw new Error("Saldo Insuficiente: Você não possui créditos para gerar sites.");
         }
-        
         isUsingCredits = true;
-        if (allowAdminTestKey) {
-            chaveParaUsar = process.env.GEMINI_API_KEY!; // Acesso VIP temporário à chave do Admin para testes
-        } else if (isAdminKeyEnabled && process.env.GEMINI_API_KEY_CLIENTES) {
-            chaveParaUsar = process.env.GEMINI_API_KEY_CLIENTES; // Chave oficial paga dos clientes
+        chaveParaUsar = process.env.GEMINI_API_KEY!;
+    } else {
+        // MODO PAGO OFICIAL DO SISTEMA (CRÉDITOS)
+        if (userCredits <= 0) {
+            throw new Error("Saldo Insuficiente: Você não possui créditos para gerar sites. Adquira um pacote de créditos.");
+        }
+        isUsingCredits = true;
+        if (isAdminKeyEnabled && process.env.GEMINI_API_KEY_CLIENTES) {
+            chaveParaUsar = process.env.GEMINI_API_KEY_CLIENTES;
         } else {
-            throw new Error("Geração bloqueada: O Administrador ainda não configurou a API Paga para clientes no servidor.");
+            throw new Error("Geração bloqueada: O Administrador ainda não configurou a API Paga centralizada para os clientes.");
         }
     }
 
@@ -188,21 +194,20 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
     if (historicoErros.length > 0) {
         try {
             await supabaseAdmin.from('api_logs').insert([{ modelos_falhos: JSON.stringify(historicoErros, null, 2), sucesso_final: geracaoSucesso, data_hora: new Date().toISOString() }]);
-        } catch (e) { console.error("Falha ao gravar log no Supabase", e); }
+        } catch (e) { console.error("Falha ao gravar log", e); }
     }
 
     if (!geracaoSucesso) {
         throw new Error("Nossos motores de IA estão temporariamente congestionados devido a alta demanda. Aguarde 30 segundos e tente novamente.");
     }
 
-    // DESCONTO FINANCEIRO (Se usou chave do sistema e deu sucesso, consome 1 crédito)
+    // DESCONTO FINANCEIRO DE CRÉDITO
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try {
             await supabaseAdmin.from('profiles').update({ credits: userCredits - 1 }).eq('id', userId);
         } catch (e) { console.error("Falha ao descontar crédito", e); }
     }
 
-    // INJEÇÕES E MOTOR UNSPLASH...
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement && !isSiteRefinement) {
         const aosCss = '<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">';
         const aosJs = '<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>\n<script>AOS.init({duration: 800, once: true});</script>';
