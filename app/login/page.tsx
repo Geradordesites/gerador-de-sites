@@ -41,8 +41,8 @@ export default function LoginPage() {
     // Fundo bg-slate-50 para combinar com a Página de Vendas e Planos
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 selection:bg-emerald-200 selection:text-emerald-900">
       
-      {/* Logo clicável que volta para a página de vendas */}
-      <div className="flex items-center gap-2 mb-8 cursor-pointer hover:scale-105 transition-transform" onClick={() => router.push('/vendas')}>
+      {/* Logo clicável que volta para a página de vendas (ajustado para /gerador) */}
+      <div className="flex items-center gap-2 mb-8 cursor-pointer hover:scale-105 transition-transform" onClick={() => router.push('/gerador')}>
         <div className="bg-emerald-600 p-2.5 rounded-xl shadow-lg shadow-emerald-600/20">
           <Sparkles className="size-6 text-white" />
         </div>
