@@ -136,8 +136,8 @@ export default function PaginaDeVendas() {
                 <div className="flex gap-4">
                   <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">3</div>
                   <div>
-                    <h4 className="text-xl font-bold mb-2">Edite e Exporte</h4>
-                    <p className="text-slate-400">Refine qualquer detalhe no nosso editor visual clique-e-arraste e baixe seu site pronto para hospedar.</p>
+                    <h4 className="text-xl font-bold mb-2">Liberdade para Editar</h4>
+                    <p className="text-slate-400">Clique em qualquer elemento para editar textos manualmente ou use nossa IA para reescrever blocos inteiros com um clique. Tudo perfeito? É só baixar o site pronto.</p>
                   </div>
                 </div>
               </div>
