@@ -645,17 +645,20 @@ export default function Home() {
   const [userId, setUserId] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userCredits, setUserCredits] = useState<number | null>(null);
-  const [userExpiration, setUserExpiration] = useState<string | null>(null);  
+  const [userExpiration, setUserExpiration] = useState<string | null>(null);
+
   useEffect(() => {
     const carregarConfiguracoesESessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
-        const { data: profile } = await supabase.from('profiles').select('user_api_key, allow_byok').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('user_api_key, allow_byok, credits, plan_expiration').eq('id', session.user.id).single();
         if (profile) {
             if (profile.user_api_key) setApiKey(profile.user_api_key);
             if (profile.allow_byok) setUserByok(profile.allow_byok);
+            setUserCredits(profile.credits ?? 0);
+            setUserExpiration(profile.plan_expiration);
         }
       }
       
@@ -784,7 +787,7 @@ export default function Home() {
   const moverElemento = (direcao: 'UP' | 'DOWN') => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'MOVE_UP', id: elementoSelecionado.id }, '*'); // Simplified logic
+      iframe.contentWindow?.postMessage({ type: 'MOVE_UP', id: elementoSelecionado.id }, '*'); 
   };
 
   const moverSecaoInteira = (direcao: 'UP' | 'DOWN') => {
@@ -1089,7 +1092,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; // Fotorrealista padrão
+          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -1722,8 +1725,8 @@ export default function Home() {
                                           {/* NOVA LÓGICA: APARECE SE ADMIN LIBEROU O GLOBAL OU O INDIVIDUAL DO USUÁRIO */}
                                           {(byokEnabled || userByok) && (
                                               <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
-                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave Gemini (Opcional)</label>
-                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria API Key do Google Gemini para ter geração ilimitada. Se deixar em branco, usará seus créditos do sistema.</p>
+                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
+                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
                                                   <input 
                                                     type="password" 
                                                     value={apiKey}
@@ -1836,65 +1839,56 @@ export default function Home() {
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
                   <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
-{/* ---> ADICIONE ESTE BLOCO NOVO AQUI: O SELO DE CRÉDITOS/VALIDADE */}
-        <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200">
-            <div className="flex flex-col text-right">
-                {userByok ? (
-                    <>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Assinatura BYOK</span>
-                        <span className="text-xs font-bold text-indigo-600 flex items-center justify-end gap-1.5">
-                            <i className="fas fa-calendar-check"></i> {userExpiration ? new Date(userExpiration).toLocaleDateString('pt-BR') : 'Sem Validade'}
-                        </span>
-                    </>
-                ) : (
-                    <>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Seus Créditos</span>
-                        <span className={`text-xs font-bold flex items-center justify-end gap-1.5 ${(userCredits || 0) < 5 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
-                            <i className="fas fa-bolt"></i> {userCredits !== null ? userCredits : '0'} Saldo
-                        </span>
-                    </>
-                )}
-            </div>
-        </div>
-        {/* ---> FIM DO BLOCO NOVO */}
+
+              {/* LADO DIREITO DA BARRA SUPERIOR */}
               <div className="flex items-center gap-3 md:gap-4">
-                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-th-large mr-1.5"></i> Meus Projetos</button>
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                   
+                  {/* SELO DE CRÉDITOS / VALIDADE (EXIBIDO PARA TODOS) */}
+                  <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200">
+                      <div className="flex flex-col text-right">
+                          {userByok ? (
+                              <>
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Assinatura BYOK</span>
+                                  <span className="text-xs font-bold text-indigo-600 flex items-center justify-end gap-1.5">
+                                      <i className="fas fa-calendar-check"></i> {userExpiration ? new Date(userExpiration).toLocaleDateString('pt-BR') : 'Ativo'}
+                                  </span>
+                              </>
+                          ) : (
+                              <>
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Seus Créditos</span>
+                                  <span className={`text-xs font-bold flex items-center justify-end gap-1.5 ${(userCredits || 0) < 5 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
+                                      <i className="fas fa-bolt"></i> {userCredits !== null ? userCredits : '0'} Saldo
+                                  </span>
+                              </>
+                          )}
+                      </div>
+                  </div>
+
+                  {/* BOTÕES EXCLUSIVOS DO ADMINISTRADOR (MEUS PROJETOS E PUBLICAR) */}
+                  {userEmail === 'josevg10@gmail.com' && (
+                      <div className="flex items-center gap-3">
+                          <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition flex items-center">
+                              <i className="fas fa-th-large mr-1.5"></i> Meus Projetos
+                          </button>
+                          <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                          
+                          {siteEditando ? (
+                              <div className="flex gap-2">
+                                  <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
+                                  <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
+                              </div>
+                          ) : (
+                              <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-globe mr-1.5"></i> Publicar Online</button>
+                          )}
+                          <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                      </div>
+                  )}
+                  
+                  {/* BOTÕES DE BAIXAR E COPIAR CÓDIGO (ÚNICOS E VISÍVEIS PARA TODOS) */}
                   <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
                       <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Arquivo para o Computador"><i className="fas fa-download"></i></button>
                       <button onClick={() => (window as any).copiarCodigo()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 transition" title="Copiar todo o Código HTML"><i className="fas fa-copy"></i></button>
                   </div>
-                  
-                 {/* O BOTÃO SÓ APARECE SE FOR VOCÊ (ADMIN) */}
-<div className="flex items-center gap-3 md:gap-4">
-    
-    {/* O BOTÃO "MEUS PROJETOS" E "PUBLICAR ONLINE" SÓ APARECEM PARA O ADMIN */}
-    {userEmail === 'josevg10@gmail.com' && (
-        <>
-            <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition">
-                <i className="fas fa-th-large mr-1.5"></i> Meus Projetos
-            </button>
-            <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-            
-            {siteEditando ? (
-                <div className="flex gap-2">
-                    <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
-                    <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
-                </div>
-            ) : (
-                <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-globe mr-1.5"></i> Publicar Online</button>
-            )}
-        </>
-    )}
-
-    {/* Os botões de baixar e copiar código continuam visíveis para todos abaixo */}
-    <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
-        <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Arquivo para o Computador"><i className="fas fa-download"></i></button>
-        <button onClick={() => (window as any).copiarCodigo()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 transition" title="Copiar todo o Código HTML"><i className="fas fa-copy"></i></button>
-    </div>
-
-</div>
               </div>
           </div>
           
