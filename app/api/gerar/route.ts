@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
-// LISTA DE MODELOS (ROTAÇÃO AUTOMÁTICA)
 const MODELOS_GEMINI = [
   "gemini-3.7-flash",
   "gemini-3.6-flash",
@@ -15,7 +14,9 @@ const MODELOS_GEMINI = [
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement } = body;
+    
+    // RECEBE A CHAVE DO CLIENTE
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -128,7 +129,6 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
         </div>
     </div>
     <script>
-      // Força a exibição do cursor e remove a marca padrão da sanfona (seta preta)
       document.querySelectorAll('#rodape-sanfonas summary').forEach(s => {
           s.style.listStyle = 'none';
           if(s.childNodes[0] && s.childNodes[0].nodeName === "#text" && s.childNodes[0].nodeValue.includes('▶')) s.childNodes[0].nodeValue = '';
@@ -140,7 +140,23 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    // === LÓGICA DE AUTORIZAÇÃO DE CHAVES ===
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
+    
+    const isByokEnabled = settings?.byok_enabled ?? true;
+    const isAdminKeyEnabled = settings?.admin_paid_key_enabled ?? true;
+
+    let chaveParaUsar = "";
+    if (isByokEnabled && clientApiKey && clientApiKey.length > 10) {
+        chaveParaUsar = clientApiKey; // Usa a do cliente
+    } else if (isAdminKeyEnabled) {
+        chaveParaUsar = process.env.GEMINI_API_KEY!; // Usa a sua paga central
+    } else {
+        throw new Error("Geração bloqueada: O uso da API central está desativado no painel Admin e você não configurou sua própria chave Gemini.");
+    }
+
+    const genAI = new GoogleGenerativeAI(chaveParaUsar);
     let htmlCode = '';
     let provedorTextoUsado = '';
     let geracaoSucesso = false;
@@ -179,10 +195,6 @@ Sempre finalize o </body> com este exato rodapé, copiando o código inteiro aba
 
     if (historicoErros.length > 0) {
         try {
-            const supabaseAdmin = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            );
             await supabaseAdmin.from('api_logs').insert([{
                 modelos_falhos: JSON.stringify(historicoErros, null, 2),
                 sucesso_final: geracaoSucesso,

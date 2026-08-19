@@ -89,7 +89,8 @@ export default function AdminPage() {
 
   const salvarConfiguracoesGlobais = async (novaConfig: any) => {
     setSalvandoConfig(true)
-    const { error } = await supabase.from('system_settings').update(novaConfig).eq('id', 'global')
+    // Alterado de .update para .upsert
+    const { error } = await supabase.from('system_settings').upsert({ id: 'global', ...novaConfig })
     if (error) alert('Erro ao salvar configurações!')
     else {
       setConfig(novaConfig)
