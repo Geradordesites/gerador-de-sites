@@ -43,7 +43,7 @@ export default function AdminPage() {
     await carregarDadosAdmin()
   }
 
-  const carregarDadosAdmin = async () => {
+ const carregarDadosAdmin = async () => {
     // Busca usuários
     const { data: profiles, error } = await supabase
       .from('profiles')
@@ -59,7 +59,12 @@ export default function AdminPage() {
       .eq('id', 'global')
       .single()
 
-    if (settings) setConfig(settings)
+    if (settings) {
+      setConfig(settings)
+    } else {
+      // AUTO-CURA: Se a linha não existir no banco, ele cria na hora!
+      await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: true, admin_paid_key_enabled: true })
+    }
 
     // Busca os Logs de Falhas de IA (Últimos 20)
     const { data: logs } = await supabase
@@ -87,21 +92,21 @@ export default function AdminPage() {
     else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, status: novoStatus } : u))
   }
 
-  const salvarConfiguracoesGlobais = async (novaConfig: any) => {
+ const salvarConfiguracoesGlobais = async (novaConfig: any) => {
     setSalvandoConfig(true)
     
-    // Atualiza apenas os campos exatos (evita conflito com o banco)
+    // UPSERT: Atualiza se existir, cria se não existir. À prova de falhas!
     const { error } = await supabase
       .from('system_settings')
-      .update({ 
+      .upsert({ 
+        id: 'global',
         byok_enabled: novaConfig.byok_enabled, 
         admin_paid_key_enabled: novaConfig.admin_paid_key_enabled 
       })
-      .eq('id', 'global')
 
     if (error) {
       console.error(error)
-      alert(`Erro ao salvar: ${error.message}`) // Agora ele mostra o motivo do erro!
+      alert(`Erro ao salvar: ${error.message}`) // Mostra o erro se o banco bloquear
     } else {
       setConfig(novaConfig)
       alert('Configurações salvas com sucesso!')
