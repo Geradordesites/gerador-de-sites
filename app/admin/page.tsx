@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Users, Shield, Zap, Key, PlusCircle, CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react'
+import { Users, Shield, Zap, Key, CheckCircle, XCircle, Loader2, AlertTriangle, Eye, EyeOff } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -13,6 +13,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [salvandoConfig, setSalvandoConfig] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState(false)
+  
+  // Estado para controlar quais chaves estão visíveis na tela
+  const [chavesVisiveis, setChavesVisiveis] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     verificarAcesso()
@@ -84,7 +87,6 @@ export default function AdminPage() {
     else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, status: novoStatus } : u))
   }
 
-  // NOVA FUNÇÃO: Ativa/Desativa o BYOK individual para o cliente
   const alternarByokIndividual = async (userId: string, statusAtual: boolean) => {
     const novoStatus = !statusAtual
     const { error } = await supabase.from('profiles').update({ allow_byok: novoStatus }).eq('id', userId)
@@ -110,6 +112,10 @@ export default function AdminPage() {
       alert('Configurações salvas com sucesso!')
     }
     setSalvandoConfig(false)
+  }
+
+  const toggleVisibilidadeChave = (userId: string) => {
+    setChavesVisiveis(prev => ({ ...prev, [userId]: !prev[userId] }))
   }
 
   if (loading || !isAuthorized) {
@@ -178,52 +184,68 @@ export default function AdminPage() {
                 <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
                   <th className="py-4 px-4 font-bold">E-mail / ID</th>
                   <th className="py-4 px-4 font-bold">Status</th>
-                  <th className="py-4 px-4 font-bold">Créditos</th>
+                  <th className="py-4 px-4 font-bold">Chave API do Cliente</th>
                   <th className="py-4 px-4 font-bold">Ações Rápidas & Permissões</th>
-                  <th className="py-4 px-4 font-bold text-center">Alternar Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {usuarios.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-4 px-4">
-                      <div className="font-bold text-slate-900">{user.nome || user.email || 'Sem Nome'}</div>
+                      <div className="font-bold text-slate-900 flex items-center gap-2">
+                        {user.nome || user.email || 'Sem Nome'}
+                        {user.status === 'ativo' ? <CheckCircle className="size-3 text-emerald-500" /> : <XCircle className="size-3 text-rose-500" />}
+                      </div>
                       <div className="text-slate-400 text-xs font-mono mt-0.5">{user.id}</div>
                     </td>
+                    
                     <td className="py-4 px-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${user.status === 'ativo' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                        {user.status === 'ativo' ? <CheckCircle className="size-3" /> : <XCircle className="size-3" />}
-                        {user.status?.toUpperCase() || 'INATIVO'}
-                      </span>
+                      <button onClick={() => alternarStatus(user.id, user.status)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm transition-all ${user.status === 'ativo' ? 'bg-white border border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-600 text-white border border-transparent hover:bg-emerald-700'}`}>
+                        {user.status === 'ativo' ? 'Bloquear' : 'Ativar'}
+                      </button>
                     </td>
-                    <td className="py-4 px-4 font-bold text-amber-600">
-                      <span className="flex items-center gap-1.5 bg-amber-50 w-fit px-2.5 py-1 rounded-md border border-amber-200">
-                        <Zap className="size-4 fill-amber-500 text-amber-500" /> {user.credits || 0} cr.
-                      </span>
-                    </td>
+
                     <td className="py-4 px-4">
-                      <div className="flex gap-2 flex-wrap items-center">
-                        <button onClick={() => alterarCreditos(user.id, user.credits || 0, 100)} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors" title="Adicionar 100">+100</button>
-                        <button onClick={() => alterarCreditos(user.id, user.credits || 0, 500)} className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 hover:bg-indigo-100 transition-colors" title="Adicionar 500">+500</button>
-                        <div className="w-px h-5 bg-slate-300 mx-1"></div>
-                        <button onClick={() => alternarByokIndividual(user.id, user.allow_byok)} className={`px-3 py-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_byok ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'}`} title="Permite o usuário colocar a chave dele">
-                           <Key className="size-3" /> {user.allow_byok ? 'Chave Liberada' : 'Chave Bloqueada'}
+                      {user.user_api_key ? (
+                        <div className="flex items-center gap-2">
+                          <code className="bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 text-xs font-mono">
+                            {chavesVisiveis[user.id] 
+                              ? user.user_api_key 
+                              : `${user.user_api_key.substring(0, 8)}••••••••${user.user_api_key.substring(user.user_api_key.length - 4)}`}
+                          </code>
+                          <button onClick={() => toggleVisibilidadeChave(user.id)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Mostrar/Ocultar Chave">
+                            {chavesVisiveis[user.id] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">Sem chave cadastrada</span>
+                      )}
+                    </td>
+
+                    <td className="py-4 px-4">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-1 items-center">
+                          <span className="flex items-center justify-center bg-amber-50 min-w-[60px] px-2 py-1.5 rounded-md border border-amber-200 text-amber-700 font-bold text-xs mr-2">
+                            <Zap className="size-3 fill-amber-500 mr-1" /> {user.credits || 0}
+                          </span>
+                          <button onClick={() => alterarCreditos(user.id, user.credits || 0, 100)} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 hover:bg-emerald-100">+100</button>
+                          <button onClick={() => alterarCreditos(user.id, user.credits || 0, 500)} className="px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded border border-indigo-200 hover:bg-indigo-100">+500</button>
+                        </div>
+                        <button onClick={() => alternarByokIndividual(user.id, user.allow_byok)} className={`w-fit px-3 py-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_byok ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'}`} title="Permite o usuário colocar a chave dele">
+                           <Key className="size-3" /> {user.allow_byok ? 'Chave (BYOK) Liberada' : 'Chave (BYOK) Bloqueada'}
                         </button>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-center">
-                      <button onClick={() => alternarStatus(user.id, user.status)} className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all ${user.status === 'ativo' ? 'bg-white border border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-600 text-white border border-transparent hover:bg-emerald-700'}`}>
-                        {user.status === 'ativo' ? 'Desativar Conta' : 'Ativar Conta'}
-                      </button>
-                    </td>
                   </tr>
                 ))}
+                {usuarios.length === 0 && (
+                  <tr><td colSpan={4} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento. (Crie uma conta para testar)</td></tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* LOGS DE FALHAS DA API */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -253,6 +275,9 @@ export default function AdminPage() {
                     <td className="py-4 px-4"><pre className="bg-slate-100 p-3 rounded-lg text-[10px] text-slate-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto border border-slate-200 custom-scrollbar">{log.modelos_falhos}</pre></td>
                   </tr>
                 ))}
+                {apiLogs.length === 0 && (
+                  <tr><td colSpan={3} className="py-16 text-center text-slate-500 font-medium">Nenhum registro de falha recente. A API está rodando 100% lisa.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
