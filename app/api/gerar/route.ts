@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { createClient } from '@supabase/supabase-js';
+
+// LISTA DE MODELOS (ROTAÇÃO AUTOMÁTICA)
+// Você pode alterar a ordem, remover ou adicionar novos modelos aqui facilmente.
+// O sistema tenta o primeiro; se falhar, tenta o segundo, e assim por diante.
+const MODELOS_GEMINI = [
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash-preview"
+];
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, useGroq } = body;
+    
+    // Removida qualquer referência a 'useGroq' ou outras APIs
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement } = body;
 
     const anoAtual = new Date().getFullYear();
 
@@ -93,34 +108,70 @@ Sempre finalize o </body> com este exato rodapé, copiando letra por letra:
     }
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
+    
+    // VARIÁVEIS DE CONTROLE DA ROTAÇÃO
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     let htmlCode = '';
-    let provedorTextoUsado = 'Google Gemini (Pro)';
+    let provedorTextoUsado = '';
+    let geracaoSucesso = false;
+    let historicoErros: any[] = [];
 
-    // O Gemini é o padrão. O Groq só será ativado se o sistema pedir explicitamente (useGroq: true)
-const usarGroq = useGroq === true;
+    // LÓGICA DE ROTAÇÃO DOS MODELOS GEMINI
+    for (const modelName of MODELOS_GEMINI) {
+        if (geracaoSucesso) break; // Se já gerou com sucesso, ignora o resto da lista
 
-    if (!usarGroq) {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        // Aumentei levemente a temperatura (0.4) para o site não ficar genérico e forçar criatividade na copy B2B
-        const model = genAI.getGenerativeModel({ model: "gemini-omni-flash-preview", systemInstruction: systemInstructionFinal, safetySettings });
-        const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } });
-        htmlCode = extrairHtmlDeJson(result.response.text());
-    } else {
-        provedorTextoUsado = 'Groq Engine (Copy)';
-        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST", headers: { "Authorization": `Bearer ${process.env.GROQ_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                model: "llama-3.3-70b-versatile", 
-                messages: [{ role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt }], 
-                temperature: 0.7,
-                max_tokens: 7500 // Garante que o Groq não corte textos longos
-            })
-        });
-        const groqData = await groqResponse.json();
-        htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
+        // 2 REQUISIÇÕES (TENTATIVAS) MÁXIMAS POR CADA MODELO
+        for (let tentativa = 1; tentativa <= 2; tentativa++) {
+            try {
+                const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
+                const result = await model.generateContent({ 
+                    contents: [{ role: "user", parts: promptParts }], 
+                    generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } 
+                });
+                
+                htmlCode = extrairHtmlDeJson(result.response.text());
+                
+                if (htmlCode && htmlCode.length >= 50) {
+                    geracaoSucesso = true;
+                    provedorTextoUsado = `Google Gemini (${modelName})`;
+                    break; // Sai do loop de tentativas deste modelo específico
+                } else {
+                    throw new Error("HTML gerado foi bloqueado, está muito curto ou inválido.");
+                }
+            } catch (error: any) {
+                // Registra o erro de forma invisível para o cliente
+                historicoErros.push({
+                    modelo: modelName,
+                    tentativa: tentativa,
+                    erro: error.message || "Erro desconhecido",
+                    hora: new Date().toISOString()
+                });
+            }
+        }
     }
 
-    if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial falhou em gerar o código HTML. Tente refazer a requisição.");
+    // REGISTRO DE ERROS NO SEU ADMIN (SUPABASE)
+    // Se ocorreram falhas (mesmo que o último modelo tenha salvado o dia), nós logamos
+    if (historicoErros.length > 0) {
+        try {
+            const supabaseAdmin = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            );
+            await supabaseAdmin.from('api_logs').insert([{
+                modelos_falhos: JSON.stringify(historicoErros, null, 2),
+                sucesso_final: geracaoSucesso,
+                data_hora: new Date().toISOString()
+            }]);
+        } catch (e) {
+            console.error("Falha ao gravar no Supabase", e);
+        }
+    }
+
+    // A MENSAGEM QUE O CLIENTE VÊ SE TUDO FALHAR
+    if (!geracaoSucesso) {
+        throw new Error("Nossos motores de Inteligência Artificial estão temporariamente congestionados devido a alta demanda. Por favor, aguarde 30 segundos e tente gerar novamente.");
+    }
 
     // Injeta scripts de animação caso não existam
     if (dinamica && dinamica !== 'estatico' && !isBlockRefinement && !isElementRefinement && !isSiteRefinement) {
@@ -131,7 +182,6 @@ const usarGroq = useGroq === true;
     }
 
     // 3. MOTOR DE IMAGENS BLINDADO (Garante busca e inserção via Unsplash)
-    // Regex melhorado para aceitar espaços extras que a IA possa inventar
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
     let match;
     let urlsToReplace = [];
