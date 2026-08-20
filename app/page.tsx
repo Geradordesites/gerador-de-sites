@@ -60,12 +60,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let aspect = elSelecionado.style.aspectRatio || '';
         let objOpacity = 1;
         
+        // INTELIGÊNCIA DA OPACIDADE: Inicia em 0% se for película vazia, ou capta o valor exato
         if (isImg) { 
             objOpacity = parseFloat(compStyle.opacity); 
+            if(isNaN(objOpacity)) objOpacity = 1;
         } else { 
             objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
+            if (isNaN(objOpacity)) {
+                let bgMatch = compStyle.backgroundColor.match(/rgba\\(\\d+,\\s*\\d+,\\s*\\d+,\\s*([\\d.]+)\\)/);
+                objOpacity = bgMatch ? parseFloat(bgMatch[1]) : 0; 
+            }
         }
-        if (isNaN(objOpacity)) objOpacity = 1;
 
         let tAlign = '';
         if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center';
@@ -325,7 +330,19 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
-                if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
+                
+                // INTELIGÊNCIA DA IMAGEM E FUNDO
+                if (event.data.bgImage !== undefined) {
+                    let childImg = el.querySelector('img');
+                    // Se a caixa não tem texto, apenas guarda uma foto, a IA redireciona para a foto
+                    if (!isImg && childImg && el.textContent.trim() === '') {
+                        childImg.src = event.data.bgImage;
+                        el.dataset.rawBgImage = ''; // Evita sobreposição
+                    } else {
+                        el.dataset.rawBgImage = event.data.bgImage;
+                    }
+                }
+                
                 if (event.data.opacity !== undefined) {
                     if (isImg) { el.style.opacity = event.data.opacity; } 
                     else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
@@ -333,12 +350,18 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                 if (!isImg) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
-                    if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
+                    if (!cBgColor || cBgColor === '') cBgColor = '#000000'; // Película padrão escura
+                    
                     let cBgImage = el.dataset.rawBgImage;
-                    if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
-                    let cOpacity = parseFloat(el.dataset.bgOpacity); if (isNaN(cOpacity)) cOpacity = 1;
+                    if (cBgImage === undefined) { 
+                        let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); 
+                        cBgImage = match ? match[1] : ''; 
+                    }
+                    
+                    let cOpacity = parseFloat(el.dataset.bgOpacity); 
+                    if (isNaN(cOpacity)) cOpacity = 0; // Se não tem fundo, não tem opacidade por cima (0%)
 
-                    let r = 255, g = 255, b = 255;
+                    let r = 0, g = 0, b = 0;
                     if (cBgColor.startsWith('#')) {
                         let hex = cBgColor.replace('#', '');
                         if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
@@ -348,7 +371,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
                     el.style.setProperty('--tw-bg-opacity', '1');
 
-                    if (cBgImage && cBgImage !== 'none') {
+                    if (cBgImage && cBgImage !== 'none' && cBgImage !== '') {
                         el.style.backgroundColor = 'transparent';
                         el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
                         el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat";
