@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
-    let timeoutSync = null; // Variável para o atraso inteligente do histórico
+    let timeoutSync = null;
 
     if (!document.getElementById('builder-core-styles')) {
         const style = document.createElement('style');
@@ -25,9 +25,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }
 
     function sendCleanHtml() {
-        // INTELIGÊNCIA DE HISTÓRICO (DEBOUNCE)
-        // Aguarda 500ms após a última alteração antes de salvar no histórico.
-        // Isso evita que cada letra digitada vire um ponto de "Desfazer".
+        // Aumentamos o tempo de espera para 800ms. 
+        // Assim ele agrupa toda a sua digitação em um único "Desfazer".
         clearTimeout(timeoutSync);
         timeoutSync = setTimeout(() => {
             let outlineAntigo = '';
@@ -35,7 +34,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
             if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
             window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
-        }, 500);
+        }, 800);
     }
 
     function selectElement(targetEl) {
@@ -105,7 +104,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             href = elSelecionado.parentElement.getAttribute('href') || '';
         }
 
-        // Correção das quebras de linha para o painel lateral
         let textoAtual = elSelecionado.innerHTML || '';
         textoAtual = textoAtual.replace(/<br\\s*\\/?>/gi, '\\n').replace(/(<([^>]+)>)/gi, "");
 
@@ -314,15 +312,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let p = event.data.device === 'mobile' ? 'max-md:' : '';
                 let escP = p ? 'max-md\\\\:' : '';
 
-                // CORREÇÃO DO TEXTO QUE "SOME" E QUEBRAS DE LINHA
                 if(event.data.text !== undefined && event.data.forceTextUpdate) {
                     let novoTexto = event.data.text.replace(/\\n/g, '<br>');
                     el.innerHTML = novoTexto;
-                    // Força um repaint do navegador para contornar o bug do WebKit em textos com fundo degradê
-                    let oldDisplay = el.style.display;
-                    el.style.display = 'none';
-                    el.offsetHeight; 
-                    el.style.display = oldDisplay;
                 }
 
                 if(event.data.src !== undefined) el.src = event.data.src;
@@ -366,7 +358,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
                 }
 
-                if (!isImg) {
+                // CORREÇÃO CRÍTICA DO TEXTO DOURADO (Background Override Bug)
+                // O fundo só será reprocessado se o usuário de fato mexer na aba de "Cor e Fundo".
+                // Isso impede que as edições de texto sobrescrevam as cores criadas pelo Tailwind.
+                if (!isImg && (event.data.bgColor !== undefined || event.data.bgImage !== undefined || event.data.opacity !== undefined)) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
                     if (!cBgColor || cBgColor === '') cBgColor = '#000000'; 
                     
@@ -399,8 +394,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                     if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
                     else el.classList.remove('backdrop-blur-md');
-                } else {
-                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
+                } else if (isImg && event.data.bgColor !== undefined) {
+                    el.style.backgroundColor = event.data.bgColor;
                 }
 
                 if(event.data.paddingX !== undefined) {
