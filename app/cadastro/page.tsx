@@ -66,7 +66,7 @@ export default function CadastroPage() {
 
       {/* Card Branco de Cadastro */}
       <div className="w-full max-w-md bg-white rounded-3xl p-8 border border-slate-200 shadow-xl shadow-slate-200/50">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">Crie sua conta grátis</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">Crie sua conta agora</h2>
         <p className="text-slate-500 text-center mb-8 text-sm">Cadastre-se para começar a gerar seus sites.</p>
 
         {/* Mensagens de Erro e Sucesso */}
