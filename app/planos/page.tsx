@@ -13,8 +13,8 @@ export default function PlanosPage() {
   // Links de Checkout da Hotmart (Substitua pelos seus links reais depois)
   const linksHotmart = {
     basico: "https://pay.hotmart.com/A107248729B",
-    pro: "https://pay.hotmart.com/SEU_LINK_PRO",
-    agencia: "https://pay.hotmart.com/SEU_LINK_AGENCIA"
+    pro: "https://pay.hotmart.com/G107249193B",
+    agencia: "https://pay.hotmart.com/U107249140O"
   }
 
   useEffect(() => {
