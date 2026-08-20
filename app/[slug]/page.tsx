@@ -21,7 +21,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
   const { data, error } = await supabase
     .from('sites_gerados')
-    .select('html_content')
+    .select('html_content, titulo')
     .eq('slug', slug)
     .single();
 
@@ -39,9 +39,14 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
   }
 
   return (
-    <div 
-      dangerouslySetInnerHTML={{ __html: data.html_content }} 
-      style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, border: 'none', overflow: 'auto' }}
+    // MÁGICA 2: O IFRAME BLINDADO
+    // Em vez de 'dangerouslySetInnerHTML', o iframe protege o HTML.
+    // O Tailwind, as fontes e o fundo preto vão carregar perfeitamente agora!
+    <iframe 
+      srcDoc={data.html_content} 
+      title={data.titulo || 'Site Gerado'}
+      style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, border: 'none', display: 'block' }}
+      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
     />
   );
 }
