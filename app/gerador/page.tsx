@@ -1,13 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code } from 'lucide-react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, MessageCircle } from 'lucide-react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-emerald-200 selection:text-emerald-900">
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-emerald-200 selection:text-emerald-900 relative">
       
       {/* HEADER SIMPLES */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
@@ -120,13 +120,8 @@ export default function PaginaDeVendas() {
             {/* Amostra 1 */}
             <div className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all">
               <div className="aspect-[4/3] bg-slate-200 relative overflow-hidden flex flex-col items-center justify-center">
-                
-                {/* DICA: Para colocar sua imagem depois, apague a div abaixo e use a tag img assim: */}
-                {/* <img src="/caminho-da-sua-imagem1.jpg" alt="Modelo 1" className="w-full h-full object-cover" /> */}
-                
                 <ImageIcon className="size-12 text-slate-400 mb-2 group-hover:scale-110 transition-transform" />
                 <span className="text-slate-500 font-medium text-sm">Insira sua Imagem de Exemplo 1</span>
-              
               </div>
               <div className="p-6">
                 <h3 className="font-bold text-lg text-slate-900 mb-1">Página de Vendas (Cursos)</h3>
@@ -137,11 +132,8 @@ export default function PaginaDeVendas() {
             {/* Amostra 2 */}
             <div className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all">
               <div className="aspect-[4/3] bg-emerald-50 relative overflow-hidden flex flex-col items-center justify-center">
-                
-                {/* DICA: Coloque a imagem 2 aqui */}
                 <ImageIcon className="size-12 text-emerald-300 mb-2 group-hover:scale-110 transition-transform" />
                 <span className="text-emerald-600/70 font-medium text-sm">Insira sua Imagem de Exemplo 2</span>
-
               </div>
               <div className="p-6">
                 <h3 className="font-bold text-lg text-slate-900 mb-1">Landing Page Corporativa</h3>
@@ -152,11 +144,8 @@ export default function PaginaDeVendas() {
             {/* Amostra 3 */}
             <div className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all">
               <div className="aspect-[4/3] bg-indigo-50 relative overflow-hidden flex flex-col items-center justify-center">
-                
-                {/* DICA: Coloque a imagem 3 aqui */}
                 <ImageIcon className="size-12 text-indigo-300 mb-2 group-hover:scale-110 transition-transform" />
                 <span className="text-indigo-600/70 font-medium text-sm">Insira sua Imagem de Exemplo 3</span>
-
               </div>
               <div className="p-6">
                 <h3 className="font-bold text-lg text-slate-900 mb-1">Página de Captura (Leads)</h3>
@@ -240,6 +229,20 @@ export default function PaginaDeVendas() {
       <footer className="bg-slate-950 py-12 text-center text-slate-500 border-t border-slate-900">
         <p>&copy; {new Date().getFullYear()} SiteGen AI. Todos os direitos reservados.</p>
       </footer>
+
+      {/* BOTÃO FLUTUANTE DO WHATSAPP DE SUPORTE */}
+      <a
+        href="https://wa.me/5561982096982?text=Olá,%20preciso%20de%20ajuda%20com%20o%20SiteGen%20AI."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-600 text-white p-4 rounded-full shadow-2xl transition-all hover:scale-110 flex items-center justify-center group"
+        title="Fale conosco no WhatsApp"
+      >
+        <MessageCircle className="size-7 fill-white text-emerald-500" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out group-hover:ml-2 text-sm font-bold">
+          Suporte WhatsApp
+        </span>
+      </a>
     </div>
   )
 }
