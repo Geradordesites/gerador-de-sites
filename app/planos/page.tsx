@@ -72,7 +72,7 @@ export default function PlanosPage() {
             Créditos sob medida para a sua escala
           </h1>
           <p className="text-lg text-slate-600">
-            Sem mensalidades surpresas. Escolha o pacote de créditos ideal para gerar seus sites, landing pages e imagens fotorealistas com IA.
+            Sem mensalidades surpresas. Escolha o pacote de créditos ideal para gerar seus sites, landing pages profissionais com IA.
           </p>
         </div>
 
