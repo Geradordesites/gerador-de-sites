@@ -3,14 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Check, Zap, Star, Crown, Loader2, ArrowRight, MessageCircle } from 'lucide-react'
+import { Check, Zap, Star, Crown, Loader2, ArrowRight, MessageCircle, AlertTriangle, X } from 'lucide-react'
 
 export default function PlanosPage() {
   const router = useRouter()
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Estados para o Modal de Aviso de E-mail
+  const [showModal, setShowModal] = useState(false)
+  const [planoSelecionado, setPlanoSelecionado] = useState<'basico' | 'pro' | 'agencia' | null>(null)
 
-  // Links de Checkout da Hotmart (Substitua pelos seus links reais depois)
+  // Links de Checkout da Hotmart
   const linksHotmart = {
     basico: "https://pay.hotmart.com/A107248729B",
     pro: "https://pay.hotmart.com/G107249193B",
@@ -29,14 +33,24 @@ export default function PlanosPage() {
     setLoading(false)
   }
 
-  const handleComprar = (plano: 'basico' | 'pro' | 'agencia') => {
+  const handleAction = (plano: 'basico' | 'pro' | 'agencia') => {
     if (!userEmail) {
-      alert("Crie sua conta gratuitamente primeiro para depois adquirir seus créditos!")
-      router.push('/login')
+      // Se não estiver logado, manda para o cadastro
+      router.push('/cadastro')
       return
     }
 
-    const urlCheckout = `${linksHotmart[plano]}?email=${encodeURIComponent(userEmail)}`
+    // Se estiver logado, abre o aviso confirmando o e-mail
+    setPlanoSelecionado(plano)
+    setShowModal(true)
+  }
+
+  const confirmarCompra = () => {
+    if (!planoSelecionado || !userEmail) return
+
+    // Oculta o modal e manda pra Hotmart com o e-mail já preenchido na URL
+    setShowModal(false)
+    const urlCheckout = `${linksHotmart[planoSelecionado]}?email=${encodeURIComponent(userEmail)}`
     window.location.href = urlCheckout
   }
 
@@ -49,11 +63,11 @@ export default function PlanosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-20 px-4 font-sans">
+    <div className="min-h-screen bg-slate-50 py-20 px-4 font-sans relative">
       <div className="max-w-7xl mx-auto">
         
         {/* Cabeçalho da Página */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6">
             Créditos sob medida para a sua escala
           </h1>
@@ -61,6 +75,16 @@ export default function PlanosPage() {
             Sem mensalidades surpresas. Escolha o pacote de créditos ideal para gerar seus sites, landing pages e imagens fotorealistas com IA.
           </p>
         </div>
+
+        {/* Aviso para quem não está logado */}
+        {!userEmail && (
+          <div className="max-w-2xl mx-auto mb-12 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+            <p className="text-amber-800 font-medium">
+              <span className="font-bold block mb-1">Atenção!</span>
+              Você precisa criar sua conta gratuitamente antes de adquirir um pacote. Escolha um plano abaixo para se cadastrar.
+            </p>
+          </div>
+        )}
 
         {/* Grid de Planos */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
@@ -87,16 +111,16 @@ export default function PlanosPage() {
 
             <ul className="space-y-4 mb-8 flex-1">
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Gerador de Sites e Landing Pages</li>
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Imagens Fotorealistas exclusivas (Unsplash)</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Imagens Fotorealistas exclusivas</li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Acesso total ao Editor Visual</li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0" /> Edições manuais não consomem créditos</li>
             </ul>
 
             <button 
-              onClick={() => handleComprar('basico')}
+              onClick={() => handleAction('basico')}
               className="w-full py-4 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex justify-center items-center gap-2"
             >
-              Adicionar Pacote
+              {userEmail ? 'Adicionar Pacote' : 'Criar Conta Primeiro'}
             </button>
           </div>
 
@@ -126,17 +150,16 @@ export default function PlanosPage() {
 
             <ul className="space-y-4 mb-8 flex-1">
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Tudo do plano Iniciante</li>
-              <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Média de até 20 sites (varia conforme edições)</li>
+              <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Média de até 20 sites</li>
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Refinamento de Copy (Textos) com IA</li>
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Suporte Prioritário</li>
-              <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0" /> Edições manuais livres de custos</li>
             </ul>
 
             <button 
-              onClick={() => handleComprar('pro')}
+              onClick={() => handleAction('pro')}
               className="w-full py-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-colors shadow-[0_0_20px_rgba(16,185,129,0.3)] flex justify-center items-center gap-2"
             >
-              Adicionar Pacote Pro <ArrowRight className="size-5" />
+              {userEmail ? 'Adicionar Pacote Pro' : 'Criar Conta Primeiro'} {userEmail && <ArrowRight className="size-5" />}
             </button>
           </div>
 
@@ -162,16 +185,16 @@ export default function PlanosPage() {
 
             <ul className="space-y-4 mb-8 flex-1">
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Tudo do plano Profissional</li>
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-700 shrink-0" /> Média de até 50 sites (varia conforme edições)</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-700 shrink-0" /> Média de até 50 sites</li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Alta escala de geração e customização</li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0" /> Edições manuais ilimitadas sem gastar</li>
             </ul>
 
             <button 
-              onClick={() => handleComprar('agencia')}
+              onClick={() => handleAction('agencia')}
               className="w-full py-4 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors flex justify-center items-center gap-2"
             >
-              Adicionar Pacote Agência
+              {userEmail ? 'Adicionar Pacote Agência' : 'Criar Conta Primeiro'}
             </button>
           </div>
 
@@ -182,7 +205,7 @@ export default function PlanosPage() {
           <h3 className="text-xl font-bold text-slate-900 mb-2">Precisa de um pacote maior ou personalizado?</h3>
           <p className="text-slate-600 text-sm mb-6">Fale diretamente conosco pelo WhatsApp para negociar condições especiais para grandes volumes.</p>
           <a 
-            href="https://wa.me/5561982096982?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20pacotes%20personalizados%20de%20créditos%20no%20BuilderPro."
+            href="https://wa.me/5561982096982?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20pacotes%20personalizados%20de%20créditos%20no%20SiteGen%20AI."
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-600/20"
@@ -192,6 +215,51 @@ export default function PlanosPage() {
         </div>
 
       </div>
+
+      {/* MODAL DE CONFIRMAÇÃO DE E-MAIL */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+            
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="size-8" />
+            </div>
+            
+            <h3 className="text-2xl font-bold text-center text-slate-900 mb-2">
+              Aviso Importante!
+            </h3>
+            
+            <p className="text-slate-600 text-center mb-6 leading-relaxed">
+              Para que seus créditos sejam liberados automaticamente, você será redirecionado para a Hotmart com o seu e-mail já preenchido:
+            </p>
+            
+            <div className="bg-slate-100 border border-slate-200 rounded-xl p-4 text-center mb-6">
+              <span className="block text-sm text-slate-500 mb-1">Não altere este e-mail no pagamento:</span>
+              <strong className="text-lg text-emerald-700 break-all">{userEmail}</strong>
+            </div>
+
+            <button 
+              onClick={confirmarCompra}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all flex justify-center items-center gap-2"
+            >
+              Entendi, ir para o pagamento <ArrowRight className="size-5" />
+            </button>
+            
+            <button 
+              onClick={() => setShowModal(false)}
+              className="w-full mt-3 py-3 text-slate-500 font-bold hover:text-slate-700 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
