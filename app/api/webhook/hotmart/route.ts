@@ -26,17 +26,16 @@ export async function POST(request: Request) {
       }
 
       if (emailComprador && creditosParaAdicionar > 0) {
-        // Busca o saldo atual na tabela 'usuarios'
+        // Busca o saldo atual na tabela CORRETA: 'profiles'
         const { data: usuario, error: fetchError } = await supabaseAdmin
-          .from('usuarios') 
+          .from('profiles') 
           .select('creditos')
           .eq('email', emailComprador)
           .single();
 
-        // Se der erro (ex: cliente pagou antes de criar a conta), avisamos no console, 
-        // mas não quebramos o servidor da Hotmart
+        // Se der erro (ex: cliente pagou antes de criar a conta), avisamos no console
         if (fetchError) {
-            console.log(`[AVISO] Cliente ${emailComprador} pagou, mas ainda não tem conta em 'usuarios'.`);
+            console.log(`[AVISO] Cliente ${emailComprador} pagou, mas ainda não tem conta em 'profiles'.`);
             return NextResponse.json({ error: 'Usuário não encontrado ainda' }, { status: 404 });
         }
 
@@ -48,7 +47,7 @@ export async function POST(request: Request) {
 
         // Atualiza o saldo somando com o anterior e registra a data da compra
         await supabaseAdmin
-          .from('usuarios')
+          .from('profiles')
           .update({ 
               creditos: novoSaldo,
               data_compra: dataAtual 
