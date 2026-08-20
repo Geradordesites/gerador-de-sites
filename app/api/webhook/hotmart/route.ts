@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         creditosParaAdicionar = 70; // Plano Iniciante
       } else if (produtoId == 8354331) {
         creditosParaAdicionar = 200; // Plano Profissional
-      } else if (produtoId == 'COLE_O_ID_DO_PLANO_3') {
+      } else if (produtoId == 8354316) {
         creditosParaAdicionar = 500; // Plano Agência
       }
 
