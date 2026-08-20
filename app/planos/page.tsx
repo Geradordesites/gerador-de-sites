@@ -35,8 +35,8 @@ export default function PlanosPage() {
 
   const handleAction = (plano: 'basico' | 'pro' | 'agencia') => {
     if (!userEmail) {
-      // Se não estiver logado, manda para o cadastro
-      router.push('/cadastro')
+      // Se não estiver logado, manda para o cadastro avisando qual plano ele escolheu na URL!
+      router.push(`/cadastro?plano=${plano}`)
       return
     }
 
