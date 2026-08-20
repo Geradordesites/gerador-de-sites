@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       // IDs configurados para o seu sistema:
       if (produtoId == 8354118) { 
         creditosParaAdicionar = 70; // Plano Iniciante
-      } else if (produtoId == 'COLE_O_ID_DO_PLANO_2') {
+      } else if (produtoId == 8354331) {
         creditosParaAdicionar = 200; // Plano Profissional
       } else if (produtoId == 'COLE_O_ID_DO_PLANO_3') {
         creditosParaAdicionar = 500; // Plano Agência
