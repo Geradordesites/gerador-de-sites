@@ -1062,7 +1062,27 @@ export default function Home() {
       const file = e.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev: any) => { atualizarElemento(isBg ? 'bgImage' : 'src', ev.target.result); };
+      reader.onload = (ev: any) => {
+          const img = new Image();
+          img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let w = img.width; let h = img.height; const maxDim = 1200; 
+              // Otimiza o tamanho para não travar o banco de dados
+              if (w > maxDim || h > maxDim) { 
+                  if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
+                  else { w = Math.round((w * maxDim) / h); h = maxDim; } 
+              }
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (ctx) { 
+                  ctx.drawImage(img, 0, 0, w, h); 
+                  // Comprime a imagem em JPEG com 80% de qualidade
+                  const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
+                  atualizarElemento(isBg ? 'bgImage' : 'src', dataUrl); 
+              }
+          };
+          img.src = ev.target.result;
+      };
       reader.readAsDataURL(file);
       e.target.value = ''; 
   };
