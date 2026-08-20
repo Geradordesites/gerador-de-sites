@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
+    let timeoutSync = null; // Variável para o atraso inteligente do histórico
 
     if (!document.getElementById('builder-core-styles')) {
         const style = document.createElement('style');
@@ -24,11 +25,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }
 
     function sendCleanHtml() {
-        let outlineAntigo = '';
-        if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
-        let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
-        if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
-        window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
+        // INTELIGÊNCIA DE HISTÓRICO (DEBOUNCE)
+        // Aguarda 500ms após a última alteração antes de salvar no histórico.
+        // Isso evita que cada letra digitada vire um ponto de "Desfazer".
+        clearTimeout(timeoutSync);
+        timeoutSync = setTimeout(() => {
+            let outlineAntigo = '';
+            if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
+            let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+            if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
+            window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
+        }, 500);
     }
 
     function selectElement(targetEl) {
@@ -60,7 +67,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let aspect = elSelecionado.style.aspectRatio || '';
         let objOpacity = 1;
         
-        // INTELIGÊNCIA DA OPACIDADE: Inicia em 0% se for película vazia, ou capta o valor exato
         if (isImg) { 
             objOpacity = parseFloat(compStyle.opacity); 
             if(isNaN(objOpacity)) objOpacity = 1;
@@ -99,11 +105,15 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             href = elSelecionado.parentElement.getAttribute('href') || '';
         }
 
+        // Correção das quebras de linha para o painel lateral
+        let textoAtual = elSelecionado.innerHTML || '';
+        textoAtual = textoAtual.replace(/<br\\s*\\/?>/gi, '\\n').replace(/(<([^>]+)>)/gi, "");
+
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
             id: elSelecionado.id,
             tagName: elSelecionado.tagName.toLowerCase(),
-            text: elSelecionado.innerText || '',
+            text: textoAtual,
             src: elSelecionado.src || '',
             href: href,
             className: elSelecionado.className,
@@ -304,7 +314,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let p = event.data.device === 'mobile' ? 'max-md:' : '';
                 let escP = p ? 'max-md\\\\:' : '';
 
-                if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
+                // CORREÇÃO DO TEXTO QUE "SOME" E QUEBRAS DE LINHA
+                if(event.data.text !== undefined && event.data.forceTextUpdate) {
+                    let novoTexto = event.data.text.replace(/\\n/g, '<br>');
+                    el.innerHTML = novoTexto;
+                    // Força um repaint do navegador para contornar o bug do WebKit em textos com fundo degradê
+                    let oldDisplay = el.style.display;
+                    el.style.display = 'none';
+                    el.offsetHeight; 
+                    el.style.display = oldDisplay;
+                }
+
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 
@@ -331,13 +351,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                 if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
                 
-                // INTELIGÊNCIA DA IMAGEM E FUNDO
                 if (event.data.bgImage !== undefined) {
                     let childImg = el.querySelector('img');
-                    // Se a caixa não tem texto, apenas guarda uma foto, a IA redireciona para a foto
                     if (!isImg && childImg && el.textContent.trim() === '') {
                         childImg.src = event.data.bgImage;
-                        el.dataset.rawBgImage = ''; // Evita sobreposição
+                        el.dataset.rawBgImage = ''; 
                     } else {
                         el.dataset.rawBgImage = event.data.bgImage;
                     }
@@ -350,7 +368,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
                 if (!isImg) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
-                    if (!cBgColor || cBgColor === '') cBgColor = '#000000'; // Película padrão escura
+                    if (!cBgColor || cBgColor === '') cBgColor = '#000000'; 
                     
                     let cBgImage = el.dataset.rawBgImage;
                     if (cBgImage === undefined) { 
@@ -359,7 +377,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     }
                     
                     let cOpacity = parseFloat(el.dataset.bgOpacity); 
-                    if (isNaN(cOpacity)) cOpacity = 0; // Se não tem fundo, não tem opacidade por cima (0%)
+                    if (isNaN(cOpacity)) cOpacity = 0; 
 
                     let r = 0, g = 0, b = 0;
                     if (cBgColor.startsWith('#')) {
