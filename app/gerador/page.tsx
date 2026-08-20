@@ -49,7 +49,7 @@ export default function PaginaDeVendas() {
               onClick={() => router.push('/login')}
               className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-[0_8px_30px_rgb(5,150,105,0.3)] transition-all hover:-translate-y-1 flex items-center justify-center gap-2 text-lg"
             >
-              Criar Conta Grátis <ArrowRight className="size-5" />
+              Criar Conta Agora <ArrowRight className="size-5" />
             </button>
             <button 
               onClick={() => router.push('/planos')}
