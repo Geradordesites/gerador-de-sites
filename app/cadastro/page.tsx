@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Loader2, Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react'
+import { Loader2, Mail, Lock, User, ArrowRight, Sparkles, AlertCircle } from 'lucide-react'
 
 export default function CadastroPage() {
   const router = useRouter()
@@ -67,7 +67,16 @@ export default function CadastroPage() {
       {/* Card Branco de Cadastro */}
       <div className="w-full max-w-md bg-white rounded-3xl p-8 border border-slate-200 shadow-xl shadow-slate-200/50">
         <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">Crie sua conta agora</h2>
-        <p className="text-slate-500 text-center mb-8 text-sm">Cadastre-se para começar a gerar seus sites.</p>
+        <p className="text-slate-500 text-center mb-6 text-sm">Cadastre-se para começar a gerar seus sites.</p>
+
+        {/* AVISO IMPORTANTE SOBRE O E-MAIL DA HOTMART */}
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs sm:text-sm flex items-start gap-3 shadow-sm">
+          <AlertCircle className="size-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <span className="font-bold block mb-0.5 text-emerald-950">Já comprou na Hotmart?</span>
+            Utilize <strong>exatamente o mesmo e-mail</strong> da sua compra para que seus créditos sejam creditados automaticamente.
+          </div>
+        </div>
 
         {/* Mensagens de Erro e Sucesso */}
         {erro && (
