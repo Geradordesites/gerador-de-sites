@@ -11,7 +11,7 @@ const MODELOS_GEMINI = [
   "gemini-3-flash-preview"
 ];
 
-// ARRAY ROTATIVO DE MODELOS DE IMAGEM DO GEMINI (COM FALLBACK ENTRE ELES)
+// MODELOS DE IMAGEM DO GEMINI EM CASCATA
 const MODELOS_IMAGEM_GEMINI = [
   "gemini-3.1-flash-image",
   "gemini-3.1-flash-lite-image",
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Aciona a geração 100% via IA (Gemini Image)
+        provedorDeImagens = 'ai_paid'; // Modo Pago: 100% IA (Gemini Image)
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
@@ -108,7 +108,7 @@ Resoluções: 1280x720, 800x1200 ou 800x800.
 `;
     } else {
         regraImagens = `
-=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE ROTATIVO) ===
+=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE) ===
 🚨 REGRA ABSOLUTA: Para as imagens do site, você DEVE utilizar a nossa tag de IA.
 Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoman in a modern office, photorealistic, 8k]" />
@@ -200,7 +200,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (COM ROTAÇÃO DOS MODELOS DE IMAGEM DO GEMINI E SEM UNSPLASH)
+    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE COM ROTAÇÃO E SEM UNSPLASH)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
@@ -215,7 +215,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
             let imagemGeradaComSucesso = false;
             let base64Image = '';
 
-            // Rotação automática pelos modelos de imagem do Gemini
             for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
                 if (imagemGeradaComSucesso) break;
                 try {
@@ -234,19 +233,17 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                             }
                         }
                     }
-                } catch (modelErr: any) {
-                    console.error(`Tentativa falhou com o modelo de imagem ${imgModelName}:`, modelErr.message);
-                }
+                } catch (modelErr: any) {}
             }
 
             if (imagemGeradaComSucesso && base64Image) {
                 htmlCode = htmlCode.replace(item.fullMatch, base64Image);
             } else {
-                throw new Error(`Falha crítica: Nenhum modelo de imagem do Gemini (${MODELOS_IMAGEM_GEMINI.join(', ')}) conseguiu gerar a imagem para o prompt: "${item.prompt}".`);
+                throw new Error(`Falha no modo pago: Nenhum modelo de imagem do Gemini conseguiu processar o prompt: "${item.prompt}".`);
             }
         }
     } 
-    // PROCESSAMENTO MODO GRATUITO (UNSPLASH COM POTÊNCIA MÁXIMA)
+    // PROCESSAMENTO MODO GRATUITO (UNSPLASH)
     else {
         const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
         let match;
