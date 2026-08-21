@@ -98,7 +98,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SHOWCASE SECTION (IMAGEM ÚNICA DE MODELOS COM BORDA ANIMADA) */}
+      {/* SHOWCASE SECTION (IMAGEM COM ZOOM SUAVE AO PASSAR O MOUSE) */}
       <section className="py-20 bg-slate-50 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold font-serif text-slate-900 mb-4">
@@ -108,13 +108,12 @@ export default function PaginaDeVendas() {
             Layouts modernos, limpos e desenvolvidos automaticamente com inteligência artificial para diversos nichos de mercado.
           </p>
 
-          {/* Container com efeito de borda suave e animada */}
-          <div className="relative p-1 rounded-3xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 animate-pulse shadow-2xl">
-            <div className="bg-white rounded-[22px] overflow-hidden p-2 md:p-4">
+          <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-200 bg-white group">
+            <div className="overflow-hidden p-2 md:p-4">
               <img 
                 src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhR2ApWLYzNQbjarzYPWDV02tyb4Nbb5EK5ogd2irBD9Lg94tYuFEThzPVXnYFC9YlrY2Xyh4mXDd5H8hdHwgP4be-rY6gyED0oSYnNCUxpwd8wEm1v6M_-TyVhQ4Fjc_LY4Ja7uhS5EJAnn2CePHx7SVJBPdPAmjD4Atm1YDm2ndEKtQDCvLnBe6hdJ5U/s908/dafb3bda-cb14-4ba0-99ac-deefff5c6a8a.jfif" 
                 alt="Modelos de sites criados pela IA" 
-                className="w-full h-auto rounded-xl object-cover shadow-sm"
+                className="w-full h-auto rounded-xl object-cover transition-transform duration-500 group-hover:scale-105"
               />
             </div>
           </div>
