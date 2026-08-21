@@ -73,24 +73,22 @@ export async function POST(req: Request) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
-        provedorDeImagens = 'unsplash'; // Cliente com chave própria usa Unsplash para não gastar sua API de IA
+        provedorDeImagens = 'unsplash'; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
-        // Chave Admin (Testes/Grátis)
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
         provedorDeImagens = 'unsplash';
     } else if (isAdminKeyEnabled) {
-        // Chave Central Paga (Usa Créditos e gera Imagens de IA)
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Aciona a geração de imagens paga!
+        provedorDeImagens = 'ai_paid'; // Aciona a geração de imagens paga via Google Imagen 3
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
 
-    // REGRAS DE IMAGEM BASEADAS NO PROVEDOR SELECIONADO
+    // REGRAS DE IMAGEM
     let regraImagens = "";
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `
@@ -98,7 +96,6 @@ export async function POST(req: Request) {
 🚨 REGRA ABSOLUTA: Use APENAS fotografias realistas de humanos em situações cotidianas. É ESTRITAMENTE PROIBIDO usar desenhos ou vetores.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 Resoluções: 1280x720, 800x1200 ou 800x800.
-Exemplo: <img src="[UNSPLASH: 1280x720: business team meeting]" />
 `;
     } else {
         regraImagens = `
@@ -107,10 +104,9 @@ Exemplo: <img src="[UNSPLASH: 1280x720: business team meeting]" />
 Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoman in a modern office, photorealistic, 8k]" />
 
-🚨 PROIBIÇÕES SEVERAS E DIRETRIZES: 
-1. É ESTRITAMENTE PROIBIDO gerar desenhos, ilustrações, gráficos animados ou imagens com estilo sci-fi/tecnologia extravagante. 
-2. Exija SEMPRE imagens REAIS e hiper-realistas de seres humanos. 
-3. Se o site for sobre um produto ou serviço (ex: Bolos, Mentorias, E-books), descreva SEMPRE uma cena com UMA PESSOA REAL interagindo com aquilo. Exemplo para site de bolos: "realistic photography of a happy human baker holding a beautiful chocolate cake". NUNCA peça apenas o objeto isolado.
+🚨 DIRETRIZES DE IMAGEM: 
+1. Proibido desenhos, 3D ou sci-fi. Exija SEMPRE fotografias hiper-realistas. 
+2. Se for sobre um produto, inclua uma pessoa real interagindo com ele (ex: "a human baker holding a cake").
 `;
     }
 
@@ -135,12 +131,12 @@ Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoma
 === REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ATENÇÃO: GERE UMA LANDING PAGE PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES.
-🚨 ESPAÇAMENTO OBRIGATÓRIO: Você deve organizar o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos subsequentes. Use margens precisas (ex: mb-4 ou mb-6) para garantir essa separação visual.
+🚨 ESPAÇAMENTO OBRIGATÓRIO: Organize o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos subsequentes (ex: mb-4 ou mb-6).
 🚨 PROIBIÇÃO DE FORMULÁRIOS: É PROIBIDO gerar tags <form>, <input> ou <textarea>. Use APENAS Botões de Ação (CTA).
 ${regraMenu}
 
 === REGRA DE OURO 2: MOBILE-FIRST E MÍDIA ===
-O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:flex-row para parear no PC.
+O site DEVE ser perfeito no celular.
 ${regraImagens}
 ${instrucaoDinamica}
 
@@ -187,11 +183,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         }
     }
 
-    if (historicoErros.length > 0) {
-        try { await supabaseAdmin.from('api_logs').insert([{ modelos_falhos: JSON.stringify(historicoErros), sucesso_final: geracaoSucesso }]); } 
-        catch (e) {}
-    }
-
     if (!geracaoSucesso) throw new Error("Nossos motores de IA retornaram erro. Nenhum crédito foi descontado. Tente novamente.");
 
     // DESCONTO DE CRÉDITOS
@@ -200,7 +191,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - SISTEMA HÍBRIDO (UNSPLASH vs API DE IA)
+    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GOOGLE IMAGEN 3)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
@@ -211,61 +202,29 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         }
 
         for (const item of iaUrlsToReplace) {
-            let imagemFinalB64 = '';
-            // Força a regra da fotografia real antes de enviar para a API de imagem
-            const basePrompt = "Hyper-realistic photography, real human people, highly detailed, photorealistic. NO drawings, NO 3D, NO sci-fi. " + item.prompt;
+            const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
             
-            try {
-                // OPÇÃO TOGETHER.AI (Fallback Integrado - Basta adicionar USE_TOGETHER=true na Vercel)
-                if (process.env.TOGETHER_API_KEY && process.env.USE_TOGETHER === 'true') {
-                    const tRes = await fetch("https://api.together.xyz/v1/images/generations", {
-                        method: "POST",
-                        headers: { "Authorization": `Bearer ${process.env.TOGETHER_API_KEY}`, "Content-Type": "application/json" },
-                        body: JSON.stringify({ model: "black-forest-labs/FLUX.1-schnell-Free", prompt: basePrompt, width: 1024, height: 768, steps: 4, response_format: "b64_json" })
-                    });
-                    const tData = await tRes.json();
-                    if (tData.data && tData.data[0].b64_json) imagemFinalB64 = `data:image/jpeg;base64,${tData.data[0].b64_json}`;
-                } 
-               // PROCESSAMENTO DE IMAGENS - NOVA LÓGICA DE DEBUG
-    if (provedorDeImagens === 'ai_paid') {
-        const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
-        let matchIa;
-        
-        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
-            const fullMatch = matchIa[0];
-            const prompt = matchIa[1];
-            
-            // Prompt otimizado para o Google Imagen 3
-            const basePrompt = "Professional, hyper-realistic, high quality photography of " + prompt;
-            
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${chaveParaUsar}`, { 
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" }, 
-                    body: JSON.stringify({ 
-                        instances: [{ prompt: basePrompt }], 
-                        parameters: { sampleCount: 1 } 
-                    }) 
-                });
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${chaveParaUsar}`, { 
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ 
+                    instances: [{ prompt: basePrompt }], 
+                    parameters: { sampleCount: 1 } 
+                }) 
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (response.ok && data.predictions && data.predictions[0].bytesBase64Encoded) {
-                    const imagemBase64 = `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
-                    htmlCode = htmlCode.replace(fullMatch, imagemBase64);
-                } else {
-                    // AQUI É O PULO DO GATO: Se der erro, ele vai te dizer o que foi
-                    throw new Error(JSON.stringify(data.error || "Erro desconhecido na API de Imagens"));
-                }
-            } catch (e: any) {
-                console.error("ERRO NA API DE IMAGEM DO GOOGLE:", e.message);
-                // Se der erro, vamos devolver o erro para você ver no navegador
-                throw new Error("Falha ao gerar imagem com Google Imagen: " + e.message);
+            // SE O GOOGLE RECUSAR, O SISTEMA PARA E TE MOSTRA O ERRO EXATO NA TELA
+            if (!response.ok || !data.predictions || !data.predictions[0]?.bytesBase64Encoded) {
+                throw new Error(`Google Imagen Error: ${JSON.stringify(data.error || data)}`);
             }
+
+            const imagemBase64 = `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
+            htmlCode = htmlCode.replace(item.fullMatch, imagemBase64);
         }
-    }
     } 
-    // FALLBACK DE SEGURANÇA PARA UNSPLASH (Se usar Chave Grátis ou falhar)
+    // PROCESSAMENTO MODO GRATUITO (UNSPLASH)
     else {
         const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
         let match;
@@ -291,7 +250,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         }
     }
     
-    // Limpeza extra caso sobre alguma tag do Unsplash sem formatação no HTML
     htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
     htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
 
