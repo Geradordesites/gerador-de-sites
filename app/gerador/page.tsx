@@ -8,10 +8,11 @@ export default function PaginaDeVendas() {
   const router = useRouter()
   const [siteExpandido, setSiteExpandido] = useState<number | null>(null)
 
+  // Dados dos 3 sites de exemplo com as imagens corrigidas e nítidas
   const exemplosSites = [
     {
       id: 1,
-      titulo: "Landing Page Premium de Alta Conversão",
+      titulo: "Landing Page de Alta Conversão para E-books",
       nicho: "Infoprodutos & E-books",
       thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj225EWctgNmoZ7ZvtLHSXEJuJulFHh8DZaQYa6ow4iacWikcqHc9_S_6gB8adi9KfAz3sMxOcEvkLojc4KQFIvnFvj9ZWFm6I2Me0-Bb-BUbnYwpnY59MVHyj_PD2wkWf1bPTaowGoCpffWQuoJUuxwMNc67GUyCGP-bJNR0ptjQMwdlOfP0bu0bBc6F8/s1600/S2.jfif",
       imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj225EWctgNmoZ7ZvtLHSXEJuJulFHh8DZaQYa6ow4iacWikcqHc9_S_6gB8adi9KfAz3sMxOcEvkLojc4KQFIvnFvj9ZWFm6I2Me0-Bb-BUbnYwpnY59MVHyj_PD2wkWf1bPTaowGoCpffWQuoJUuxwMNc67GUyCGP-bJNR0ptjQMwdlOfP0bu0bBc6F8/s1600/S2.jfif"
@@ -21,14 +22,14 @@ export default function PaginaDeVendas() {
       titulo: "Site Institucional e Mentorias",
       nicho: "Consultorias & Especialistas",
       thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiImportado/s1600/s4.jfif"
+      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif"
     },
     {
       id: 3,
       titulo: "Página de Captura Estratégica",
       nicho: "Negócios Locais & Serviços",
       thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
+      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8OpgJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
     }
   ]
 
@@ -132,7 +133,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - MOCKUP DE TELA PROFISSIONAL) */}
+      {/* SAMPLES SECTION (Amostras de Sites - MOCKUP NÍTIDO DE ALTA RESOLUÇÃO) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -146,7 +147,7 @@ export default function PaginaDeVendas() {
               Nosso sistema não cria apenas através de prompts de texto. <strong>Basta enviar uma imagem, arte ou print de referência</strong> e a nossa Inteligência Artificial vai extrair as cores, a estrutura e desenhar um site completo baseado nela!
             </p>
             <p className="text-slate-500 max-w-3xl mx-auto">
-              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a arte.
+              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a arte em alta definição.
             </p>
           </div>
 
@@ -166,7 +167,7 @@ export default function PaginaDeVendas() {
                   <div className="flex-1 text-center md:text-left w-full">
                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2 block">{site.nicho}</span>
                     <h3 className="text-2xl font-bold text-slate-900 mb-2">{site.titulo}</h3>
-                    <p className="text-slate-500 text-sm">Site gerado com inteligência artificial. Clique para expandir a arte completa.</p>
+                    <p className="text-slate-500 text-sm">Site gerado com inteligência artificial. Clique para expandir a arte em alta definição.</p>
                   </div>
                   
                   <div className="shrink-0">
@@ -180,11 +181,11 @@ export default function PaginaDeVendas() {
                   </div>
                 </div>
 
-                {/* CORPO DO MOCKUP DE TELA (Proporção Perfeita Preservada) */}
+                {/* CORPO DO MOCKUP COM RESOLUÇÃO NÍDIDA (Largura fixa para evitar borrões) */}
                 {siteExpandido === site.id && (
                   <div className="border-t border-slate-100 bg-slate-900 p-3 md:p-8 animate-in slide-in-from-top-4 duration-300 ease-out">
                     
-                    {/* Barra de Navegação do Mockup (Estilo Navegador) */}
+                    {/* Barra de Navegador do Mockup */}
                     <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center justify-between border-b border-slate-700">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -197,14 +198,16 @@ export default function PaginaDeVendas() {
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold border border-emerald-500/30">100% IA</span>
                     </div>
 
-                    {/* Caixa de Rolagem com Largura Fixa e Altura Controlada (Mantém o Aspecto Real sem Achatamentos) */}
-                    <div className="w-full h-[650px] bg-white rounded-b-xl overflow-y-auto custom-scrollbar shadow-2xl relative">
-                      <img 
-                        src={site.imagemCompleta} 
-                        alt={`Design completo do site ${site.titulo}`} 
-                        className="w-full h-auto block object-top"
-                        loading="lazy"
-                      />
+                    {/* Janela com largura nativa e alta definição (Sem distorção) */}
+                    <div className="w-full h-[650px] bg-white rounded-b-xl overflow-auto custom-scrollbar shadow-2xl relative">
+                      <div className="w-[1280px] mx-auto">
+                        <img 
+                          src={site.imagemCompleta} 
+                          alt={`Design completo do site ${site.titulo}`} 
+                          className="w-full h-auto block object-top"
+                          loading="lazy"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -304,7 +307,7 @@ export default function PaginaDeVendas() {
 
       {/* Estilo para barra de rolagem customizada */}
       <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
