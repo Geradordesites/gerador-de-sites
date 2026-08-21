@@ -1,144 +1,41 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown } from 'lucide-react'
-
-// ==========================================
-// CÓDIGOS DOS SITES DE EXEMPLO (HTML BRUTO)
-// ==========================================
-const SITE_KRONOS = `<!DOCTYPE html>
-<html lang="pt-BR" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRONOS Engenharia & Construção | Obras de Alto Padrão</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], heading: ['Montserrat', 'sans-serif'], }, colors: { brand: { dark: '#0B0F17', asphalt: '#121824', card: '#1A2332', orange: '#FF5500', orangeHover: '#E04B00', gold: '#F59E0B', silver: '#94A3B8', } } } } }
-    </script>
-    <style>.glass-panel { background: rgba(26, 35, 50, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); } .glass-nav { background: rgba(11, 15, 23, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }</style>
-</head>
-<body class="bg-brand-dark text-slate-100 font-sans antialiased">
-    <nav class="fixed top-0 left-0 w-full z-50 glass-nav">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-heading font-black text-xl rounded">K</div>
-                <span class="font-heading font-extrabold text-xl text-white">KRONOS</span>
-            </div>
-            <div class="hidden md:flex gap-8 text-sm text-slate-300">
-                <span>Sobre Nós</span><span>Serviços</span><span>Portfólio</span>
-            </div>
-            <span class="hidden sm:inline-flex items-center gap-2 bg-brand-orange text-white px-6 py-3 rounded font-heading font-bold text-xs uppercase"><i class="fas fa-paper-plane"></i> Orçamento</span>
-        </div>
-    </nav>
-    <section class="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden">
-        <div class="absolute inset-0 z-0">
-            <img src="https://images.unsplash.com/photo-1732740674554-11b7772d8c21?auto=format&fit=crop&w=1080&q=80" class="w-full h-full object-cover opacity-30" />
-            <div class="absolute inset-0 bg-gradient-to-t from-brand-dark to-transparent"></div>
-        </div>
-        <div class="relative z-10 max-w-7xl mx-auto px-6 w-full">
-            <div class="max-w-3xl">
-                <h1 class="font-heading font-black text-4xl sm:text-6xl lg:text-7xl text-white uppercase mb-6">Construindo o Futuro com <span class="text-brand-orange">Solidez Monumental</span></h1>
-                <p class="text-slate-300 text-lg mb-8">Soluções completas para edifícios corporativos, complexos industriais e residências de alto padrão com precisão cirúrgica e rigor técnico.</p>
-                <span class="inline-flex items-center gap-3 bg-brand-orange text-white px-8 py-4 rounded font-heading font-bold text-sm uppercase">Iniciar Projeto <i class="fas fa-arrow-right"></i></span>
-            </div>
-        </div>
-    </section>
-    <section class="py-24 bg-brand-asphalt text-center px-6 border-t border-slate-800">
-        <h2 class="font-heading font-black text-3xl text-white mb-6">Obras Emblemáticas Finalizadas</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto mt-12 text-left">
-            <div class="bg-brand-card rounded-xl p-6 border border-slate-800"><h3 class="font-heading text-xl text-white mb-2">Torre Horizon Business</h3><p class="text-slate-400 text-sm">42 pavimentos corporativos em estrutura mista.</p></div>
-            <div class="bg-brand-card rounded-xl p-6 border border-slate-800"><h3 class="font-heading text-xl text-white mb-2">Residência Alphaville</h3><p class="text-slate-400 text-sm">Mansão minimalista com balanços audaciosos.</p></div>
-            <div class="bg-brand-card rounded-xl p-6 border border-slate-800"><h3 class="font-heading text-xl text-white mb-2">Complexo Logístico</h3><p class="text-slate-400 text-sm">Centro de distribuição de classe A.</p></div>
-        </div>
-    </section>
-    <footer class="py-12 bg-brand-dark text-center text-slate-400 text-sm border-t border-slate-800">© 2026 KRONOS Engenharia & Construção.</footer>
-</body>
-</html>`;
-
-const SITE_EBOOK = `<!DOCTYPE html>
-<html lang="pt-BR" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Código da Prosperidade</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>tailwind.config = { theme: { extend: { colors: { em: { 950: '#022c22', 900: '#064e3b', 800: '#065f46', 500: '#10b981', 100: '#dcfce7' } } } } }</script>
-</head>
-<body class="bg-em-100 text-slate-800 font-sans">
-    <nav class="w-full bg-em-950 text-white py-4 px-6 flex justify-between items-center shadow-lg">
-        <div class="font-black text-xl"><i class="fas fa-book-open text-em-500 mr-2"></i>CÓDIGO <span class="text-em-500">PROSPERIDADE</span></div>
-        <span class="bg-orange-500 text-white font-bold px-5 py-2 rounded-full text-sm">QUERO O E-BOOK</span>
-    </nav>
-    <section class="bg-gradient-to-b from-em-950 to-em-800 text-white py-20 px-6 text-center">
-        <div class="max-w-4xl mx-auto">
-            <span class="bg-em-800 border border-em-500 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-6 inline-block text-amber-400">Método Comprovado</span>
-            <h1 class="text-4xl md:text-5xl font-black mb-6">Aprenda o Passo a Passo para Organizar suas Finanças e Multiplicar seu Dinheiro</h1>
-            <p class="text-lg text-em-100 mb-8">Descubra o mapa definitivo criado para quem deseja sair das dívidas, construir uma reserva sólida e investir com inteligência.</p>
-            <span class="bg-orange-500 text-white font-black px-8 py-4 rounded-xl text-lg inline-block shadow-xl">QUERO ACESSAR O E-BOOK AGORA</span>
-        </div>
-    </section>
-    <section class="py-20 bg-white text-center px-6">
-        <h2 class="text-3xl font-black text-em-950 mb-12">Um Guia Prático, Direto ao Ponto</h2>
-        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div class="p-8 bg-em-50 rounded-2xl border border-em-100"><h3 class="font-bold text-lg mb-2">Blindagem Financeira</h3><p class="text-slate-600 text-sm">Como estancar vazamentos de dinheiro.</p></div>
-            <div class="p-8 bg-em-50 rounded-2xl border border-em-100"><h3 class="font-bold text-lg mb-2">Psicologia da Riqueza</h3><p class="text-slate-600 text-sm">Elimine crenças limitantes sobre dinheiro.</p></div>
-            <div class="p-8 bg-em-50 rounded-2xl border border-em-100"><h3 class="font-bold text-lg mb-2">Renda Passiva</h3><p class="text-slate-600 text-sm">Faça os juros compostos trabalharem por você.</p></div>
-        </div>
-    </section>
-    <section class="py-16 bg-em-950 text-white text-center px-6">
-        <h2 class="text-3xl font-black mb-4">Oferta Especial por Tempo Limitado</h2>
-        <div class="text-5xl font-black text-amber-400 my-6">12x de R$ 9,74</div>
-        <span class="bg-orange-500 text-white font-black px-10 py-5 rounded-xl text-xl inline-block">COMPRAR AGORA</span>
-    </section>
-</body>
-</html>`;
-
-const SITE_TRG = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instituto TRG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <script>tailwind.config = { theme: { extend: { fontFamily: { serif: ['Playfair Display', 'serif'], sans: ['Plus Jakarta Sans', 'sans'] }, colors: { navy: { 950: '#040B14', 900: '#0B1A30', 800: '#132847' }, gold: { 400: '#F3C669', 500: '#D4A338' } } } } }</script>
-</head>
-<body class="bg-white text-navy-900 font-sans">
-    <nav class="w-full bg-navy-900 text-white py-4 px-6 flex justify-between items-center">
-        <div class="font-serif font-bold text-xl flex items-center gap-2"><div class="w-8 h-8 bg-gold-500 text-navy-900 flex items-center justify-center rounded-full">T</div>Instituto TRG</div>
-        <span class="bg-gold-500 text-navy-900 font-bold px-6 py-2 rounded-full text-sm">Agendar Sessão</span>
-    </nav>
-    <section class="bg-navy-900 text-white py-24 px-6 text-center">
-        <div class="max-w-4xl mx-auto">
-            <span class="text-gold-400 font-bold uppercase tracking-widest text-xs border border-gold-500/30 px-4 py-1 rounded-full mb-6 inline-block">Reprocessamento Generativo</span>
-            <h1 class="text-4xl md:text-5xl font-serif font-bold mb-6">Você continuará repetindo os mesmos padrões de dor ou fará a escolha de se libertar agora?</h1>
-            <p class="text-lg text-slate-300 mb-8">Desligue a dor associada às memórias traumáticas e retome o controle definitivo da sua vida em poucas sessões.</p>
-            <span class="bg-gold-500 text-navy-950 font-bold px-8 py-4 rounded-xl text-lg inline-block">Quero me libertar agora</span>
-        </div>
-    </section>
-    <section class="py-20 px-6 max-w-6xl mx-auto">
-        <div class="text-center mb-12"><h2 class="font-serif text-3xl font-bold">O que a TRG resolve?</h2></div>
-        <div class="grid md:grid-cols-3 gap-6">
-            <div class="p-6 bg-navy-50 rounded-xl border border-navy-100"><i class="fas fa-heart-crack text-gold-500 text-3xl mb-4"></i><h3 class="font-serif font-bold text-xl mb-2">Ansiedade e Pânico</h3><p class="text-sm text-slate-600">Reprocessamento de gatilhos.</p></div>
-            <div class="p-6 bg-navy-50 rounded-xl border border-navy-100"><i class="fas fa-cloud-rain text-gold-500 text-3xl mb-4"></i><h3 class="font-serif font-bold text-xl mb-2">Depressão</h3><p class="text-sm text-slate-600">Reconstrução da energia vital.</p></div>
-            <div class="p-6 bg-navy-50 rounded-xl border border-navy-100"><i class="fas fa-child-reaching text-gold-500 text-3xl mb-4"></i><h3 class="font-serif font-bold text-xl mb-2">Traumas de Infância</h3><p class="text-sm text-slate-600">Liberação da criança interior.</p></div>
-        </div>
-    </section>
-    <section class="py-16 bg-navy-950 text-white text-center px-6">
-        <h2 class="font-serif text-3xl font-bold mb-8">Dê o primeiro passo rumo à sua libertação.</h2>
-        <span class="bg-emerald-600 text-white font-bold px-10 py-5 rounded-xl text-xl inline-block"><i class="fab fa-whatsapp mr-2"></i> Agendar via WhatsApp</span>
-    </section>
-</body>
-</html>`;
-
+import { useState } from 'react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown, ExternalLink } from 'lucide-react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
+  // Estado para controlar qual site está aberto na sanfona (accordion)
+  const [siteAberto, setSiteAberto] = useState<number | null>(null)
+
+  // Array com os dados dos 3 sites de exemplo
+  const exemplosDeSites = [
+    {
+      id: 1,
+      titulo: 'Página de Vendas (Ebooks e Cursos)',
+      descricao: 'Design de alta conversão otimizado com blocos de módulos, bônus, ofertas e depoimentos.',
+      iconeColor: 'text-emerald-500',
+      iconeBg: 'bg-emerald-100',
+      link: 'COLOQUE_O_LINK_DO_SEU_SITE_1_AQUI' // EX: 'https://seusite.com/modelo-curso'
+    },
+    {
+      id: 2,
+      titulo: 'Landing Page para Mentorias e Serviços',
+      descricao: 'Estrutura limpa e corporativa, focada em construir autoridade e capturar clientes High Ticket.',
+      iconeColor: 'text-blue-500',
+      iconeBg: 'bg-blue-100',
+      link: 'COLOQUE_O_LINK_DO_SEU_SITE_2_AQUI'
+    },
+    {
+      id: 3,
+      titulo: 'Página de Captura (Leads e Lançamentos)',
+      descricao: 'Foco absoluto na conversão de contatos com formulários em destaque e gatilhos mentais.',
+      iconeColor: 'text-purple-500',
+      iconeBg: 'bg-purple-100',
+      link: 'COLOQUE_O_LINK_DO_SEU_SITE_3_AQUI'
+    }
+  ]
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-emerald-200 selection:text-emerald-900 relative">
@@ -161,7 +58,7 @@ export default function PaginaDeVendas() {
         </div>
       </header>
 
-      {/* HERO SECTION */}
+      {/* HERO SECTION (A Promessa Principal) */}
       <section className="pt-24 pb-32 px-4 text-center overflow-hidden relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-300/20 blur-[120px] rounded-full pointer-events-none -z-10" />
         
@@ -171,7 +68,7 @@ export default function PaginaDeVendas() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 font-serif leading-[1.1]">
-            Crie sites profissionais em segundos com <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400">Inteligência Artificial</span>
+            Crie sites profissionais em segundos com <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400">Inteligência Artificial</span>
           </h1>
           
           <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
@@ -190,7 +87,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
+      {/* FEATURES SECTION (Mostrando o Valor) */}
       <section className="py-24 bg-white px-4 border-y border-slate-100">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
@@ -232,126 +129,80 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - REFORMULADA COM SANFONA E IFRAME) */}
+      {/* SAMPLES SECTION (Amostras de Sites - NOVA VERSÃO) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold font-serif text-slate-900 mb-6 max-w-4xl mx-auto leading-tight">
               Crie sites e landing pages para ebooks, cursos, mentoria e todos os nichos
             </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto bg-emerald-100/50 p-4 rounded-xl border border-emerald-200">
-              <i className="fas fa-magic text-emerald-600 mr-2"></i>
-              Estes são <strong>modelos 100% reais</strong> criados pelo nosso gerador de sites. Clique nas abas abaixo para visualizar a página completa funcionando na prática, sem sair desta tela.
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Veja abaixo alguns exemplos reais. Todos esses sites são <strong>modelos 100% criados pelo nosso gerador de sites inteligente</strong>. Clique em um deles para visualizar o resultado completo.
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto space-y-6">
-            
-            {/* AMOSTRA 1: ENGENHARIA */}
-            <details className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all [&_summary::-webkit-details-marker]:hidden">
-              <summary className="p-6 md:p-8 cursor-pointer list-none flex items-center justify-between outline-none">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex flex-shrink-0 items-center justify-center">
-                    <Layout className="size-7" />
+          <div className="max-w-4xl mx-auto space-y-6">
+            {exemplosDeSites.map((site) => (
+              <div key={site.id} className={`bg-white border transition-all duration-300 rounded-3xl overflow-hidden ${siteAberto === site.id ? 'border-emerald-400 shadow-lg shadow-emerald-100' : 'border-slate-200 shadow-sm hover:border-emerald-200 hover:shadow-md'}`}>
+                
+                {/* CABEÇALHO DA SANFONA */}
+                <button
+                  onClick={() => setSiteAberto(siteAberto === site.id ? null : site.id)}
+                  className="w-full text-left p-6 sm:p-8 flex items-center justify-between focus:outline-none group"
+                >
+                  <div className="flex items-center gap-5">
+                    <div className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 ${site.iconeBg} ${site.iconeColor}`}>
+                      <ImageIcon className="size-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-1 group-hover:text-emerald-700 transition-colors">
+                        {site.titulo}
+                      </h3>
+                      <p className="text-slate-500 text-sm hidden sm:block">
+                        {site.descricao}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                      <h3 className="font-bold text-slate-800 text-lg md:text-xl">Site Corporativo (Empresas e Agências)</h3>
-                      <p className="text-sm text-slate-500 font-medium mt-1">Exemplo criado: KRONOS Engenharia</p>
+                  <div className="shrink-0 ml-4 flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 group-hover:bg-emerald-50">
+                    <ChevronDown className={`size-5 text-slate-400 transition-transform duration-300 ${siteAberto === site.id ? 'rotate-180 text-emerald-600' : 'group-hover:text-emerald-600'}`} />
                   </div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center group-open:rotate-180 transition-transform text-slate-400">
-                  <ChevronDown className="size-5" />
-                </div>
-              </summary>
-              <div className="border-t border-slate-100 p-2 md:p-4 bg-slate-200">
-                {/* Cabeçalho fake de navegador do Mac */}
-                <div className="bg-slate-800 rounded-t-xl px-4 py-2.5 flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                   <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                   <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                   <div className="ml-4 text-xs text-slate-400 font-mono tracking-wider flex-1 text-center pr-10">kronos-engenharia.com</div>
-                </div>
-                <iframe
-                  srcDoc={SITE_KRONOS}
-                  className="w-full h-[60vh] md:h-[700px] border-none bg-white rounded-b-xl"
-                  sandbox="allow-scripts allow-same-origin"
-                  loading="lazy"
-                  title="Exemplo Site Engenharia"
-                />
-              </div>
-            </details>
+                </button>
 
-            {/* AMOSTRA 2: E-BOOK */}
-            <details className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all [&_summary::-webkit-details-marker]:hidden">
-              <summary className="p-6 md:p-8 cursor-pointer list-none flex items-center justify-between outline-none">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex flex-shrink-0 items-center justify-center">
-                    <Sparkles className="size-7" />
+                {/* CONTEÚDO EXPANSÍVEL (IFRAME) */}
+                {siteAberto === site.id && (
+                  <div className="p-4 sm:p-6 bg-slate-100 border-t border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex justify-between items-center mb-3 px-2">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Visualização ao vivo</span>
+                      <a href={site.link} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
+                        Abrir em nova guia <ExternalLink className="size-3" />
+                      </a>
+                    </div>
+                    {/* O IFRAME SÓ EXISTE NO NAVEGADOR SE A SANFONA ESTIVER ABERTA */}
+                    <div className="w-full h-[600px] bg-white rounded-xl shadow-inner border border-slate-300 overflow-hidden relative">
+                      {site.link.includes('COLOQUE_O_LINK') ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                          <Layout className="size-12 mb-2 opacity-50" />
+                          <p className="font-medium text-sm">Insira o link real no código para visualizar</p>
+                        </div>
+                      ) : (
+                        <iframe 
+                          src={site.link} 
+                          title={`Preview do ${site.titulo}`}
+                          className="w-full h-full border-none"
+                          loading="lazy"
+                        />
+                      )}
+                    </div>
                   </div>
-                  <div>
-                      <h3 className="font-bold text-slate-800 text-lg md:text-xl">Página de Vendas (E-books e Infoprodutos)</h3>
-                      <p className="text-sm text-slate-500 font-medium mt-1">Exemplo criado: Guia Código da Prosperidade</p>
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center group-open:rotate-180 transition-transform text-slate-400">
-                  <ChevronDown className="size-5" />
-                </div>
-              </summary>
-              <div className="border-t border-slate-100 p-2 md:p-4 bg-slate-200">
-                <div className="bg-slate-800 rounded-t-xl px-4 py-2.5 flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                   <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                   <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                   <div className="ml-4 text-xs text-slate-400 font-mono tracking-wider flex-1 text-center pr-10">codigodaprosperidade.com.br</div>
-                </div>
-                <iframe
-                  srcDoc={SITE_EBOOK}
-                  className="w-full h-[60vh] md:h-[700px] border-none bg-white rounded-b-xl"
-                  sandbox="allow-scripts allow-same-origin"
-                  loading="lazy"
-                  title="Exemplo E-book"
-                />
+                )}
+                
               </div>
-            </details>
-
-            {/* AMOSTRA 3: MENTORIA/TERAPIA */}
-            <details className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all [&_summary::-webkit-details-marker]:hidden">
-              <summary className="p-6 md:p-8 cursor-pointer list-none flex items-center justify-between outline-none">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex flex-shrink-0 items-center justify-center">
-                    <Zap className="size-7" />
-                  </div>
-                  <div>
-                      <h3 className="font-bold text-slate-800 text-lg md:text-xl">Landing Page de Captura (Mentoria e Terapia)</h3>
-                      <p className="text-sm text-slate-500 font-medium mt-1">Exemplo criado: Terapia TRG</p>
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center group-open:rotate-180 transition-transform text-slate-400">
-                  <ChevronDown className="size-5" />
-                </div>
-              </summary>
-              <div className="border-t border-slate-100 p-2 md:p-4 bg-slate-200">
-                <div className="bg-slate-800 rounded-t-xl px-4 py-2.5 flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                   <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                   <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-                   <div className="ml-4 text-xs text-slate-400 font-mono tracking-wider flex-1 text-center pr-10">instituto-trg.com.br</div>
-                </div>
-                <iframe
-                  srcDoc={SITE_TRG}
-                  className="w-full h-[60vh] md:h-[700px] border-none bg-white rounded-b-xl"
-                  sandbox="allow-scripts allow-same-origin"
-                  loading="lazy"
-                  title="Exemplo Mentoria TRG"
-                />
-              </div>
-            </details>
-
+            ))}
           </div>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
+      {/* HOW IT WORKS (Como Funciona) */}
       <section className="py-24 px-4 bg-slate-900 text-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-16 items-center">
@@ -386,6 +237,7 @@ export default function PaginaDeVendas() {
               </div>
             </div>
 
+            {/* Imagem Ilustrativa (Mockup) */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-3xl blur-3xl opacity-20" />
               <div className="relative bg-slate-800 border border-slate-700 rounded-3xl p-4 shadow-2xl aspect-square flex items-center justify-center">
@@ -418,12 +270,12 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* FOOTER SIMPLES */}
       <footer className="bg-slate-950 py-12 text-center text-slate-500 border-t border-slate-900">
         <p>&copy; {new Date().getFullYear()} SiteGen AI. Todos os direitos reservados.</p>
       </footer>
 
-      {/* WHATSAPP */}
+      {/* BOTÃO FLUTUANTE DO WHATSAPP */}
       <a
         href="https://wa.me/5561982096982?text=Olá,%20preciso%20de%20ajuda%20com%20o%20SiteGen%20AI."
         target="_blank"
