@@ -11,7 +11,6 @@ const MODELOS_GEMINI = [
   "gemini-3-flash-preview"
 ];
 
-// MODELOS DE IMAGEM DO GEMINI EM CASCATA
 const MODELOS_IMAGEM_GEMINI = [
   "gemini-3.1-flash-image",
   "gemini-3.1-flash-lite-image",
@@ -82,40 +81,36 @@ export async function POST(req: Request) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
-        provedorDeImagens = 'unsplash'; 
+        provedorDeImagens = 'ai_paid'; // Chave própria usa IA paga se autorizada
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash';
+        provedorDeImagens = 'unsplash'; // Apenas modo admin/global grátis usa Unsplash
     } else if (isAdminKeyEnabled) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Modo Pago: 100% IA (Gemini Image)
+        provedorDeImagens = 'ai_paid'; // Modo Pago Central: 100% IA (Gemini Image)
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
 
-    // REGRAS DE IMAGEM
+    // REGRAS DE IMAGEM UNIFICADAS PARA TODAS AS OPÇÕES (GERAÇÃO E EDIÇÃO)
     let regraImagens = "";
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `
 === SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 REGRA ABSOLUTA: Use APENAS fotografias realistas de humanos em situações cotidianas. É ESTRITAMENTE PROIBIDO usar desenhos ou vetores.
+🚨 Use APENAS fotografias realistas de humanos. Proibido desenhos ou vetores.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
-Resoluções: 1280x720, 800x1200 ou 800x800.
 `;
     } else {
         regraImagens = `
-=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE) ===
-🚨 REGRA ABSOLUTA: Para as imagens do site, você DEVE utilizar a nossa tag de IA.
+=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE OBRIGATÓRIO) ===
+🚨 REGRA ABSOLUTA: Para QUALQUER imagem gerada ou modificada, você DEVE utilizar exclusivamente a tag de IA do Gemini.
 Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
-Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoman in a modern office, photorealistic, 8k]" />
-
-🚨 DIRETRIZES DE IMAGEM: 
-1. Proibido desenhos, 3D ou sci-fi. Exija SEMPRE fotografias hiper-realistas. 
-2. Se for sobre um produto, inclua uma pessoa real interagindo com ele (ex: "a human baker holding a cake").
+Exemplo: <img src="[IMAGEM_IA: realistic photography of a professional human baker holding a cake, photorealistic, 8k]" />
+🚨 PROIBIDO USAR UNSPLASH OU LINKS EXTERNOS NO MODO PAGO. Exija sempre fotografias hiper-realistas de humanos interagindo com o tema.
 `;
     }
 
@@ -132,9 +127,10 @@ Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoma
 
     let regrasObrigatorias = "";
     if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva TODO o código HTML estruturado no JSON.`;
+        regraImagens
+        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva TODO o código HTML estruturado no JSON.\n${regraImagens}`;
     } else if (isElementRefinement || isBlockRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado, dentro do JSON.`;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado, dentro do JSON.\n${regraImagens}`;
     } else {
         regrasObrigatorias = `
 === REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
@@ -200,7 +196,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE COM ROTAÇÃO E SEM UNSPLASH)
+    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE COM ROTAÇÃO E 100% IA)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
