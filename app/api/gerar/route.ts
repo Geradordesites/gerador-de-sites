@@ -3,7 +3,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { createClient } from '@supabase/supabase-js';
 
 const MODELOS_GEMINI = [
-  "gemini-3.7-flash"
+  "gemini-3.7-flash",
   "gemini-3.5-flash", 
   "gemini-3.6-flash",
   "gemini-3.5-flash-lite",
@@ -16,7 +16,7 @@ const CUSTO_POR_ACAO = 10;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId, userEmail } = body;
+    const { systemInstruction, promptParts, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
     const MEU_EMAIL_ADMIN = 'josevg10@gmail.com';
@@ -29,14 +29,6 @@ export async function POST(req: Request) {
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
 
-    let temImagem = false;
-    let textoDoPrompt = "";
-    for (const part of promptParts) {
-        if (part.inlineData) temImagem = true;
-        if (part.text) textoDoPrompt += part.text + "\n";
-    }
-
-    // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
@@ -65,237 +57,93 @@ export async function POST(req: Request) {
     let isUsingCredits = false;
     let provedorDeImagens = 'unsplash'; 
 
-    // VERIFICA O SALDO E DEFINE A CHAVE NA ORDEM DE PRIORIDADE CORRETA
     if (isAdmin) {
         chaveParaUsar = process.env.GEMINI_API_KEY!;
         provedorDeImagens = 'unsplash'; 
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
-        if (!userPlanExpiration || userPlanExpiration < new Date()) {
-            throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
-        }
+        if (!userPlanExpiration || userPlanExpiration < new Date()) throw new Error("Assinatura expirada.");
         chaveParaUsar = clientApiKey;
         provedorDeImagens = 'unsplash'; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
-        if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
+        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Créditos insuficientes.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
         provedorDeImagens = 'unsplash';
     } else if (isAdminKeyEnabled) {
-        if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
+        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Créditos insuficientes.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Aciona a geração de imagens via Gemini Image Model
+        provedorDeImagens = 'ai_paid'; // MODO PAGO = IA TOTAL
     } else {
-        throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
+        throw new Error("Acesso bloqueado pelo administrador.");
     }
 
-    // REGRAS DE IMAGEM
-    let regraImagens = "";
-    if (provedorDeImagens === 'unsplash') {
-        regraImagens = `
-=== SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 REGRA ABSOLUTA: Use APENAS fotografias realistas de humanos em situações cotidianas. É ESTRITAMENTE PROIBIDO usar desenhos ou vetores.
-Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
-Resoluções: 1280x720, 800x1200 ou 800x800.
-`;
-    } else {
-        regraImagens = `
-=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE) ===
-🚨 REGRA ABSOLUTA: Para as imagens do site, você DEVE utilizar a nossa tag de IA.
-Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
-Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoman in a modern office, photorealistic, 8k]" />
-
-🚨 DIRETRIZES DE IMAGEM: 
-1. Proibido desenhos, 3D ou sci-fi. Exija SEMPRE fotografias hiper-realistas. 
-2. Se for sobre um produto, inclua uma pessoa real interagindo com ele (ex: "a human baker holding a cake").
-`;
-    }
-
-    let regraMenu = "";
-    if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
-        regraMenu = "🚨 REGRA FATAL: O HTML DEVE INICIAR COM UMA TAG <nav> CONTENDO UM MENU FIXO, LOGOTIPO, LINKS DE ÂNCORA E UM BOTÃO CTA.";
-    } else if (textoDoPrompt.includes("NÃO crie menu")) {
-        regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>.";
-    }
-    
-    let instrucaoDinamica = "";
-    if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais principais.";
-    else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e hover:scale-105 nos botões.";
-
-    let regrasObrigatorias = "";
-    if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva TODO o código HTML estruturado no JSON.`;
-    } else if (isElementRefinement || isBlockRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado, dentro do JSON.`;
-    } else {
-        regrasObrigatorias = `
-=== REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
-Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 ATENÇÃO: GERE UMA LANDING PAGE PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES.
-🚨 ESPAÇAMENTO OBRIGATÓRIO: Organize o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos subsequentes (ex: mb-4 ou mb-6).
-🚨 PROIBIÇÃO DE FORMULÁRIOS: É PROIBIDO gerar tags <form>, <input> ou <textarea>. Use APENAS Botões de Ação (CTA).
-${regraMenu}
-
-=== REGRA DE OURO 2: MOBILE-FIRST E MÍDIA ===
-O site DEVE ser perfeito no celular.
-${regraImagens}
-${instrucaoDinamica}
-
-=== COMPLIANCE: RODAPÉ JURÍDICO E CORES HARMONIOSAS ===
-O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de texto do restante do site.
-<footer class="w-full font-sans py-16 mt-12 border-t">
-    <div class="max-w-5xl mx-auto px-6">
-        <div class="text-center pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4"><p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p></div>
-    </div>
-</footer>
-`;
-    }
-
-    const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
+    const systemInstructionFinal = (systemInstruction || '') + '\n\n=== REGRAS: Imagens reais, hiper-realistas, sem desenhos/sci-fi. Use [IMAGEM_IA: prompt] ===';
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
     let htmlCode = '';
-    let provedorTextoUsado = '';
-    let geracaoSucesso = false;
-    let historicoErros: any[] = [];
+    
+    // GERAÇÃO DO TEXTO
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash", systemInstruction: systemInstructionFinal, safetySettings });
+    const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }] });
+    htmlCode = extrairHtmlDeJson(result.response.text());
 
-    // TENTA GERAR O SITE
-    for (const modelName of MODELOS_GEMINI) {
-        if (geracaoSucesso) break; 
-        for (let tentativa = 1; tentativa <= 2; tentativa++) {
-            try {
-                const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
-                const result = await model.generateContent({ 
-                    contents: [{ role: "user", parts: promptParts }], 
-                    generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } 
-                });
-                
-                htmlCode = extrairHtmlDeJson(result.response.text());
-                
-                if (htmlCode && htmlCode.length >= 50) {
-                    geracaoSucesso = true;
-                    provedorTextoUsado = `Google Gemini (${modelName})`;
-                    break; 
-                } else {
-                    throw new Error("HTML gerado foi bloqueado, curto ou inválido.");
-                }
-            } catch (error: any) {
-                historicoErros.push({ modelo: modelName, tentativa: tentativa, erro: error.message || "Erro desconhecido" });
-            }
-        }
-    }
-
-    if (!geracaoSucesso) throw new Error("Nossos motores de IA retornaram erro. Nenhum crédito foi descontado. Tente novamente.");
-
-    // DESCONTO DE CRÉDITOS
-    if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
-        try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } 
-        catch (e) {}
-    }
-
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE MODEL)
+    // PROCESSAMENTO DE IMAGENS PAGO (SEM UNSPLASH)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
-        let iaUrlsToReplace = [];
         
-        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
-            iaUrlsToReplace.push({ fullMatch: matchIa[0], prompt: matchIa[1] }); 
-        }
-
-        // Instancia o modelo Gemini para geração de imagens (gemini-3.1-flash-image)
+        // Usando modelo de imagem via SDK conforme sugestão do próprio Gemini
         const imageModel = genAI.getGenerativeModel({ model: "gemini-3.1-flash-image" });
 
-        for (const item of iaUrlsToReplace) {
-            const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
+        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
+            const fullMatch = matchIa[0];
+            const basePrompt = "Professional, hyper-realistic, high quality photography of " + matchIa[1];
             
-            try {
-                const imgResult = await imageModel.generateContent({
-                    contents: [{ role: "user", parts: [{ text: basePrompt }] }]
-                });
+            const imgResult = await imageModel.generateContent({
+                contents: [{ role: "user", parts: [{ text: basePrompt }] }]
+            });
 
-                let base64Image = '';
-                const responseCandidates = imgResult.response.candidates;
-                if (responseCandidates && responseCandidates[0]?.content?.parts) {
-                    for (const part of responseCandidates[0].content.parts) {
-                        if (part.inlineData && part.inlineData.data) {
-                            base64Image = `data:${part.inlineData.mimeType || 'image/jpeg'};base64,${part.inlineData.data}`;
-                            break;
-                        }
+            const response = imgResult.response;
+            if (response.candidates && response.candidates[0]?.content?.parts) {
+                for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData && part.inlineData.data) {
+                        htmlCode = htmlCode.replace(fullMatch, `data:image/jpeg;base64,${part.inlineData.data}`);
                     }
                 }
-
-                if (base64Image) {
-                    htmlCode = htmlCode.replace(item.fullMatch, base64Image);
-                } else {
-                    throw new Error("O modelo Gemini de imagem não retornou dados binários.");
-                }
-            } catch (imgError: any) {
-                throw new Error(`Erro ao gerar imagem com Gemini Image: ${imgError.message}`);
+            } else {
+                throw new Error("Falha total na geração da imagem pelo Gemini.");
             }
         }
-    } 
-    // PROCESSAMENTO MODO GRATUITO (UNSPLASH)
-    else {
+    } else {
+        // MODO GRATUITO (UNSPLASH)
         const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
         let match;
-        let urlsToReplace = [];
-        while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
-
-        if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
-            for (const item of urlsToReplace) {
-                let orient = 'landscape';
-                if (item.dimensao === '800x1200') orient = 'portrait';
-                if (item.dimensao === '800x800') orient = 'squarish';
-                const kwFormatada = encodeURIComponent(item.keywords.trim());
-                let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
-                try {
-                    const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
-                    if (uRes.ok) {
-                        const uData = await uRes.json();
-                        if (uData.results && uData.results.length > 0) imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                    }
-                } catch (e) {}
-                htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
+        while ((match = regexImgReq.exec(htmlCode)) !== null) {
+            const fullMatch = match[0];
+            const kwFormatada = encodeURIComponent(match[2].trim());
+            const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=1&client_id=${process.env.UNSPLASH_API_KEY}`);
+            if (uRes.ok) {
+                const uData = await uRes.json();
+                if (uData.results && uData.results.length > 0) htmlCode = htmlCode.replace(fullMatch, uData.results[0].urls.regular);
             }
         }
     }
-    
-    htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
-    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
 
-    return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
+    if (isUsingCredits && userId) await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId);
 
+    return NextResponse.json({ success: true, html: htmlCode });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
 function extrairHtmlDeJson(text: string): string {
-  try {
-      let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
-      const start = clean.indexOf('{');
-      const end = clean.lastIndexOf('}');
-      if (start !== -1 && end !== -1) {
-          const jsonString = clean.substring(start, end + 1);
-          const json = JSON.parse(jsonString);
-          let extracted = json.codigo_html || json.html || Object.values(json)[0] || jsonString;
-          if (typeof extracted === 'string') extracted = extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
-          return extracted;
-      }
-      return clean;
-  } catch (e) {
-      let fallback = text.replace(/```(html|json)?/gi, '').replace(/```/g, '').trim();
-      if (fallback.toLowerCase().startsWith('json')) fallback = fallback.substring(4).trim();
-      if (fallback.startsWith('{') && fallback.includes('"codigo_html":')) {
-          const idx = fallback.indexOf('"codigo_html":');
-          if (idx !== -1) {
-              let rawHtml = fallback.substring(idx + 14).trim();
-              if (rawHtml.startsWith('"')) rawHtml = rawHtml.substring(1);
-              if (rawHtml.endsWith('}')) rawHtml = rawHtml.slice(0, -1).trim();
-              if (rawHtml.endsWith('"')) rawHtml = rawHtml.slice(0, -1);
-              return rawHtml.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-          }
-      }
-      return fallback;
-  }
+    let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}');
+    if (start !== -1 && end !== -1) {
+        const json = JSON.parse(clean.substring(start, end + 1));
+        return json.codigo_html || json.html || Object.values(json)[0];
+    }
+    return clean;
 }
