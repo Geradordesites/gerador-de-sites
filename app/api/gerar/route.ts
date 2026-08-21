@@ -3,6 +3,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { createClient } from '@supabase/supabase-js';
 
 const MODELOS_GEMINI = [
+  "gemini-3.7-flash",
   "gemini-3.5-flash", 
   "gemini-3.6-flash",
   "gemini-3.5-flash-lite",
@@ -191,7 +192,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GOOGLE IMAGEN 3)
+    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GOOGLE IMAGEN 3 - VERSÃO 002 ATUALIZADA)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
@@ -204,7 +205,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         for (const item of iaUrlsToReplace) {
             const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
             
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${chaveParaUsar}`, { 
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${chaveParaUsar}`, { 
                 method: "POST", 
                 headers: { "Content-Type": "application/json" }, 
                 body: JSON.stringify({ 
@@ -215,7 +216,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
 
             const data = await response.json();
 
-            // SE O GOOGLE RECUSAR, O SISTEMA PARA E TE MOSTRA O ERRO EXATO NA TELA
             if (!response.ok || !data.predictions || !data.predictions[0]?.bytesBase64Encoded) {
                 throw new Error(`Google Imagen Error: ${JSON.stringify(data.error || data)}`);
             }
