@@ -1,31 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ImagePlus } from 'lucide-react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ImagePlus, FileText, Cpu, CheckCircle2 } from 'lucide-react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
-
-  const exemplosSites = [
-    {
-      id: 1,
-      titulo: "Landing Page de Alta Conversão para E-books",
-      nicho: "Infoprodutos & E-books",
-      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj225EWctgNmoZ7ZvtLHSXEJuJulFHh8DZaQYa6ow4iacWikcqHc9_S_6gB8adi9KfAz3sMxOcEvkLojc4KQFIvnFvj9ZWFm6I2Me0-Bb-BUbnYwpnY59MVHyj_PD2wkWf1bPTaowGoCpffWQuoJUuxwMNc67GUyCGP-bJNR0ptjQMwdlOfP0bu0bBc6F8/s1600/S2.jfif"
-    },
-    {
-      id: 2,
-      titulo: "Site Institucional e Mentorias",
-      nicho: "Consultorias & Especialistas",
-      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif"
-    },
-    {
-      id: 3,
-      titulo: "Página de Captura Estratégica",
-      nicho: "Negócios Locais & Serviços",
-      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
-    }
-  ]
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-emerald-200 selection:text-emerald-900 relative">
@@ -110,7 +89,7 @@ export default function PaginaDeVendas() {
               <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <ImageIcon className="size-7" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Imagens Fotorealistas</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Imagens Fotorrealistas</h3>
               <p className="text-slate-600 leading-relaxed">
                 Chega de banco de imagens clichês. Integrado com poderosos motores de imagem, o sistema cria artes exclusivas e de altíssima qualidade para o seu site.
               </p>
@@ -119,42 +98,73 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (3 IMAGENS LADO A LADO) */}
+      {/* CAPABILITIES SECTION (INFORMAÇÕES COM ÍCONES EM CSS / LUCIDE) */}
       <section className="py-24 bg-slate-50 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-6">
-                <ImagePlus className="size-8" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-6 shadow-sm">
+                <Cpu className="size-8" />
             </div>
             <h2 className="text-3xl md:text-5xl font-bold font-serif text-slate-900 mb-4">
-              Crie sites a partir de Textos ou Imagens de Referência
+              Poder absoluto na criação do seu próximo site
             </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto mb-4">
-              Nosso sistema não cria apenas através de prompts de texto. <strong>Basta enviar uma imagem, arte ou print de referência</strong> e a nossa Inteligência Artificial vai extrair as cores, a estrutura e desenhar um site completo baseado nela!
-            </p>
-            <p className="text-slate-500 max-w-3xl mx-auto">
-              Exemplos reais gerados pela nossa inteligência artificial para diferentes nichos de mercado.
+            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+              Descubra os recursos avançados que tornam nossa Inteligência Artificial a ferramenta mais rápida e eficiente do mercado para criadores de conteúdo e empreendedores.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {exemplosSites.map((site) => (
-              <div key={site.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex flex-col group">
-                <div className="w-full overflow-hidden relative border-b border-slate-100 bg-slate-100">
-                  <img 
-                    src={site.thumb} 
-                    alt={site.titulo} 
-                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
-                </div>
-                <div className="p-6 flex flex-col flex-1 justify-between">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1 block">{site.nicho}</span>
-                    <h3 className="font-bold text-xl text-slate-900 mb-2">{site.titulo}</h3>
-                  </div>
-                </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Recurso 1 */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                <ImagePlus className="size-6" />
               </div>
-            ))}
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Criação Direto por Imagem (Image-to-Site)</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Não quer apenas escrever? Envie uma imagem, arte ou print de referência. Nossa IA analisa o design, extrai a paleta de cores e reconstrói um site completo e funcional baseado exatamente nela.
+                </p>
+              </div>
+            </div>
+
+            {/* Recurso 2 */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                <FileText className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Prompts Inteligentes e Textos Sob Medida</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Digite breves instruções ou cole sua copy. O sistema estrutura blocos profissionais de conversão, páginas de captura, áreas de FAQ e rodapés blindados em segundos.
+                </p>
+              </div>
+            </div>
+
+            {/* Recurso 3 */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+                <Zap className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Perfeito para Anúncios (Facebook & Instagram Ads)</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Estruturas limpas, carregamento ultrarrápido e compatibilidade total com pixels de rastreamento. Suas campanhas de tráfego pago rodando com o máximo de aproveitamento.
+                </p>
+              </div>
+            </div>
+
+            {/* Recurso 4 */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100">
+                <CheckCircle2 className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Liberdade Total de Edição Visual</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Gostou do resultado da IA, mas quer mudar um detalhe? Utilize nosso editor visual integrado para ajustar textos, cores, botões e imagens com cliques simples.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
