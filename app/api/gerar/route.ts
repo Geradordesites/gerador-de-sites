@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     
     let isByokEnabled = settings?.byok_enabled ?? true;
     const isAdminKeyEnabled = settings?.admin_paid_key_enabled ?? true; // Chave Central Paga
-    const isGlobalAdminKeyEnabled = settings?.global_admin_key_enabled ?? false; // Chave Global do Admin (Grátis)
+    const isGlobalAdminKeyEnabled = settings?.global_admin_key_enabled ?? false; 
 
     let userByokAllowed = false;
     let userCredits = 0;
@@ -63,53 +63,39 @@ export async function POST(req: Request) {
     
     let chaveParaUsar = "";
     let isUsingCredits = false;
-    let provedorDeImagens = 'unsplash'; // Padrão: Imagens Grátis
 
     // VERIFICA O SALDO E DEFINE A CHAVE NA ORDEM DE PRIORIDADE CORRETA
     if (isAdmin) {
         chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash'; 
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
-        provedorDeImagens = 'unsplash'; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash';
     } else if (isAdminKeyEnabled) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
+        // Usa a sua nova chave paga do Google Cloud para o Gemini processar o site!
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Aciona a geração de imagens paga via Google Imagen 3
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
 
-    // REGRAS DE IMAGEM
-    let regraImagens = "";
-    if (provedorDeImagens === 'unsplash') {
-        regraImagens = `
-=== SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 REGRA ABSOLUTA: Use APENAS fotografias realistas de humanos em situações cotidianas. É ESTRITAMENTE PROIBIDO usar desenhos ou vetores.
+    // REGRAS DE IMAGEM (Focadas em fotografias reais de humanos via Unsplash)
+    const regraImagens = `
+=== SISTEMA DE MÍDIA PROFISSIONAL (UNSPLASH) ===
+🚨 REGRA ABSOLUTA: Use APENAS fotografias realistas de humanos em situações cotidianas ou de negócios. É ESTRITAMENTE PROIBIDO usar desenhos, ilustrações, vetores ou gráficos sci-fi.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
-Resoluções: 1280x720, 800x1200 ou 800x800.
+Resoluções Obrigatórias: 
+- 1280x720 (Paisagem para Hero Section e Banners)
+- 800x1200 (Retrato para pessoas e cards verticais)
+- 800x800 (Quadrado para ícones e detalhes)
+Exemplo: <img src="[UNSPLASH: 1280x720: professional human baker in a warm kitchen]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Confeiteiro" />
 `;
-    } else {
-        regraImagens = `
-=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===
-🚨 REGRA ABSOLUTA: Para as imagens do site, você DEVE utilizar a nossa tag de IA.
-Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
-Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoman in a modern office, photorealistic, 8k]" />
-
-🚨 DIRETRIZES DE IMAGEM: 
-1. Proibido desenhos, 3D ou sci-fi. Exija SEMPRE fotografias hiper-realistas. 
-2. Se for sobre um produto, inclua uma pessoa real interagindo com ele (ex: "a human baker holding a cake").
-`;
-    }
 
     let regraMenu = "";
     if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
@@ -158,7 +144,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     let geracaoSucesso = false;
     let historicoErros: any[] = [];
 
-    // TENTA GERAR O SITE
+    // TENTA GERAR O SITE USANDO O GEMINI COM A CHAVE PAGA
     for (const modelName of MODELOS_GEMINI) {
         if (geracaoSucesso) break; 
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
@@ -186,72 +172,37 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
 
     if (!geracaoSucesso) throw new Error("Nossos motores de IA retornaram erro. Nenhum crédito foi descontado. Tente novamente.");
 
-    // DESCONTO DE CRÉDITOS
+    // DESCONTO DE CRÉDITOS DA SUA CONTA PAGA
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } 
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GOOGLE IMAGEN 3 - VERSÃO 002 ATUALIZADA)
-    if (provedorDeImagens === 'ai_paid') {
-        const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
-        let matchIa;
-        let iaUrlsToReplace = [];
-        
-        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
-            iaUrlsToReplace.push({ fullMatch: matchIa[0], prompt: matchIa[1] }); 
-        }
+    // PROCESSAMENTO DE IMAGENS INTELIGENTE VIA UNSPLASH
+    const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
+    let match;
+    let urlsToReplace = [];
+    while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
 
-        for (const item of iaUrlsToReplace) {
-            const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
-            
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${chaveParaUsar}`, { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ 
-                    instances: [{ prompt: basePrompt }], 
-                    parameters: { sampleCount: 1 } 
-                }) 
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.predictions || !data.predictions[0]?.bytesBase64Encoded) {
-                throw new Error(`Google Imagen Error: ${JSON.stringify(data.error || data)}`);
-            }
-
-            const imagemBase64 = `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
-            htmlCode = htmlCode.replace(item.fullMatch, imagemBase64);
-        }
-    } 
-    // PROCESSAMENTO MODO GRATUITO (UNSPLASH)
-    else {
-        const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
-        let match;
-        let urlsToReplace = [];
-        while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
-
-        if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
-            for (const item of urlsToReplace) {
-                let orient = 'landscape';
-                if (item.dimensao === '800x1200') orient = 'portrait';
-                if (item.dimensao === '800x800') orient = 'squarish';
-                const kwFormatada = encodeURIComponent(item.keywords.trim());
-                let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
-                try {
-                    const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
-                    if (uRes.ok) {
-                        const uData = await uRes.json();
-                        if (uData.results && uData.results.length > 0) imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                    }
-                } catch (e) {}
-                htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
-            }
+    if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
+        for (const item of urlsToReplace) {
+            let orient = 'landscape';
+            if (item.dimensao === '800x1200') orient = 'portrait';
+            if (item.dimensao === '800x800') orient = 'squarish';
+            const kwFormatada = encodeURIComponent(item.keywords.trim());
+            let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
+            try {
+                const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+                if (uRes.ok) {
+                    const uData = await uRes.json();
+                    if (uData.results && uData.results.length > 0) imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
+                }
+            } catch (e) {}
+            htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     }
     
     htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
-    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
 
