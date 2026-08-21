@@ -6,7 +6,7 @@ import { useState } from 'react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
-  const [siteExpandido, setSiteExpandido] = useState<number | null>(1) // Inicia com o primeiro aberto por padrão para destaque
+  const [siteExpandido, setSiteExpandido] = useState<number | null>(1) // Inicia com o primeiro aberto por padrão
 
   const exemplosSites = [
     {
@@ -132,7 +132,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (3 CARDS LADO A LADO + PREVIEW NÍDIDO EMBAIXO) */}
+      {/* SAMPLES SECTION (3 CARDS LADO A LADO + MOCKUP NÍTIDO EMBAIXO) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -175,7 +175,7 @@ export default function PaginaDeVendas() {
             ))}
           </div>
 
-          {/* PREVIEW DA IMAGEM SELECIONADA (EXIBIDO EMBAIXO, TAMANHO ESTREITO E NÍTIDO) */}
+          {/* PREVIEW DA IMAGEM NÍDIDA EMBAIXO (COM LARGURA REAL DE COMPUTADOR E SCROLL) */}
           {siteExpandido !== null && (() => {
             const siteAtual = exemplosSites.find(s => s.id === siteExpandido);
             if (!siteAtual) return null;
@@ -198,14 +198,14 @@ export default function PaginaDeVendas() {
                   </button>
                 </div>
 
-                {/* Caixa com largura otimizada (max-w-2xl) para manter a imagem estreita, nítida e sem borrar */}
-                <div className="w-full h-[600px] bg-white rounded-b-xl overflow-y-auto custom-scrollbar shadow-inner flex justify-center p-4">
-                  <div className="w-full max-w-2xl">
+                {/* Caixa com scroll horizontal e vertical onde a imagem mantém sua resolução nativa sem desbotar/embaçar */}
+                <div className="w-full h-[650px] bg-white rounded-b-xl overflow-auto custom-scrollbar shadow-inner">
+                  <div className="w-[1200px] mx-auto">
                     <img 
                       src={siteAtual.imagemCompleta} 
                       alt={siteAtual.titulo} 
-                      className="w-full h-auto block rounded shadow-sm"
-                      style={{ imageRendering: '-webkit-optimize-contrast' }}
+                      className="w-full h-auto block object-top"
+                      style={{ imageRendering: 'high-quality' }}
                       loading="lazy"
                     />
                   </div>
