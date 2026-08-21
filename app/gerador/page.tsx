@@ -1,44 +1,31 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown, ChevronUp, ImagePlus, Monitor } from 'lucide-react'
-import { useState } from 'react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ImagePlus } from 'lucide-react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
-  const [siteExpandido, setSiteExpandido] = useState<number | null>(1) // Inicia com o primeiro aberto por padrão
 
   const exemplosSites = [
     {
       id: 1,
       titulo: "Landing Page de Alta Conversão para E-books",
       nicho: "Infoprodutos & E-books",
-      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj225EWctgNmoZ7ZvtLHSXEJuJulFHh8DZaQYa6ow4iacWikcqHc9_S_6gB8adi9KfAz3sMxOcEvkLojc4KQFIvnFvj9ZWFm6I2Me0-Bb-BUbnYwpnY59MVHyj_PD2wkWf1bPTaowGoCpffWQuoJUuxwMNc67GUyCGP-bJNR0ptjQMwdlOfP0bu0bBc6F8/s1600/S2.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj225EWctgNmoZ7ZvtLHSXEJuJulFHh8DZaQYa6ow4iacWikcqHc9_S_6gB8adi9KfAz3sMxOcEvkLojc4KQFIvnFvj9ZWFm6I2Me0-Bb-BUbnYwpnY59MVHyj_PD2wkWf1bPTaowGoCpffWQuoJUuxwMNc67GUyCGP-bJNR0ptjQMwdlOfP0bu0bBc6F8/s1600/S2.jfif"
+      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj225EWctgNmoZ7ZvtLHSXEJuJulFHh8DZaQYa6ow4iacWikcqHc9_S_6gB8adi9KfAz3sMxOcEvkLojc4KQFIvnFvj9ZWFm6I2Me0-Bb-BUbnYwpnY59MVHyj_PD2wkWf1bPTaowGoCpffWQuoJUuxwMNc67GUyCGP-bJNR0ptjQMwdlOfP0bu0bBc6F8/s1600/S2.jfif"
     },
     {
       id: 2,
       titulo: "Site Institucional e Mentorias",
       nicho: "Consultorias & Especialistas",
-      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif"
+      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif"
     },
     {
       id: 3,
       titulo: "Página de Captura Estratégica",
       nicho: "Negócios Locais & Serviços",
-      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
+      thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
     }
   ]
-
-  const toggleSanfona = (id: number) => {
-    if (siteExpandido === id) {
-      setSiteExpandido(null)
-    } else {
-      setSiteExpandido(id)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-emerald-200 selection:text-emerald-900 relative">
@@ -132,9 +119,9 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (3 CARDS LADO A LADO + MOCKUP NÍTIDO EMBAIXO) */}
+      {/* SAMPLES SECTION (3 IMAGENS LADO A LADO) */}
       <section className="py-24 bg-slate-50 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-6">
                 <ImagePlus className="size-8" />
@@ -146,74 +133,29 @@ export default function PaginaDeVendas() {
               Nosso sistema não cria apenas através de prompts de texto. <strong>Basta enviar uma imagem, arte ou print de referência</strong> e a nossa Inteligência Artificial vai extrair as cores, a estrutura e desenhar um site completo baseado nela!
             </p>
             <p className="text-slate-500 max-w-3xl mx-auto">
-              Clique em qualquer modelo abaixo para visualizar a arte gerada em alta definição logo abaixo.
+              Exemplos reais gerados pela nossa inteligência artificial para diferentes nichos de mercado.
             </p>
           </div>
 
-          {/* 3 CARDS LADO A LADO */}
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="grid md:grid-cols-3 gap-8">
             {exemplosSites.map((site) => (
-              <div 
-                key={site.id} 
-                onClick={() => toggleSanfona(site.id)}
-                className={`bg-white border-2 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col ${siteExpandido === site.id ? 'border-emerald-600 ring-4 ring-emerald-500/20 scale-[1.02]' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden relative border-b border-slate-100 bg-slate-100">
-                  <img src={site.thumb} alt={site.titulo} className="w-full h-full object-cover object-top" />
+              <div key={site.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex flex-col group">
+                <div className="w-full overflow-hidden relative border-b border-slate-100 bg-slate-100">
+                  <img 
+                    src={site.thumb} 
+                    alt={site.titulo} 
+                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" 
+                  />
                 </div>
                 <div className="p-6 flex flex-col flex-1 justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1 block">{site.nicho}</span>
-                    <h3 className="font-bold text-lg text-slate-900 mb-2">{site.titulo}</h3>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-600">
-                    <span>{siteExpandido === site.id ? 'Visualizando Abaixo' : 'Ver Arte Completa'}</span>
-                    {siteExpandido === site.id ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                    <h3 className="font-bold text-xl text-slate-900 mb-2">{site.titulo}</h3>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* PREVIEW DA IMAGEM NÍDIDA EMBAIXO (COM LARGURA REAL DE COMPUTADOR E SCROLL) */}
-          {siteExpandido !== null && (() => {
-            const siteAtual = exemplosSites.find(s => s.id === siteExpandido);
-            if (!siteAtual) return null;
-            return (
-              <div className="bg-slate-900 p-4 md:p-8 rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center justify-between border-b border-slate-700 mb-0">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  </div>
-                  <div className="bg-slate-900 text-slate-400 text-xs px-6 py-1 rounded-md font-mono flex items-center gap-2">
-                    <Monitor className="size-3 text-emerald-400" /> sitegen-ai.com/preview/{siteAtual.id}
-                  </div>
-                  <button 
-                    onClick={() => setSiteExpandido(null)}
-                    className="text-xs text-slate-400 hover:text-white font-bold bg-slate-700 px-3 py-1 rounded-lg transition"
-                  >
-                    Fechar X
-                  </button>
-                </div>
-
-                {/* Caixa com scroll horizontal e vertical onde a imagem mantém sua resolução nativa sem desbotar/embaçar */}
-                <div className="w-full h-[650px] bg-white rounded-b-xl overflow-auto custom-scrollbar shadow-inner">
-                  <div className="w-[1200px] mx-auto">
-                    <img 
-                      src={siteAtual.imagemCompleta} 
-                      alt={siteAtual.titulo} 
-                      className="w-full h-auto block object-top"
-                      style={{ imageRendering: 'high-quality' }}
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
         </div>
       </section>
 
@@ -304,14 +246,6 @@ export default function PaginaDeVendas() {
           Suporte WhatsApp
         </span>
       </a>
-
-      {/* Estilo para barra de rolagem customizada */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}} />
     </div>
   )
 }
