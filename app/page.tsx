@@ -952,7 +952,7 @@ export default function Home() {
   };
 
   const otimizarComIA = async (comandoOverride?: string) => {
-      const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
+      const promptInput = document.getElementById('ai_prompt_element') as HTMLTextAreaElement;
       const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
       const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
@@ -1706,9 +1706,16 @@ export default function Home() {
                                           <button onClick={() => otimizarComIA("Reescreva gerando forte urgência, escassez e apelo forte para clicar. O usuário deve sentir que precisa agir agora.")} className="bg-orange-600 hover:bg-orange-500 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-orange-500 flex items-center justify-center gap-1.5"><i className="fas fa-fire"></i> Gerar Urgência</button>
                                       </div>
                                   )}
-                                  <div className="flex gap-2 relative">
-                                      <input type="text" id="ai_prompt_element" placeholder="Escreva o que a IA deve fazer..." className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg px-4 py-3 outline-none focus:border-indigo-400 placeholder-slate-400" />
-                                      <button onClick={() => otimizarComIA()} className="absolute right-1.5 top-1.5 bottom-1.5 w-10 bg-indigo-600 hover:bg-indigo-500 rounded-md flex items-center justify-center transition shadow-sm"><i className="fas fa-paper-plane"></i></button>
+                                  
+                                  {/* CAMPO DE PROMPT AUMENTADO */}
+                                  <div className="relative mt-2">
+                                      <textarea 
+                                          id="ai_prompt_element" 
+                                          rows={4}
+                                          placeholder="Escreva o que a IA deve fazer com este elemento..." 
+                                          className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg pl-4 pr-12 py-3 outline-none focus:border-indigo-400 placeholder-slate-400 resize-y custom-scrollbar" 
+                                      ></textarea>
+                                      <button onClick={() => otimizarComIA()} className="absolute right-2 bottom-2.5 w-9 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-md flex items-center justify-center transition shadow-sm" title="Enviar Comando IA"><i className="fas fa-paper-plane"></i></button>
                                   </div>
                               </div>
                           </div>
