@@ -8,7 +8,7 @@ import { Users, Shield, Zap, Key, CheckCircle, XCircle, Loader2, AlertTriangle, 
 export default function AdminPage() {
   const router = useRouter()
   const [usuarios, setUsuarios] = useState<any[]>([])
-  const [config, setConfig] = useState<any>({ byok_enabled: true, admin_paid_key_enabled: true })
+  const [config, setConfig] = useState<any>({ byok_enabled: true, admin_paid_key_enabled: true, global_admin_key_enabled: false })
   const [apiLogs, setApiLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [salvandoConfig, setSalvandoConfig] = useState(false)
@@ -57,7 +57,7 @@ export default function AdminPage() {
     if (settings) {
       setConfig(settings)
     } else {
-      await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: true, admin_paid_key_enabled: true })
+      await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: true, admin_paid_key_enabled: true, global_admin_key_enabled: false })
     }
 
     const { data: logs } = await supabase
@@ -86,7 +86,6 @@ export default function AdminPage() {
     else setUsuarios(usuarios.map(u => u.id === userId ? { ...u, credits: novoValor } : u))
   }
 
-  // NOVA FUNÇÃO: Permite alterar dias livremente (somar ou subtrair) ou escolher pelo calendário
   const alterarTempoPlanoDias = async (userId: string, dataAtual: string | null, diasParaSomarOuSubtrair: number) => {
     let base = dataAtual && new Date(dataAtual) > new Date() ? new Date(dataAtual) : new Date();
     base.setDate(base.getDate() + diasParaSomarOuSubtrair);
@@ -100,7 +99,6 @@ export default function AdminPage() {
     }
   }
 
-  // NOVA FUNÇÃO: Definir data exata escolhida pelo calendário ou zerar
   const definirValidadeManual = async (userId: string, dataString: string) => {
     let novaIso = null;
     if (dataString) {
@@ -139,7 +137,8 @@ export default function AdminPage() {
       .upsert({ 
         id: 'global',
         byok_enabled: novaConfig.byok_enabled, 
-        admin_paid_key_enabled: novaConfig.admin_paid_key_enabled 
+        admin_paid_key_enabled: novaConfig.admin_paid_key_enabled,
+        global_admin_key_enabled: novaConfig.global_admin_key_enabled 
       })
 
     if (error) {
@@ -183,25 +182,43 @@ export default function AdminPage() {
           </button>
         </div>
 
+        {/* CONTROLES GLOBAIS DE IA & BYOK (ATUALIZADO COM 3 COLUNAS) */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-10 shadow-sm">
           <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <Key className="size-5 text-amber-500" /> Controles Globais de IA & BYOK
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-bold text-sm text-slate-900">Permitir Chave Própria (Acesso Global)</span>
-                <input type="checkbox" checked={config.byok_enabled} onChange={(e) => setConfig({ ...config, byok_enabled: e.target.checked })} className="size-5 accent-emerald-600 cursor-pointer" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            
+            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors h-full flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-sm text-slate-900">Permitir Chave Própria (BYOK)</span>
+                  <input type="checkbox" checked={config.byok_enabled} onChange={(e) => setConfig({ ...config, byok_enabled: e.target.checked })} className="size-5 accent-emerald-600 cursor-pointer" />
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">Se ativado, TODOS os clientes poderão inserir a própria chave. Se desativado, apenas quem tiver permissão individual poderá.</p>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">Se ativado, TODOS os clientes poderão inserir a própria chave. Se desativado, apenas quem tiver permissão individual (abaixo) poderá.</p>
             </div>
-            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-bold text-sm text-slate-900">Sua Chave Central (API Paga Ativa)</span>
-                <input type="checkbox" checked={config.admin_paid_key_enabled} onChange={(e) => setConfig({ ...config, admin_paid_key_enabled: e.target.checked })} className="size-5 accent-emerald-600 cursor-pointer" />
+
+            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors h-full flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-sm text-slate-900">Sua Chave Central (API Paga)</span>
+                  <input type="checkbox" checked={config.admin_paid_key_enabled} onChange={(e) => setConfig({ ...config, admin_paid_key_enabled: e.target.checked })} className="size-5 accent-emerald-600 cursor-pointer" />
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">Controla se a sua API paga centralizada está operacional para processar requisições através de Créditos.</p>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">Controla se a sua API paga centralizada está operacional para processar requisições através de Créditos.</p>
             </div>
+
+            <div className="bg-indigo-50/50 p-5 rounded-xl border border-indigo-200 hover:border-indigo-300 transition-colors h-full flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-sm text-indigo-950">Chave Global do Admin</span>
+                  <input type="checkbox" checked={config.global_admin_key_enabled} onChange={(e) => setConfig({ ...config, global_admin_key_enabled: e.target.checked })} className="size-5 accent-indigo-600 cursor-pointer" />
+                </div>
+                <p className="text-xs text-indigo-900/70 leading-relaxed">Se ativado, todos os clientes sem chave própria usarão a sua chave mestre de Administrador para as requisições.</p>
+              </div>
+            </div>
+
           </div>
           <div className="mt-6 flex justify-end pt-6 border-t border-slate-100">
             <button onClick={() => salvarConfiguracoesGlobais(config)} disabled={salvandoConfig} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md flex items-center gap-2 transition-all disabled:opacity-70">
@@ -257,7 +274,6 @@ export default function AdminPage() {
                         </button>
                       </td>
 
-                      {/* COLUNA: CRÉDITOS */}
                       <td className="py-5 px-4 align-top">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
@@ -281,7 +297,6 @@ export default function AdminPage() {
                         </div>
                       </td>
 
-                      {/* COLUNA: ASSINATURA BYOK (COM CALENDÁRIO LIVRE E CONTROLES DE ADICIONAR/REDUZIR/ZERAR) */}
                       <td className="py-5 px-4 align-top bg-slate-50/50 border-l border-r border-slate-100">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center flex-wrap gap-2">
@@ -302,7 +317,6 @@ export default function AdminPage() {
                         </div>
                       </td>
 
-                      {/* COLUNA: CHAVE DO CLIENTE */}
                       <td className="py-5 px-4 align-top">
                         {user.user_api_key ? (
                           <div className="flex items-center gap-2">
@@ -318,7 +332,6 @@ export default function AdminPage() {
                         )}
                       </td>
 
-                      {/* COLUNA: PERMISSÕES INDIVIDUAIS */}
                       <td className="py-5 px-4 align-top">
                         <div className="flex flex-col gap-2 w-fit">
                           <button onClick={() => alternarByokIndividual(user.id, user.allow_byok)} className={`px-2.5 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_byok ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`} title="Permite o usuário colar e usar a chave própria dele">
