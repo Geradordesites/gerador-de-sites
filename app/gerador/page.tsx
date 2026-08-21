@@ -5,7 +5,7 @@ import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDow
 import { useState } from 'react'
 
 // =========================================================================
-// CÓDIGOS HTML COMPLETOS DOS SITES DE EXEMPLO
+// CÓDIGOS HTML COMPLETOS DOS SITES DE EXEMPLO (COM MENU CORRIGIDO PARA IFRAME)
 // =========================================================================
 
 const SITE_EBOOK = `<!DOCTYPE html>
@@ -45,10 +45,11 @@ const SITE_EBOOK = `<!DOCTYPE html>
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emeraldCustom-500 to-green-400 flex items-center justify-center text-emeraldCustom-950 font-black text-xl shadow-md">
                     <i class="fas fa-book-open"></i>
                 </div>
-                <span class="font-extrabold text-xl tracking-tight text-white">CÓDIGO <span class="text-emeraldCustom-500">PROSPERIDADE</span></span>
+                <span class="font-extrabold text-lg sm:text-xl tracking-tight text-white">CÓDIGO <span class="text-emeraldCustom-500">PROSPERIDADE</span></span>
             </div>
             
-            <div class="hidden md:flex items-center gap-8 font-medium text-sm text-emeraldCustom-100">
+            <!-- Links do meio ocultos no Iframe (lg:flex) -->
+            <div class="hidden lg:flex items-center gap-6 font-medium text-sm text-emeraldCustom-100">
                 <a href="#inicio" class="hover:text-emeraldCustom-500 transition-colors">Início</a>
                 <a href="#problemas" class="hover:text-emeraldCustom-500 transition-colors">Para Quem É</a>
                 <a href="#conteudo" class="hover:text-emeraldCustom-500 transition-colors">O Conteúdo</a>
@@ -57,8 +58,9 @@ const SITE_EBOOK = `<!DOCTYPE html>
             </div>
 
             <div>
-                <a href="#checkout" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-full text-sm shadow-lg hover:shadow-orange-500/30 transition-all duration-300 transform hover:-translate-y-0.5 inline-flex items-center gap-2">
-                    <span>QUERO O E-BOOK</span>
+                <a href="#checkout" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm shadow-lg hover:shadow-orange-500/30 transition-all duration-300 transform hover:-translate-y-0.5 inline-flex items-center gap-2">
+                    <span class="hidden sm:inline">QUERO O E-BOOK</span>
+                    <span class="sm:hidden">COMPRAR</span>
                     <i class="fas fa-arrow-right text-xs"></i>
                 </a>
             </div>
@@ -455,18 +457,21 @@ const SITE_MENTORIA = `<!DOCTYPE html>
             <a href="#" class="flex items-center gap-3 group">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 to-gold-400 flex items-center justify-center text-navy-950 font-serif font-bold text-xl shadow-lg shadow-gold-500/20 group-hover:scale-105 transition-transform">T</div>
                 <div class="flex flex-col">
-                    <span class="font-serif text-lg font-bold tracking-wide text-white leading-tight">Instituto TRG</span>
-                    <span class="text-xs text-gold-400 font-medium tracking-widest uppercase">Reprocessamento Emocional</span>
+                    <span class="font-serif text-base sm:text-lg font-bold tracking-wide text-white leading-tight">Instituto TRG</span>
+                    <span class="hidden sm:block text-xs text-gold-400 font-medium tracking-widest uppercase">Reprocessamento</span>
                 </div>
             </a>
-            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-200">
+            
+            <!-- Oculto no Iframe com lg:flex -->
+            <div class="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-200">
                 <a href="#sobre" class="hover:text-gold-400 transition-colors">O Método</a>
                 <a href="#o-que-resolve" class="hover:text-gold-400 transition-colors">O Que Trata</a>
                 <a href="#passos" class="hover:text-gold-400 transition-colors">Como Funciona</a>
                 <a href="#depoimentos" class="hover:text-gold-400 transition-colors">Depoimentos</a>
             </div>
-            <a href="#agendamento" class="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-navy-950 font-bold px-6 py-2.5 rounded-full text-sm shadow-md hover:shadow-gold-500/20 transition-all transform hover:-translate-y-0.5 border border-gold-400/30 flex items-center gap-2">
-                <i class="fab fa-whatsapp text-base"></i> <span>Agendar Sessão</span>
+
+            <a href="#agendamento" class="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-navy-950 font-bold px-4 py-2 sm:px-6 sm:py-2.5 rounded-full text-xs sm:text-sm shadow-md hover:shadow-gold-500/20 transition-all transform hover:-translate-y-0.5 border border-gold-400/30 flex items-center gap-2">
+                <i class="fab fa-whatsapp text-base"></i> <span class="hidden sm:inline">Agendar Sessão</span>
             </a>
         </div>
     </nav>
@@ -609,10 +614,11 @@ const SITE_INSTITUCIONAL = `<!DOCTYPE html>
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <a href="#" class="flex items-center gap-3 group">
                 <div class="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-heading font-black text-xl rounded shadow-lg group-hover:scale-105 transition-transform">K</div>
-                <span class="font-heading font-extrabold text-xl tracking-wider text-white uppercase">KRONOS</span>
+                <span class="font-heading font-extrabold text-xl tracking-wider text-white uppercase hidden sm:block">KRONOS</span>
             </a>
             
-            <div class="hidden lg:flex items-center gap-8 font-medium text-sm text-slate-300">
+            <!-- Oculto no Iframe com lg:flex -->
+            <div class="hidden lg:flex items-center gap-6 font-medium text-sm text-slate-300">
                 <a href="#sobre" class="hover:text-brand-orange transition-colors">Sobre Nós</a>
                 <a href="#servicos" class="hover:text-brand-orange transition-colors">Serviços</a>
                 <a href="#portfolio" class="hover:text-brand-orange transition-colors">Portfólio</a>
@@ -620,8 +626,8 @@ const SITE_INSTITUCIONAL = `<!DOCTYPE html>
                 <a href="#faq" class="hover:text-brand-orange transition-colors">FAQ</a>
             </div>
 
-            <a href="#contato" class="hidden sm:inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeHover text-white px-6 py-3 rounded font-heading font-bold text-xs uppercase tracking-wider transition-all shadow-lg">
-                <i class="fas fa-paper-plane"></i> Solicitar Orçamento
+            <a href="#contato" class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeHover text-white px-4 py-2 sm:px-6 sm:py-3 rounded font-heading font-bold text-xs uppercase tracking-wider transition-all shadow-lg">
+                <i class="fas fa-paper-plane"></i> <span class="hidden sm:inline">Solicitar Orçamento</span>
             </a>
         </div>
     </nav>
@@ -723,7 +729,7 @@ const SITE_INSTITUCIONAL = `<!DOCTYPE html>
     </footer>
 </body></html>`;
 
-// Script de rolagem interna do Iframe (Evita pular para fora do painel)
+// Script de rolagem interna do Iframe (Evita pular para fora do painel da Sanfona)
 const SCROLL_FIX_SCRIPT = `
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -749,10 +755,11 @@ const SCROLL_FIX_SCRIPT = `
 
 export default function PaginaDeVendas() {
   const router = useRouter()
+  
   // Estado para controlar qual sanfona está aberta
   const [siteExpandido, setSiteExpandido] = useState<number | null>(null)
 
-  // Dados dos 3 sites de exemplo mapeados com os HTMLs Integrais + Script de Rolagem Correta
+  // Dados dos 3 sites de exemplo
   const exemplosSites = [
     {
       id: 1,
@@ -877,7 +884,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - SANFONA INTERNA COM SRCDOC E FIX DE ROLAGEM) */}
+      {/* SAMPLES SECTION (Amostras de Sites - SANFONA COM SRCDOC) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -919,7 +926,7 @@ export default function PaginaDeVendas() {
                   </div>
                 </div>
 
-                {/* CORPO DO IFRAME (Carrega todo o HTML e Rola Corretamente) */}
+                {/* CORPO DO IFRAME */}
                 {siteExpandido === site.id && (
                   <div className="border-t border-slate-100 bg-slate-100 p-2 md:p-6 animate-in slide-in-from-top-4 duration-300 ease-out">
                     <div className="flex justify-between items-center mb-3 px-2">
