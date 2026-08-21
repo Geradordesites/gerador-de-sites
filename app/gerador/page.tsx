@@ -1,36 +1,216 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
+
+// =========================================================================
+// CÓDIGOS HTML DOS SITES DE EXEMPLO
+// Injetados via srcDoc para não precisarem de links externos ou hospedagem
+// =========================================================================
+
+const SITE_EBOOK = `<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código da Prosperidade | O Guia Prático para Multiplicar sua Renda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { emeraldCustom: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b', 950: '#022c22' } } } }
+        }
+    </script>
+</head>
+<body class="bg-emeraldCustom-50 text-slate-800 font-sans antialiased selection:bg-emeraldCustom-600 selection:text-white">
+    <nav class="fixed top-0 left-0 w-full bg-emeraldCustom-950/95 backdrop-blur-md text-white z-50 border-b border-emeraldCustom-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emeraldCustom-500 to-green-400 flex items-center justify-center text-emeraldCustom-950 font-black text-xl shadow-md"><i class="fas fa-book-open"></i></div>
+                <span class="font-extrabold text-xl tracking-tight text-white">CÓDIGO <span class="text-emeraldCustom-500">PROSPERIDADE</span></span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 font-medium text-sm text-emeraldCustom-100">
+                <a href="#inicio" class="hover:text-emeraldCustom-500 transition-colors">Início</a>
+                <a href="#problemas" class="hover:text-emeraldCustom-500 transition-colors">Para Quem É</a>
+                <a href="#conteudo" class="hover:text-emeraldCustom-500 transition-colors">O Conteúdo</a>
+            </div>
+            <div>
+                <a href="#checkout" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-full text-sm shadow-lg hover:shadow-orange-500/30 transition-all inline-flex items-center gap-2">
+                    <span>QUERO O E-BOOK</span> <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <div class="h-20"></div>
+    <section id="inicio" class="relative bg-gradient-to-b from-emeraldCustom-950 via-emeraldCustom-900 to-emeraldCustom-800 text-white py-16 md:py-24 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center gap-12 lg:gap-16">
+                <div class="w-full md:w-1/2 text-center md:text-left">
+                    <div class="inline-flex items-center gap-2 bg-emeraldCustom-800/80 border border-emeraldCustom-600 px-4 py-1.5 rounded-full text-emeraldCustom-100 text-xs font-semibold uppercase tracking-wider mb-6 shadow-inner">
+                        <i class="fas fa-star text-amber-400"></i> Método Comprovado
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-4">Aprenda o Passo a Passo Exato para Organizar suas Finanças e Multiplicar seu Dinheiro</h1>
+                    <p class="text-lg md:text-xl text-emeraldCustom-100 leading-relaxed font-light mb-6">Descubra o mapa definitivo criado para quem deseja sair das dívidas, construir uma reserva sólida e alcançar a verdadeira segurança financeira.</p>
+                </div>
+                <div class="w-full md:w-1/2 flex justify-center">
+                    <div class="relative max-w-md w-full">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-emeraldCustom-500 to-amber-400 rounded-3xl blur-xl opacity-40 animate-pulse"></div>
+                        <div class="relative bg-emeraldCustom-900 border border-emeraldCustom-700 p-4 rounded-2xl shadow-2xl">
+                            <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Mockup" class="w-full h-auto object-cover rounded-xl shadow-md">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="py-20 bg-white text-slate-800">
+        <div class="max-w-5xl mx-auto px-4 text-center">
+            <h2 class="text-3xl font-extrabold text-emeraldCustom-950 mb-4">Veja o Que Dizem Quem Já Aplicou o Método</h2>
+            <p class="text-slate-600 text-lg mb-12">Pessoas comuns que decidiram tomar o controle de suas vidas financeiras.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-emeraldCustom-50 p-6 rounded-2xl shadow-sm border border-emeraldCustom-100 text-left">
+                    <div class="flex text-amber-400 mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-600 text-sm mb-4">"O e-book é extremamente direto. Sem termos complicados. Aprendi a montar minha reserva."</p>
+                    <div class="font-bold text-slate-900 text-sm">Carlos Eduardo</div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body></html>`;
+
+const SITE_MENTORIA = `<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRG - Terapia de Reprocessamento Generativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { serif: ['Playfair Display', 'serif'], sans: ['Plus Jakarta Sans', 'sans-serif'] }, colors: { navy: { 950: '#040B14', 900: '#0B1A30', 800: '#132847' }, gold: { 400: '#F3C669', 500: '#D4A338', 600: '#B58322' } } } } }
+    </script>
+</head>
+<body class="bg-white text-navy-900 font-sans">
+    <nav class="fixed top-0 w-full bg-navy-900/95 backdrop-blur-md border-b border-navy-800 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 to-gold-400 flex items-center justify-center text-navy-950 font-serif font-bold text-xl">T</div>
+                <div class="flex flex-col"><span class="font-serif text-lg font-bold text-white">Instituto TRG</span></div>
+            </div>
+            <a href="#agendamento" class="bg-gradient-to-r from-gold-500 to-gold-600 text-navy-950 font-bold px-6 py-2.5 rounded-full text-sm">Agendar Sessão</a>
+        </div>
+    </nav>
+    <section class="relative pt-32 pb-20 md:pt-44 md:pb-32 bg-navy-900 text-white min-h-screen flex items-center overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 opacity-95"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10 w-full">
+            <div class="flex flex-col md:flex-row items-center gap-12">
+                <div class="w-full md:w-1/2 space-y-6">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-navy-800/80 border border-gold-500/30 text-gold-400 text-xs font-semibold uppercase">
+                        <i class="fas fa-shield-halved text-gold-400"></i> Terapia de Reprocessamento
+                    </div>
+                    <h1 class="font-serif text-4xl lg:text-5xl font-bold leading-tight text-white">Você continuará repetindo os mesmos padrões de dor ou fará a escolha de se libertar?</h1>
+                    <p class="text-slate-300 text-lg font-light">Traumas do passado, ansiedade paralisante e bloqueios não precisam definir o seu futuro. Retome o controle da sua vida em poucas sessões.</p>
+                </div>
+                <div class="w-full md:w-1/2">
+                    <div class="relative rounded-2xl overflow-hidden border border-gold-500/20 shadow-2xl">
+                        <img src="https://images.unsplash.com/photo-1624268010368-2c3def0a26ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4MjMzOTJ8MHwxfHNlYXJjaHw5fHxzZXJlbmUlMjB3b21hbiUyMHBlYWNlZnVsJTIwZmFjZSUyMGxpZ2h0JTIwYmFja2dyb3VuZHxlbnwwfDF8fHwxNzg3MzE4OTA4fDA&ixlib=rb-4.1.0&q=80&w=1080" class="w-full h-[480px] object-cover" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="py-20 bg-slate-50 text-navy-900">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <h2 class="font-serif text-4xl font-bold text-navy-950 mb-12">As 5 Fases do Protocolo</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><span class="text-3xl font-serif text-gold-500 block mb-3">01</span><h3 class="font-bold text-lg">Cronológico</h3><p class="text-sm text-slate-600 mt-2">Varredura das memórias da infância até o presente.</p></div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><span class="text-3xl font-serif text-gold-500 block mb-3">02</span><h3 class="font-bold text-lg">Somático</h3><p class="text-sm text-slate-600 mt-2">Liberação de cargas emocionais presas no corpo.</p></div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><span class="text-3xl font-serif text-gold-500 block mb-3">03</span><h3 class="font-bold text-lg">Temático</h3><p class="text-sm text-slate-600 mt-2">Tratamento focado em fobias e lutos pendentes.</p></div>
+            </div>
+        </div>
+    </section>
+</body></html>`;
+
+const SITE_INSTITUCIONAL = `<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRONOS Engenharia & Construção</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], heading: ['Montserrat', 'sans-serif'] }, colors: { brand: { dark: '#0B0F17', asphalt: '#121824', card: '#1A2332', orange: '#FF5500' } } } } }
+    </script>
+</head>
+<body class="bg-brand-dark text-slate-100 font-sans">
+    <nav class="fixed top-0 w-full z-50 bg-brand-dark/90 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-heading font-black text-xl rounded">K</div>
+                <span class="font-heading font-extrabold text-xl tracking-wider text-white uppercase">KRONOS</span>
+            </div>
+            <a href="#contato" class="bg-brand-orange text-white px-6 py-2.5 rounded font-heading font-bold text-xs uppercase tracking-wider">Solicitar Orçamento</a>
+        </div>
+    </nav>
+    <section class="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1732740674554-11b7772d8c21?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4MjMzOTJ8MHwxfHNlYXJjaHw5fHxtb2Rlcm4lMjBza3lzY3JhcGVyJTIwY29uc3RydWN0aW9uJTIwc3Vuc2V0JTIwZHJvbmV8ZW58MHwwfHx8MTc4NzMxNzYyOHww&ixlib=rb-4.1.0&q=80&w=1080" class="w-full h-full object-cover opacity-30" />
+            <div class="absolute inset-0 bg-gradient-to-r from-brand-dark via-brand-dark/80 to-transparent"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-6 w-full">
+            <div class="max-w-3xl">
+                <h1 class="font-heading font-black text-5xl sm:text-7xl text-white uppercase tracking-tight leading-none mb-6">Construindo o Futuro com Solidez Monumental</h1>
+                <p class="text-slate-300 text-xl font-light mb-8">Soluções completas para edifícios corporativos, complexos industriais e residências de alto padrão com precisão cirúrgica.</p>
+                <a href="#portfolio" class="inline-flex justify-center items-center bg-brand-orange text-white px-8 py-4 rounded font-heading font-bold text-sm uppercase tracking-wider">Explorar Obras <i class="fas fa-building ml-2"></i></a>
+            </div>
+        </div>
+    </section>
+    <section class="py-24 bg-brand-asphalt">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16"><h2 class="font-heading font-black text-4xl text-white uppercase">Soluções Integradas</h2></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-brand-card p-8 rounded-xl border border-slate-800"><i class="fas fa-building-user text-3xl text-brand-orange mb-4"></i><h3 class="font-heading font-bold text-xl text-white mb-4">Obras Corporativas</h3><p class="text-slate-400 text-sm">Edifícios comerciais construídos com rapidez e eficiência energética.</p></div>
+                <div class="bg-brand-card p-8 rounded-xl border border-slate-800"><i class="fas fa-home text-3xl text-brand-orange mb-4"></i><h3 class="font-heading font-bold text-xl text-white mb-4">Residencial de Luxo</h3><p class="text-slate-400 text-sm">Casas e mansões de altíssimo padrão com acabamentos nobres.</p></div>
+                <div class="bg-brand-card p-8 rounded-xl border border-slate-800"><i class="fas fa-industry text-3xl text-brand-orange mb-4"></i><h3 class="font-heading font-bold text-xl text-white mb-4">Infraestrutura Industrial</h3><p class="text-slate-400 text-sm">Galpões logísticos de alto desempenho e fundações profundas.</p></div>
+            </div>
+        </div>
+    </section>
+</body></html>`;
+
+// =========================================================================
+// COMPONENTE PRINCIPAL
+// =========================================================================
 
 export default function PaginaDeVendas() {
   const router = useRouter()
   // Estado para controlar qual sanfona está aberta
   const [siteExpandido, setSiteExpandido] = useState<number | null>(null)
 
-  // Dados dos 3 sites de exemplo (Altere os links e imagens aqui)
+  // Dados dos 3 sites de exemplo mapeados com os HTMLs Injetados
   const exemplosSites = [
     {
       id: 1,
       titulo: "Página de Vendas para E-books",
       nicho: "Infoprodutos & Ebooks",
-      thumb: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=400",
-      urlIframe: "https://seusite.com/exemplo-ebook" // COLOQUE O LINK DO SEU SITE AQUI
+      thumb: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      codigoHtml: SITE_EBOOK
     },
     {
       id: 2,
       titulo: "Landing Page para Mentorias",
       nicho: "Consultorias & Especialistas",
-      thumb: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=400",
-      urlIframe: "https://seusite.com/exemplo-mentoria" // COLOQUE O LINK DO SEU SITE AQUI
+      thumb: "https://images.unsplash.com/photo-1624268010368-2c3def0a26ec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4MjMzOTJ8MHwxfHNlYXJjaHw5fHxzZXJlbmUlMjB3b21hbiUyMHBlYWNlZnVsJTIwZmFjZSUyMGxpZ2h0JTIwYmFja2dyb3VuZHxlbnwwfDF8fHwxNzg3MzE4OTA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      codigoHtml: SITE_MENTORIA
     },
     {
       id: 3,
       titulo: "Página Institucional",
       nicho: "Negócios Locais & Agências",
-      thumb: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=400",
-      urlIframe: "https://seusite.com/exemplo-institucional" // COLOQUE O LINK DO SEU SITE AQUI
+      thumb: "https://images.unsplash.com/photo-1732740674554-11b7772d8c21?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4MjMzOTJ8MHwxfHNlYXJjaHw5fHxtb2Rlcm4lMjBza3lzY3JhcGVyJTIwY29uc3RydWN0aW9uJTIwc3Vuc2V0JTIwZHJvbmV8ZW58MHwwfHx8MTc4NzMxNzYyOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      codigoHtml: SITE_INSTITUCIONAL
     }
   ]
 
@@ -134,7 +314,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - SANFONA) */}
+      {/* SAMPLES SECTION (Amostras de Sites - SANFONA INTERNA COM SRCDOC) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -177,19 +357,18 @@ export default function PaginaDeVendas() {
                   </div>
                 </div>
 
-                {/* CORPO DA SANFONA (Iframe carregado condicionalmente) */}
+                {/* CORPO DA SANFONA COM IFRAME BLINDADO (SRCDOC) */}
                 {siteExpandido === site.id && (
                   <div className="border-t border-slate-100 bg-slate-100 p-2 md:p-6 animate-in slide-in-from-top-4 duration-300 ease-out">
                     <div className="flex justify-between items-center mb-3 px-2">
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Preview do Site Interativo</span>
-                      <a href={site.urlIframe} target="_blank" rel="noreferrer" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                        Abrir em nova aba <ExternalLink className="size-3" />
-                      </a>
+                      {/* Removido o botão de abrir em nova aba para reter o usuário no seu site */}
+                      <span className="text-[10px] bg-slate-200 text-slate-600 px-3 py-1 rounded-full font-bold">100% Criado com IA</span>
                     </div>
-                    {/* O iframe só é renderizado na DOM se a sanfona estiver aberta, mantendo o site leve */}
+                    {/* O iframe renderiza diretamente a string HTML (srcDoc) garantindo que o usuário nunca saia da página */}
                     <div className="w-full h-[600px] bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative">
                       <iframe 
-                        src={site.urlIframe} 
+                        srcDoc={site.codigoHtml} 
                         className="w-full h-full border-none"
                         loading="lazy"
                         title={site.titulo}
