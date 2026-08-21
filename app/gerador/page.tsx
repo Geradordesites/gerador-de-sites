@@ -1,14 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown, ChevronUp, ImagePlus } from 'lucide-react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ChevronDown, ChevronUp, ImagePlus, Monitor } from 'lucide-react'
 import { useState } from 'react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
   const [siteExpandido, setSiteExpandido] = useState<number | null>(null)
 
-  // Dados dos 3 sites de exemplo com as novas imagens
   const exemplosSites = [
     {
       id: 1,
@@ -22,7 +21,7 @@ export default function PaginaDeVendas() {
       titulo: "Site Institucional e Mentorias",
       nicho: "Consultorias & Especialistas",
       thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiIf54OVfia9QHekeZPzR4Q_yh9dKES817qONN7hjZpevhdEH5Qgfc_Eff2RjxTaPUWqBLm5hdTxbs4tQc3Rs-l5nKspG41r20w0R5fFKini6JOxZdYC9MWBvGxVhbvL_CL8/s1600/s4.jfif"
+      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg_YFxQYaJ6ux839azuEbuy70GrcJdZweu-n-_8vDbmk-TAR5bK0uZrnCYiImportado/s1600/s4.jfif"
     },
     {
       id: 3,
@@ -133,7 +132,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - IMAGENS NA SANFONA) */}
+      {/* SAMPLES SECTION (Amostras de Sites - MOCKUP DE TELA PROFISSIONAL) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -147,7 +146,7 @@ export default function PaginaDeVendas() {
               Nosso sistema não cria apenas através de prompts de texto. <strong>Basta enviar uma imagem, arte ou print de referência</strong> e a nossa Inteligência Artificial vai extrair as cores, a estrutura e desenhar um site completo baseado nela!
             </p>
             <p className="text-slate-500 max-w-3xl mx-auto">
-              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a imagem gerada.
+              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a arte.
             </p>
           </div>
 
@@ -181,20 +180,29 @@ export default function PaginaDeVendas() {
                   </div>
                 </div>
 
-                {/* CORPO DA IMAGEM COMPLETA */}
+                {/* CORPO DO MOCKUP DE TELA (Proporção Perfeita Preservada) */}
                 {siteExpandido === site.id && (
-                  <div className="border-t border-slate-100 bg-slate-100 p-2 md:p-6 animate-in slide-in-from-top-4 duration-300 ease-out">
-                    <div className="flex justify-between items-center mb-3 px-2">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Design Gerado</span>
-                      <span className="text-[10px] bg-slate-200 text-slate-600 px-3 py-1 rounded-full font-bold">100% Criado com IA</span>
-                    </div>
+                  <div className="border-t border-slate-100 bg-slate-900 p-3 md:p-8 animate-in slide-in-from-top-4 duration-300 ease-out">
                     
-                    {/* Imagem do site renderizada de forma responsiva */}
-                    <div className="w-full bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative flex justify-center max-h-[800px] overflow-y-auto custom-scrollbar p-2">
+                    {/* Barra de Navegação do Mockup (Estilo Navegador) */}
+                    <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center justify-between border-b border-slate-700">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      </div>
+                      <div className="bg-slate-900 text-slate-400 text-xs px-6 py-1 rounded-md font-mono flex items-center gap-2">
+                        <Monitor className="size-3 text-emerald-400" /> sitegen-ai.com/preview/{site.id}
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold border border-emerald-500/30">100% IA</span>
+                    </div>
+
+                    {/* Caixa de Rolagem com Largura Fixa e Altura Controlada (Mantém o Aspecto Real sem Achatamentos) */}
+                    <div className="w-full h-[650px] bg-white rounded-b-xl overflow-y-auto custom-scrollbar shadow-2xl relative">
                       <img 
                         src={site.imagemCompleta} 
                         alt={`Design completo do site ${site.titulo}`} 
-                        className="w-full h-auto object-top max-w-5xl rounded-xl shadow-sm"
+                        className="w-full h-auto block object-top"
                         loading="lazy"
                       />
                     </div>
