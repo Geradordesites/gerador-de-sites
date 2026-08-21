@@ -3,7 +3,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { createClient } from '@supabase/supabase-js';
 
 const MODELOS_GEMINI = [
-  "gemini-3.5-flash", // Atualizado para usar o padrão mais rápido
+  "gemini-3.5-flash", 
   "gemini-3.6-flash",
   "gemini-3.5-flash-lite",
   "gemini-3.1-flash-lite",
@@ -105,8 +105,12 @@ Exemplo: <img src="[UNSPLASH: 1280x720: business team meeting]" />
 === SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===
 🚨 REGRA ABSOLUTA: Para as imagens do site, você DEVE utilizar a nossa tag de IA.
 Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
-Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businessman in a modern office, photorealistic, 8k]" />
-🚨 PROIBIÇÕES SEVERAS: É ESTRITAMENTE PROIBIDO gerar desenhos, ilustrações, gráficos animados ou imagens com estilo sci-fi/tecnologia extravagante. Exija SEMPRE imagens REAIS e hiper-realistas de seres humanos.
+Exemplo: <img src="[IMAGEM_IA: realistic photography of a confident businesswoman in a modern office, photorealistic, 8k]" />
+
+🚨 PROIBIÇÕES SEVERAS E DIRETRIZES: 
+1. É ESTRITAMENTE PROIBIDO gerar desenhos, ilustrações, gráficos animados ou imagens com estilo sci-fi/tecnologia extravagante. 
+2. Exija SEMPRE imagens REAIS e hiper-realistas de seres humanos. 
+3. Se o site for sobre um produto ou serviço (ex: Bolos, Mentorias, E-books), descreva SEMPRE uma cena com UMA PESSOA REAL interagindo com aquilo. Exemplo para site de bolos: "realistic photography of a happy human baker holding a beautiful chocolate cake". NUNCA peça apenas o objeto isolado.
 `;
     }
 
