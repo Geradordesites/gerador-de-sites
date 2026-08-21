@@ -109,12 +109,12 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     
     // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
-    // IMPORTANTE: USAMOS A SERVICE_ROLE_KEY AQUI PARA O LOG DE ERROS GRAVAR MESMO SE A REQUISIÇÃO FALHAR
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
     let isByokEnabled = settings?.byok_enabled ?? true;
     const isAdminKeyEnabled = settings?.admin_paid_key_enabled ?? true;
+    const isGlobalAdminKeyEnabled = settings?.global_admin_key_enabled ?? false; // NOVO: Chave Global do Admin
 
     let userByokAllowed = false;
     let userCredits = 0;
@@ -135,7 +135,7 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
     let chaveParaUsar = "";
     let isUsingCredits = false;
 
-    // VERIFICA O SALDO E DEFINE A CHAVE
+    // VERIFICA O SALDO E DEFINE A CHAVE NA ORDEM DE PRIORIDADE CORRETA
     if (isAdmin) {
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
@@ -143,6 +143,13 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
+    } else if (isGlobalAdminKeyEnabled) {
+        // Se a Chave Global do Admin estiver ligada, todos usam a chave mestre do admin mediante consumo de créditos
+        if (userCredits < CUSTO_POR_ACAO) {
+            throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos. Seu saldo atual é ${userCredits}.`);
+        }
+        isUsingCredits = true;
+        chaveParaUsar = process.env.ADMIN_MASTER_API_KEY || process.env.GEMINI_API_KEY!;
     } else if (allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) {
             throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos. Seu saldo atual é ${userCredits}.`);
@@ -157,7 +164,7 @@ Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta 
         if (isAdminKeyEnabled && process.env.GEMINI_API_KEY_CLIENTES) {
             chaveParaUsar = process.env.GEMINI_API_KEY_CLIENTES;
         } else {
-            throw new Error("Geração bloqueada: O Administrador ainda não configurou a API Paga centralizada.");
+            throw new Error("Geração bloqueada: O Administrador desativou o acesso geral ou não configurou a chave global/paga.");
         }
     }
 
