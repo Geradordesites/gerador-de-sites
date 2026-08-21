@@ -8,7 +8,7 @@ export default function PaginaDeVendas() {
   const router = useRouter()
   const [siteExpandido, setSiteExpandido] = useState<number | null>(null)
 
-  // Dados dos 3 sites de exemplo com as imagens corrigidas e nítidas
+  // Dados dos 3 sites de exemplo com os links corretos e alta nitidez
   const exemplosSites = [
     {
       id: 1,
@@ -29,7 +29,7 @@ export default function PaginaDeVendas() {
       titulo: "Página de Captura Estratégica",
       nicho: "Negócios Locais & Serviços",
       thumb: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif",
-      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8OpgJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
+      imagemCompleta: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-gFL-kfUmx0xptn3EqunlzsvEfuLXUZrvdNbY9ZJ5-AEg6Zx6gExfd5fQqBXfZUTjDzAeqVeXduVyUjJnyeXA_3V7XodBt5Aow-utZwWegKwVwycSwLeZ_sUThe7bhs1Pb9jGZHNvarHDxz06jp8QPGJ_QZ8BD6MlqJCGIHhpoIlIvt5rUrh0b-DzKuY/s1600/s5.jfif"
     }
   ]
 
@@ -133,7 +133,7 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - MOCKUP NÍTIDO DE ALTA RESOLUÇÃO) */}
+      {/* SAMPLES SECTION (Amostras de Sites - MOCKUP COM ALTA NITIDEZ) */}
       <section className="py-24 bg-slate-50 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -147,7 +147,7 @@ export default function PaginaDeVendas() {
               Nosso sistema não cria apenas através de prompts de texto. <strong>Basta enviar uma imagem, arte ou print de referência</strong> e a nossa Inteligência Artificial vai extrair as cores, a estrutura e desenhar um site completo baseado nela!
             </p>
             <p className="text-slate-500 max-w-3xl mx-auto">
-              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a arte em alta definição.
+              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a arte em altíssima definição.
             </p>
           </div>
 
@@ -181,7 +181,7 @@ export default function PaginaDeVendas() {
                   </div>
                 </div>
 
-                {/* CORPO DO MOCKUP COM RESOLUÇÃO NÍDIDA (Largura fixa para evitar borrões) */}
+                {/* CORPO DO MOCKUP COM RESOLUÇÃO REAL (Sem distorção ou embaçamento) */}
                 {siteExpandido === site.id && (
                   <div className="border-t border-slate-100 bg-slate-900 p-3 md:p-8 animate-in slide-in-from-top-4 duration-300 ease-out">
                     
@@ -198,13 +198,13 @@ export default function PaginaDeVendas() {
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold border border-emerald-500/30">100% IA</span>
                     </div>
 
-                    {/* Janela com largura nativa e alta definição (Sem distorção) */}
-                    <div className="w-full h-[650px] bg-white rounded-b-xl overflow-auto custom-scrollbar shadow-2xl relative">
-                      <div className="w-[1280px] mx-auto">
+                    {/* Container com largura otimizada e nitidez nativa */}
+                    <div className="w-full h-[650px] bg-white rounded-b-xl overflow-auto custom-scrollbar shadow-2xl relative flex justify-center">
+                      <div className="w-full max-w-4xl">
                         <img 
                           src={site.imagemCompleta} 
                           alt={`Design completo do site ${site.titulo}`} 
-                          className="w-full h-auto block object-top"
+                          className="w-full h-auto block object-top shadow-md"
                           loading="lazy"
                         />
                       </div>
