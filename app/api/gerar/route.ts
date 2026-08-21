@@ -226,28 +226,26 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                     const tData = await tRes.json();
                     if (tData.data && tData.data[0].b64_json) imagemFinalB64 = `data:image/jpeg;base64,${tData.data[0].b64_json}`;
                 } 
-                // OPÇÃO GOOGLE IMAGEN (Principal)
+               // OPÇÃO GOOGLE IMAGEN (Principal)
                 else {
                     const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${chaveParaUsar}`, { 
                         method: "POST", 
                         headers: { "Content-Type": "application/json" }, 
-                        body: JSON.stringify({ instances: [{ prompt: basePrompt }], parameters: { sampleCount: 1, aspectRatio: "16:9" } }) 
+                        // Removi o aspectRatio para forçar o padrão 1:1 e evitar erros de formatação
+                        body: JSON.stringify({ instances: [{ prompt: basePrompt }], parameters: { sampleCount: 1 } }) 
                     });
+                    
                     const gData = await gRes.json();
+                    
+                    // NOVA LINHA: Isso vai imprimir o erro exato lá no painel da Vercel!
+                    if (!gRes.ok) {
+                        console.error("🚨 ERRO DO GOOGLE IMAGEN:", JSON.stringify(gData, null, 2));
+                    }
+
                     if (gData.predictions && gData.predictions[0].bytesBase64Encoded) {
                         imagemFinalB64 = `data:image/jpeg;base64,${gData.predictions[0].bytesBase64Encoded}`;
                     }
                 }
-                
-                if (imagemFinalB64) {
-                    htmlCode = htmlCode.replace(item.fullMatch, imagemFinalB64);
-                } else {
-                    htmlCode = htmlCode.replace(item.fullMatch, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
-                }
-            } catch (e) {
-                htmlCode = htmlCode.replace(item.fullMatch, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
-            }
-        }
     } 
     // FALLBACK DE SEGURANÇA PARA UNSPLASH (Se usar Chave Grátis ou falhar)
     else {
