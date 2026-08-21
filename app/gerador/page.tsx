@@ -6,9 +6,8 @@ import { useState } from 'react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
-  const [siteExpandido, setSiteExpandido] = useState<number | null>(null)
+  const [siteExpandido, setSiteExpandido] = useState<number | null>(1) // Inicia com o primeiro aberto por padrão para destaque
 
-  // Dados dos 3 sites de exemplo com os links corretos e alta nitidez
   const exemplosSites = [
     {
       id: 1,
@@ -133,9 +132,9 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* SAMPLES SECTION (Amostras de Sites - MOCKUP COM ALTA NITIDEZ) */}
+      {/* SAMPLES SECTION (3 CARDS LADO A LADO + PREVIEW NÍDIDO EMBAIXO) */}
       <section className="py-24 bg-slate-50 px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-6">
                 <ImagePlus className="size-8" />
@@ -147,73 +146,74 @@ export default function PaginaDeVendas() {
               Nosso sistema não cria apenas através de prompts de texto. <strong>Basta enviar uma imagem, arte ou print de referência</strong> e a nossa Inteligência Artificial vai extrair as cores, a estrutura e desenhar um site completo baseado nela!
             </p>
             <p className="text-slate-500 max-w-3xl mx-auto">
-              Perfeito para gerar Páginas de Vendas de e-books, Lançamentos, Mentorias e Negócios Locais. Clique em "Ver Site Completo" para expandir a arte em altíssima definição.
+              Clique em qualquer modelo abaixo para visualizar a arte gerada em alta definição logo abaixo.
             </p>
           </div>
 
-          <div className="space-y-6">
+          {/* 3 CARDS LADO A LADO */}
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
             {exemplosSites.map((site) => (
-              <div key={site.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                
-                {/* CABEÇALHO DA SANFONA */}
-                <div 
-                  onClick={() => toggleSanfona(site.id)}
-                  className="flex flex-col md:flex-row items-center gap-6 p-4 md:p-6 cursor-pointer group"
-                >
-                  <div className="shrink-0 w-full md:w-48 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden relative border border-slate-100">
-                    <img src={site.thumb} alt={site.titulo} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
+              <div 
+                key={site.id} 
+                onClick={() => toggleSanfona(site.id)}
+                className={`bg-white border-2 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col ${siteExpandido === site.id ? 'border-emerald-600 ring-4 ring-emerald-500/20 scale-[1.02]' : 'border-slate-200 hover:border-slate-300'}`}
+              >
+                <div className="aspect-[4/3] w-full overflow-hidden relative border-b border-slate-100 bg-slate-100">
+                  <img src={site.thumb} alt={site.titulo} className="w-full h-full object-cover object-top" />
+                </div>
+                <div className="p-6 flex flex-col flex-1 justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1 block">{site.nicho}</span>
+                    <h3 className="font-bold text-lg text-slate-900 mb-2">{site.titulo}</h3>
                   </div>
-                  
-                  <div className="flex-1 text-center md:text-left w-full">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2 block">{site.nicho}</span>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">{site.titulo}</h3>
-                    <p className="text-slate-500 text-sm">Site gerado com inteligência artificial. Clique para expandir a arte em alta definição.</p>
-                  </div>
-                  
-                  <div className="shrink-0">
-                    <button className="flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">
-                      {siteExpandido === site.id ? (
-                        <>Fechar Site <ChevronUp className="size-4" /></>
-                      ) : (
-                        <>Ver Site Completo <ChevronDown className="size-4" /></>
-                      )}
-                    </button>
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-600">
+                    <span>{siteExpandido === site.id ? 'Visualizando Abaixo' : 'Ver Arte Completa'}</span>
+                    {siteExpandido === site.id ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                   </div>
                 </div>
-
-                {/* CORPO DO MOCKUP COM RESOLUÇÃO REAL (Sem distorção ou embaçamento) */}
-                {siteExpandido === site.id && (
-                  <div className="border-t border-slate-100 bg-slate-900 p-3 md:p-8 animate-in slide-in-from-top-4 duration-300 ease-out">
-                    
-                    {/* Barra de Navegador do Mockup */}
-                    <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center justify-between border-b border-slate-700">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      </div>
-                      <div className="bg-slate-900 text-slate-400 text-xs px-6 py-1 rounded-md font-mono flex items-center gap-2">
-                        <Monitor className="size-3 text-emerald-400" /> sitegen-ai.com/preview/{site.id}
-                      </div>
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold border border-emerald-500/30">100% IA</span>
-                    </div>
-
-                    {/* Container com largura otimizada e nitidez nativa */}
-                    <div className="w-full h-[650px] bg-white rounded-b-xl overflow-auto custom-scrollbar shadow-2xl relative flex justify-center">
-                      <div className="w-full max-w-4xl">
-                        <img 
-                          src={site.imagemCompleta} 
-                          alt={`Design completo do site ${site.titulo}`} 
-                          className="w-full h-auto block object-top shadow-md"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
+
+          {/* PREVIEW DA IMAGEM SELECIONADA (EXIBIDO EMBAIXO, TAMANHO ESTREITO E NÍTIDO) */}
+          {siteExpandido !== null && (() => {
+            const siteAtual = exemplosSites.find(s => s.id === siteExpandido);
+            if (!siteAtual) return null;
+            return (
+              <div className="bg-slate-900 p-4 md:p-8 rounded-3xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center justify-between border-b border-slate-700 mb-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <div className="bg-slate-900 text-slate-400 text-xs px-6 py-1 rounded-md font-mono flex items-center gap-2">
+                    <Monitor className="size-3 text-emerald-400" /> sitegen-ai.com/preview/{siteAtual.id}
+                  </div>
+                  <button 
+                    onClick={() => setSiteExpandido(null)}
+                    className="text-xs text-slate-400 hover:text-white font-bold bg-slate-700 px-3 py-1 rounded-lg transition"
+                  >
+                    Fechar X
+                  </button>
+                </div>
+
+                {/* Caixa com largura otimizada (max-w-2xl) para manter a imagem estreita, nítida e sem borrar */}
+                <div className="w-full h-[600px] bg-white rounded-b-xl overflow-y-auto custom-scrollbar shadow-inner flex justify-center p-4">
+                  <div className="w-full max-w-2xl">
+                    <img 
+                      src={siteAtual.imagemCompleta} 
+                      alt={siteAtual.titulo} 
+                      className="w-full h-auto block rounded shadow-sm"
+                      style={{ imageRendering: '-webkit-optimize-contrast' }}
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       </section>
 
