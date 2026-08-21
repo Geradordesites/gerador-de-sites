@@ -226,26 +226,44 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                     const tData = await tRes.json();
                     if (tData.data && tData.data[0].b64_json) imagemFinalB64 = `data:image/jpeg;base64,${tData.data[0].b64_json}`;
                 } 
-               // OPÇÃO GOOGLE IMAGEN (Principal)
-                else {
-                    const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${chaveParaUsar}`, { 
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json" }, 
-                        // Removi o aspectRatio para forçar o padrão 1:1 e evitar erros de formatação
-                        body: JSON.stringify({ instances: [{ prompt: basePrompt }], parameters: { sampleCount: 1 } }) 
-                    });
-                    
-                    const gData = await gRes.json();
-                    
-                    // NOVA LINHA: Isso vai imprimir o erro exato lá no painel da Vercel!
-                    if (!gRes.ok) {
-                        console.error("🚨 ERRO DO GOOGLE IMAGEN:", JSON.stringify(gData, null, 2));
-                    }
+               // PROCESSAMENTO DE IMAGENS - NOVA LÓGICA DE DEBUG
+    if (provedorDeImagens === 'ai_paid') {
+        const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
+        let matchIa;
+        
+        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
+            const fullMatch = matchIa[0];
+            const prompt = matchIa[1];
+            
+            // Prompt otimizado para o Google Imagen 3
+            const basePrompt = "Professional, hyper-realistic, high quality photography of " + prompt;
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${chaveParaUsar}`, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" }, 
+                    body: JSON.stringify({ 
+                        instances: [{ prompt: basePrompt }], 
+                        parameters: { sampleCount: 1 } 
+                    }) 
+                });
 
-                    if (gData.predictions && gData.predictions[0].bytesBase64Encoded) {
-                        imagemFinalB64 = `data:image/jpeg;base64,${gData.predictions[0].bytesBase64Encoded}`;
-                    }
+                const data = await response.json();
+
+                if (response.ok && data.predictions && data.predictions[0].bytesBase64Encoded) {
+                    const imagemBase64 = `data:image/jpeg;base64,${data.predictions[0].bytesBase64Encoded}`;
+                    htmlCode = htmlCode.replace(fullMatch, imagemBase64);
+                } else {
+                    // AQUI É O PULO DO GATO: Se der erro, ele vai te dizer o que foi
+                    throw new Error(JSON.stringify(data.error || "Erro desconhecido na API de Imagens"));
                 }
+            } catch (e: any) {
+                console.error("ERRO NA API DE IMAGEM DO GOOGLE:", e.message);
+                // Se der erro, vamos devolver o erro para você ver no navegador
+                throw new Error("Falha ao gerar imagem com Google Imagen: " + e.message);
+            }
+        }
+    }
     } 
     // FALLBACK DE SEGURANÇA PARA UNSPLASH (Se usar Chave Grátis ou falhar)
     else {
