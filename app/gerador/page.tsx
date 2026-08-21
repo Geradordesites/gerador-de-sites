@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code, ImagePlus, FileText, Cpu, CheckCircle2 } from 'lucide-react'
+import { Sparkles, Layout, Image as ImageIcon, Zap, ArrowRight, Code } from 'lucide-react'
 
 export default function PaginaDeVendas() {
   const router = useRouter()
@@ -28,19 +28,19 @@ export default function PaginaDeVendas() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="pt-24 pb-32 px-4 text-center overflow-hidden relative">
+      <section className="pt-20 pb-20 px-4 text-center overflow-hidden relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-300/20 blur-[120px] rounded-full pointer-events-none -z-10" />
         
         <div className="max-w-4xl mx-auto relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm mb-8 border border-emerald-200 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm mb-6 border border-emerald-200 shadow-sm">
             <Zap className="size-4 fill-emerald-600" /> A Revolução da Criação Web
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 font-serif leading-[1.1]">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-6 font-serif leading-[1.1]">
             Crie sites profissionais em segundos com <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400">Inteligência Artificial</span>
           </h1>
           
-          <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
             Esqueça horas de programação ou templates engessados. Nossa IA constrói a estrutura visual, escreve os textos persuasivos e gera imagens exclusivas para o seu negócio com um único clique.
           </p>
           
@@ -56,11 +56,11 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
-      <section className="py-24 bg-white px-4 border-y border-slate-100">
+      {/* FEATURES SECTION (Espaçamento reduzido) */}
+      <section className="py-16 bg-white px-4 border-y border-slate-100">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-3xl md:text-5xl font-bold font-serif text-slate-900 mb-4">Tudo o que você precisa em um só lugar</h2>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-bold font-serif text-slate-900 mb-3">Tudo o que você precisa em um só lugar</h2>
             <p className="text-lg text-slate-500">Uma infraestrutura completa para lançar suas ideias na internet.</p>
           </div>
 
@@ -98,72 +98,24 @@ export default function PaginaDeVendas() {
         </div>
       </section>
 
-      {/* CAPABILITIES SECTION (INFORMAÇÕES COM ÍCONES EM CSS / LUCIDE) */}
-      <section className="py-24 bg-slate-50 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-6 shadow-sm">
-                <Cpu className="size-8" />
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold font-serif text-slate-900 mb-4">
-              Poder absoluto na criação do seu próximo site
-            </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-              Descubra os recursos avançados que tornam nossa Inteligência Artificial a ferramenta mais rápida e eficiente do mercado para criadores de conteúdo e empreendedores.
-            </p>
-          </div>
+      {/* SHOWCASE SECTION (IMAGEM ÚNICA DE MODELOS COM BORDA ANIMADA) */}
+      <section className="py-20 bg-slate-50 px-4">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold font-serif text-slate-900 mb-4">
+            Veja Exemplos de Sites Criados pelo Sistema
+          </h2>
+          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
+            Layouts modernos, limpos e desenvolvidos automaticamente com inteligência artificial para diversos nichos de mercado.
+          </p>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Recurso 1 */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
-                <ImagePlus className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Criação Direto por Imagem (Image-to-Site)</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Não quer apenas escrever? Envie uma imagem, arte ou print de referência. Nossa IA analisa o design, extrai a paleta de cores e reconstrói um site completo e funcional baseado exatamente nela.
-                </p>
-              </div>
-            </div>
-
-            {/* Recurso 2 */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
-                <FileText className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Prompts Inteligentes e Textos Sob Medida</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Digite breves instruções ou cole sua copy. O sistema estrutura blocos profissionais de conversão, páginas de captura, áreas de FAQ e rodapés blindados em segundos.
-                </p>
-              </div>
-            </div>
-
-            {/* Recurso 3 */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
-                <Zap className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Perfeito para Anúncios (Facebook & Instagram Ads)</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Estruturas limpas, carregamento ultrarrápido e compatibilidade total com pixels de rastreamento. Suas campanhas de tráfego pago rodando com o máximo de aproveitamento.
-                </p>
-              </div>
-            </div>
-
-            {/* Recurso 4 */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-start gap-5">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100">
-                <CheckCircle2 className="size-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Liberdade Total de Edição Visual</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Gostou do resultado da IA, mas quer mudar um detalhe? Utilize nosso editor visual integrado para ajustar textos, cores, botões e imagens com cliques simples.
-                </p>
-              </div>
+          {/* Container com efeito de borda suave e animada */}
+          <div className="relative p-1 rounded-3xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 animate-pulse shadow-2xl">
+            <div className="bg-white rounded-[22px] overflow-hidden p-2 md:p-4">
+              <img 
+                src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhR2ApWLYzNQbjarzYPWDV02tyb4Nbb5EK5ogd2irBD9Lg94tYuFEThzPVXnYFC9YlrY2Xyh4mXDd5H8hdHwgP4be-rY6gyED0oSYnNCUxpwd8wEm1v6M_-TyVhQ4Fjc_LY4Ja7uhS5EJAnn2CePHx7SVJBPdPAmjD4Atm1YDm2ndEKtQDCvLnBe6hdJ5U/s908/dafb3bda-cb14-4ba0-99ac-deefff5c6a8a.jfif" 
+                alt="Modelos de sites criados pela IA" 
+                className="w-full h-auto rounded-xl object-cover shadow-sm"
+              />
             </div>
           </div>
         </div>
@@ -181,8 +133,8 @@ export default function PaginaDeVendas() {
                 <div className="flex gap-4">
                   <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">1</div>
                   <div>
-                    <h4 className="text-xl font-bold mb-2">Envie a Ideia ou Imagem</h4>
-                    <p className="text-slate-400">Diga para a IA qual é o seu negócio em poucas palavras ou faça o upload de uma imagem que você gostou do design.</p>
+                    <h4 className="text-xl font-bold mb-2">Descreva sua ideia</h4>
+                    <p className="text-slate-400">Diga para a IA qual é o seu negócio, produto ou serviço em poucas palavras.</p>
                   </div>
                 </div>
                 
@@ -190,7 +142,7 @@ export default function PaginaDeVendas() {
                   <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">2</div>
                   <div>
                     <h4 className="text-xl font-bold mb-2">A IA cria tudo</h4>
-                    <p className="text-slate-400">O sistema escreve os textos, monta a estrutura visual extraída da sua imagem e desenha artes exclusivas em tempo real.</p>
+                    <p className="text-slate-400">O sistema escreve os textos, monta a estrutura visual e desenha as imagens em tempo real.</p>
                   </div>
                 </div>
 
@@ -198,7 +150,7 @@ export default function PaginaDeVendas() {
                   <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">3</div>
                   <div>
                     <h4 className="text-xl font-bold mb-2">Liberdade para Editar</h4>
-                    <p className="text-slate-400">Clique em qualquer elemento para editar textos manualmente ou use nossa IA para reescrever blocos inteiros com um clique. Tudo perfeito? É só publicar.</p>
+                    <p className="text-slate-400">Clique em qualquer elemento para editar textos manualmente ou use nossa IA para reescrever blocos inteiros com um clique. Tudo perfeito? É só baixar o site pronto.</p>
                   </div>
                 </div>
               </div>
@@ -209,7 +161,7 @@ export default function PaginaDeVendas() {
               <div className="relative bg-slate-800 border border-slate-700 rounded-3xl p-4 shadow-2xl aspect-square flex items-center justify-center">
                 <div className="text-center">
                   <Sparkles className="size-16 text-emerald-400 mx-auto mb-4" />
-                  <p className="text-slate-300 font-medium">Sua Imagem + Nossa IA =<br/> <span className="text-emerald-400 font-bold text-xl mt-2 block">Site Incrível em Segundos</span></p>
+                  <p className="text-slate-300 font-medium">Sua Ideia + Nossa Tecnologia =<br/> <span className="text-emerald-400 font-bold text-xl mt-2 block">Resultado Incrível</span></p>
                 </div>
               </div>
             </div>
