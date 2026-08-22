@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -1822,62 +1821,43 @@ export default function Home() {
                                           </select>
                                       </div>
 
-                                      {/* NOVO BLOCO: CHAVE UNSPLASH – SEMPRE VISÍVEL */}
-                                      <div className="pt-4 border-t border-slate-100 mb-4">
-                                          <label className="input-label mb-2 flex items-center text-indigo-700">
-                                              <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
-                                          </label>
-                                          <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-                                              Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
-                                          </p>
-                                          <input 
-                                              type="password" 
-                                              value={unsplashKey}
-                                              onChange={(e) => setUnsplashKey(e.target.value)}
-                                              onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
-                                              placeholder="Cole seu Client ID..." 
-                                              className="input-standard font-mono text-xs" 
-                                          />
-                                          <p className="text-[9px] text-emerald-600 mt-1">
-                                              <i className="fas fa-check-circle"></i> Fica salva automaticamente.
-                                          </p>
-                                      </div>
+                                      {/* BLOCO BYOK – APENAS APARECE SE AUTORIZADO PELO ADMIN */}
+                                      {(byokEnabled || userByok) && (
+                                          <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
+                                              <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
+                                              <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
+                                              <input 
+                                                  type="password" 
+                                                  value={apiKey}
+                                                  onChange={(e) => setApiKey(e.target.value)}
+                                                  onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
+                                                  placeholder="AIzaSy..." 
+                                                  className="input-standard font-mono text-xs" 
+                                              />
+                                              <p className="text-[9px] text-emerald-600 mt-1 mb-4">
+                                                  <i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.
+                                              </p>
 
-                                      {/* BLOCO BYOK – APENAS A CHAVE GEMINI (UNSPLASH REMOVIDO) */}
-                                     {(byokEnabled || userByok) && (
-    <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
-        <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
-        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
-        <input 
-            type="password" 
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
-            placeholder="AIzaSy..." 
-            className="input-standard font-mono text-xs" 
-        />
-        <p className="text-[9px] text-emerald-600 mt-1 mb-4"><i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.</p>
-
-        {/* Chave Unsplash integrada na mesma regra do admin */}
-        <label className="input-label mb-2 flex items-center text-indigo-700">
-            <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
-        </label>
-        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-            Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
-        </p>
-        <input 
-            type="password" 
-            value={unsplashKey}
-            onChange={(e) => setUnsplashKey(e.target.value)}
-            onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
-            placeholder="Cole seu Client ID..." 
-            className="input-standard font-mono text-xs" 
-        />
-        <p className="text-[9px] text-emerald-600 mt-1">
-            <i className="fas fa-check-circle"></i> Fica salva automaticamente.
-        </p>
-    </div>
-)}
+                                              {/* CAMPO UNSPLASH – DENTRO DO MESMO BLOCO CONDICIONAL */}
+                                              <label className="input-label mb-2 flex items-center text-indigo-700">
+                                                  <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
+                                              </label>
+                                              <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                                                  Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
+                                              </p>
+                                              <input 
+                                                  type="password" 
+                                                  value={unsplashKey}
+                                                  onChange={(e) => setUnsplashKey(e.target.value)}
+                                                  onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
+                                                  placeholder="Cole seu Client ID..." 
+                                                  className="input-standard font-mono text-xs" 
+                                              />
+                                              <p className="text-[9px] text-emerald-600 mt-1">
+                                                  <i className="fas fa-check-circle"></i> Fica salva automaticamente.
+                                              </p>
+                                          </div>
+                                      )}
                                   </div>
                               </div>
 
@@ -1968,15 +1948,18 @@ export default function Home() {
                   </div>
 
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-file-import"></i> Importar HTML
+                  
+                  {/* ===== BOTÃO IMPORTAR HTML – AGORA SEMPRE VISÍVEL ===== */}
+                  <button onClick={() => setModalImportarCodigo(true)} className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-file-import"></i> <span className="hidden sm:inline">Importar HTML</span>
                   </button>
+                  
                   <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
                       <i className="fas fa-search-dollar"></i> SEO & Scripts
                   </button>
-                 <button onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm" title="Aprenda a colocar seu site no ar de graça">
-                  <i className="fas fa-globe"></i> Como Hospedar
-              </button>
+                  <button onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-globe"></i> Como Hospedar
+                  </button>
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
                   <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
