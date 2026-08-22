@@ -14,8 +14,8 @@ const MODELOS_TEXTO_GRATIS = [
 
 // 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA (2 Modelos)
 const MODELOS_TEXTO_PAGO = [
-  "gemini-3.1-flash-lite",
-  "gemini-3.5-flash-lite"
+  "gemini-2.5-flash",
+  "gemini-3.5-flash"
 ];
 
 // 3. MODELOS DE IMAGEM ECONÔMICOS (Usados apenas na API Paga)
