@@ -41,7 +41,6 @@ export default function AdminPage() {
   }
 
   const carregarDadosAdmin = async () => {
-    // Garanta que a coluna 'unsplash_api_key' está no select
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
@@ -264,21 +263,20 @@ export default function AdminPage() {
 
                   return (
                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                     <td className="py-5 px-4 align-top">
-                        {user.user_api_key ? (
-                          <div className="flex items-center gap-2">
-                            <code className="bg-slate-100 text-slate-700 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-mono max-w-[130px] overflow-hidden truncate block">
-                              {chavesVisiveis[`${user.id}_gemini`] ? user.user_api_key : `${user.user_api_key.substring(0, 6)}••••••••`}
-                            </code>
-                            <button onClick={() => toggleVisibilidadeChave(`${user.id}_gemini`)} className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Mostrar/Ocultar Chave">
-                              {chavesVisiveis[`${user.id}_gemini`] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-1 rounded">Sem chave Gemini</span>
-                        )}
+                      {/* COLUNA 1: NOME E E-MAIL */}
+                      <td className="py-5 px-4 align-top">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5 mb-1">
+                          {user.nome || 'Sem Nome'}
+                          {user.status === 'ativo' ? <CheckCircle className="size-3 text-emerald-500" /> : <XCircle className="size-3 text-rose-500" />}
+                        </div>
+                        <div className="text-indigo-600 font-bold text-xs mt-0.5">{user.email || 'E-mail não informado'}</div>
+                        <div className="text-slate-400 text-[10px] font-mono mt-1 mb-3">{user.id}</div>
+                        <button onClick={() => alternarStatus(user.id, user.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase shadow-sm transition-all ${user.status === 'ativo' ? 'bg-white border border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-600 text-white border border-transparent hover:bg-emerald-700'}`}>
+                          {user.status === 'ativo' ? 'Bloquear Conta' : 'Ativar Conta'}
+                        </button>
                       </td>
 
+                      {/* COLUNA 2: CRÉDITOS */}
                       <td className="py-5 px-4 align-top">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
@@ -302,6 +300,7 @@ export default function AdminPage() {
                         </div>
                       </td>
 
+                      {/* COLUNA 3: ASSINATURA */}
                       <td className="py-5 px-4 align-top bg-slate-50/50 border-l border-r border-slate-100">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center flex-wrap gap-2">
@@ -322,11 +321,12 @@ export default function AdminPage() {
                         </div>
                       </td>
 
+                      {/* COLUNA 4: CHAVE GEMINI */}
                       <td className="py-5 px-4 align-top">
-                        {user.client_api_key ? (
+                        {user.user_api_key ? (
                           <div className="flex items-center gap-2">
                             <code className="bg-slate-100 text-slate-700 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-mono max-w-[130px] overflow-hidden truncate block">
-                              {chavesVisiveis[`${user.id}_gemini`] ? user.client_api_key : `${user.client_api_key.substring(0, 6)}••••••••`}
+                              {chavesVisiveis[`${user.id}_gemini`] ? user.user_api_key : `${user.user_api_key.substring(0, 6)}••••••••`}
                             </code>
                             <button onClick={() => toggleVisibilidadeChave(`${user.id}_gemini`)} className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Mostrar/Ocultar Chave">
                               {chavesVisiveis[`${user.id}_gemini`] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -337,6 +337,7 @@ export default function AdminPage() {
                         )}
                       </td>
                       
+                      {/* COLUNA 5: CHAVE UNSPLASH */}
                       <td className="py-5 px-4 align-top">
                         {user.unsplash_api_key ? (
                           <div className="flex items-center gap-2">
@@ -352,6 +353,7 @@ export default function AdminPage() {
                         )}
                       </td>
 
+                      {/* COLUNA 6: PERMISSÕES ESPECIAIS */}
                       <td className="py-5 px-4 align-top">
                         <div className="flex flex-col gap-2 w-fit">
                           <button onClick={() => alternarByokIndividual(user.id, user.allow_byok)} className={`px-2.5 py-1.5 flex items-center justify-between gap-3 text-[10px] uppercase tracking-wider font-bold rounded-lg border transition-colors ${user.allow_byok ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`} title="Permite o usuário colar e usar a chave própria dele">
