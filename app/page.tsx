@@ -615,7 +615,33 @@ const UI_BLOCKS = {
         </div>
     </section>`
 };
-
+// ========== CONTEÚDO DO TOUR GUIADO ==========
+const conteudosPassos = [
+    {
+        titulo: "1. Geração Inteligente por IA",
+        descricao: "No painel lateral, digite o tema do seu produto no campo principal e clique em 'Gerar'. A Inteligência Artificial criará toda a estrutura da página e os textos de vendas instantaneamente.",
+        icone: "fas fa-keyboard",
+        dica: "Dica: Quanto mais detalhes você colocar sobre o produto, mais persuasiva será a cópia."
+    },
+    {
+        titulo: "2. Edição Direta na Tela",
+        descricao: "Quer mudar um título ou botão? Basta clicar diretamente sobre ele na visualização do site. O painel lateral se abrirá para você reescrever o texto ou alterar cores na hora.",
+        icone: "fas fa-mouse-pointer",
+        dica: "Dica: Clique em qualquer espaço vazio do fundo para fechar a edição."
+    },
+    {
+        titulo: "3. Gerenciamento de Imagens",
+        descricao: "As fotos do autor e dos depoimentos já vêm integradas com imagens reais do Unsplash para nunca quebrar o layout. Se preferir, cole o link de outra foto no painel.",
+        icone: "fas fa-image",
+        dica: "Dica: Sempre use fotos reais de pessoas para gerar maior conexão com o cliente."
+    },
+    {
+        titulo: "4. Limpeza e Publicação",
+        descricao: "Terminou de ajustar? Clique no fundo do site para remover a seleção e visualize sua página 100% limpa pronta para exportar o código ou publicar.",
+        icone: "fas fa-rocket",
+        dica: "Dica: Revise todos os links de checkout antes de colocar no ar!"
+    }
+];
 export default function Home() {
   const [byokEnabled, setByokEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -626,6 +652,8 @@ export default function Home() {
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
   const [unsplashKey, setUnsplashKey] = useState('');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [passoAtualTutorial, setPassoAtualTutorial] = useState(1);
+  const totalPassosTutorial = 4;  
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -2041,7 +2069,7 @@ export default function Home() {
           </div>
         </div>
       )}
-   {/* ================= TOUR GUIADO PASSO A PASSO (WIZARD INTERATIVO) ================= */}
+{/* ================= TOUR GUIADO PASSO A PASSO (WIZARD INTERATIVO) ================= */}
 <button
     onClick={() => setIsTutorialOpen(true)}
     className="fixed top-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
@@ -2051,119 +2079,81 @@ export default function Home() {
     <span>Guia Rápido</span>
 </button>
 
-{isTutorialOpen && (() => {
-    const [passoAtual, setPassoAtual] = React.useState(1);
-    const totalPassos = 4;
-
-    const conteudosPassos = [
-        {
-            passo: 1,
-            titulo: "1. Geração Inteligente por IA",
-            descricao: "No painel lateral, digite o tema do seu produto no campo principal e clique em 'Gerar'. A Inteligência Artificial criará toda a estrutura da página e os textos de vendas instantaneamente.",
-            icone: "fas fa-keyboard",
-            dica: "Dica: Quanto mais detalhes você colocar sobre o produto, mais persuasiva será a cópia."
-        },
-        {
-            passo: 2,
-            titulo: "2. Edição Direta na Tela",
-            descricao: "Quer mudar um título ou botão? Basta clicar diretamente sobre ele na visualização do site. O painel lateral se abrirá para você reescrever o texto ou alterar cores na hora.",
-            icone: "fas fa-mouse-pointer",
-            dica: "Dica: Clique em qualquer espaço vazio do fundo para fechar a edição."
-        },
-        {
-            passo: 3,
-            titulo: "3. Gerenciamento de Imagens",
-            descricao: "As fotos do autor e dos depoimentos já vêm integradas com imagens reais do Unsplash para nunca quebrar o layout. Se preferir, cole o link de outra foto no painel.",
-            icone: "fas fa-image",
-            dica: "Dica: Sempre use fotos reais de pessoas para gerar maior conexão com o cliente."
-        },
-        {
-            passo: 4,
-            titulo: "4. Limpeza e Publicação",
-            descricao: "Terminou de ajustar? Clique no fundo do site para remover a seleção e visualize sua página 100% limpa pronta para exportar o código ou publicar.",
-            icone: "fas fa-rocket",
-            dica: "Dica: Revise todos os links de checkout antes de colocar no ar!"
-        }
-    ];
-
-    const atual = conteudosPassos[passoAtual - 1];
-
-    return (
-        <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-indigo-100 animate-fadeIn">
-                
-                {/* Cabeçalho */}
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
-                    <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-md">
-                            {passoAtual}
-                        </span>
-                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-                            Passo {passoAtual} de {totalPassos}
-                        </span>
-                    </div>
-                    <button onClick={() => setIsTutorialOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
-                        <i className="fas fa-times text-xl"></i>
-                    </button>
+{isTutorialOpen && (
+    <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-indigo-100 animate-fadeIn">
+            
+            {/* Cabeçalho */}
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
+                <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-md">
+                        {passoAtualTutorial}
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                        Passo {passoAtualTutorial} de {totalPassosTutorial}
+                    </span>
                 </div>
-                
-                {/* Conteúdo do Passo Atual */}
-                <div className="p-8 text-center space-y-6">
-                    <div className="w-20 h-20 mx-auto bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner transform rotate-3">
-                        <i className={atual.icone}></i>
-                    </div>
-
-                    <div className="space-y-3">
-                        <h3 className="text-2xl font-black text-slate-800">{atual.titulo}</h3>
-                        <p className="text-slate-600 leading-relaxed text-base">{atual.descricao}</p>
-                    </div>
-
-                    <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 text-left text-xs text-amber-800 flex items-start gap-3">
-                        <i className="fas fa-lightbulb text-amber-500 text-lg mt-0.5"></i>
-                        <span>{atual.dica}</span>
-                    </div>
-
-                    {/* Barra de Progresso */}
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div 
-                            className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
-                            style={{ width: `${(passoAtual / totalPassos) * 100}%` }}
-                        ></div>
-                    </div>
-                </div>
-
-                {/* Rodapé com Navegação */}
-                <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <button 
-                        onClick={() => setPassoAtual(p => Math.max(p - 1, 1))}
-                        disabled={passoAtual === 1}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-                            passoAtual === 1 
-                                ? 'opacity-40 cursor-not-allowed text-slate-400 bg-slate-200' 
-                                : 'text-slate-700 bg-white border border-slate-200 hover:bg-slate-100'
-                        }`}
-                    >
-                        <i className="fas fa-arrow-left"></i> Anterior
-                    </button>
-
-                    {passoAtual < totalPassos ? (
-                        <button 
-                            onClick={() => setPassoAtual(p => Math.min(p + 1, totalPassos))}
-                            className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
-                        >
-                            Próximo <i className="fas fa-arrow-right"></i>
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={() => setIsTutorialOpen(false)}
-                            className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
-                        >
-                            Concluir <i className="fas fa-check"></i>
-                        </button>
-                    )}
-                </div>
-
+                <button onClick={() => setIsTutorialOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                    <i className="fas fa-times text-xl"></i>
+                </button>
             </div>
+            
+            {/* Conteúdo do Passo Atual */}
+            <div className="p-8 text-center space-y-6">
+                <div className="w-20 h-20 mx-auto bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner transform rotate-3">
+                    <i className={conteudosPassos[passoAtualTutorial - 1].icone}></i>
+                </div>
+
+                <div className="space-y-3">
+                    <h3 className="text-2xl font-black text-slate-800">{conteudosPassos[passoAtualTutorial - 1].titulo}</h3>
+                    <p className="text-slate-600 leading-relaxed text-base">{conteudosPassos[passoAtualTutorial - 1].descricao}</p>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 text-left text-xs text-amber-800 flex items-start gap-3">
+                    <i className="fas fa-lightbulb text-amber-500 text-lg mt-0.5"></i>
+                    <span>{conteudosPassos[passoAtualTutorial - 1].dica}</span>
+                </div>
+
+                {/* Barra de Progresso */}
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div 
+                        className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
+                        style={{ width: `${(passoAtualTutorial / totalPassosTutorial) * 100}%` }}
+                    ></div>
+                </div>
+            </div>
+
+            {/* Rodapé com Navegação */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <button 
+                    onClick={() => setPassoAtualTutorial(p => Math.max(p - 1, 1))}
+                    disabled={passoAtualTutorial === 1}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                        passoAtualTutorial === 1 
+                            ? 'opacity-40 cursor-not-allowed text-slate-400 bg-slate-200' 
+                            : 'text-slate-700 bg-white border border-slate-200 hover:bg-slate-100'
+                    }`}
+                >
+                    <i className="fas fa-arrow-left"></i> Anterior
+                </button>
+
+                {passoAtualTutorial < totalPassosTutorial ? (
+                    <button 
+                        onClick={() => setPassoAtualTutorial(p => Math.min(p + 1, totalPassosTutorial))}
+                        className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                    >
+                        Próximo <i className="fas fa-arrow-right"></i>
+                    </button>
+                ) : (
+                    <button 
+                        onClick={() => setIsTutorialOpen(false)}
+                        className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                    >
+                        Concluir <i className="fas fa-check"></i>
+                    </button>
+                )}
+            </div>
+
         </div>
-    );
-})()}
+    </div>
+)}
