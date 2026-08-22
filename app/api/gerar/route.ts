@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
-const MODELOS_GEMINI = [
+// 1. MODELOS DE TEXTO PARA API GRÁTIS OU CHAVE DO CLIENTE (6 Modelos)
+const MODELOS_TEXTO_GRATIS = [
   "gemini-3.7-flash",
   "gemini-3.5-flash", 
   "gemini-3.6-flash",
@@ -11,7 +12,13 @@ const MODELOS_GEMINI = [
   "gemini-3-flash-preview"
 ];
 
-// OTIMIZADO: Apenas os 2 modelos de imagem mais econômicos e rápidos da linha Flash
+// 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA (2 Modelos)
+const MODELOS_TEXTO_PAGO = [
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite"
+];
+
+// 3. MODELOS DE IMAGEM ECONÔMICOS (Usados apenas na API Paga)
 const MODELOS_IMAGEM_GEMINI = [
   "gemini-3.1-flash-image",
   "gemini-3.1-flash-lite-image"
@@ -70,27 +77,32 @@ export async function POST(req: Request) {
     let chaveParaUsar = "";
     let isUsingCredits = false;
     let provedorDeImagens = 'unsplash'; 
+    let modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Define o padrão
 
-    // VERIFICA O SALDO E DEFINE A CHAVE NA ORDEM DE PRIORIDADE CORRETA
+    // VERIFICA O SALDO E DEFINE A CHAVE E OS MODELOS NA ORDEM CORRETA
     if (isAdmin) {
         chaveParaUsar = process.env.GEMINI_API_KEY!;
         provedorDeImagens = 'unsplash'; 
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Admin usa API Grátis (6 modelos)
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
-        provedorDeImagens = 'ai_paid'; // Chave própria usa IA paga se autorizada
+        provedorDeImagens = 'ai_paid'; // Chave própria do cliente gera imagem via IA na conta dele
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Cliente com chave própria tem acesso aos 6 modelos
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash'; // Apenas modo admin/global grátis usa Unsplash
+        provedorDeImagens = 'unsplash'; // Usuário no modo grátis
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Usa API Grátis (6 modelos)
     } else if (isAdminKeyEnabled) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Modo Pago Central: 100% IA (Gemini Image Econômico)
+        provedorDeImagens = 'ai_paid'; // Modo Pago: 100% Imagem IA
+        modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; // <--- PROTEÇÃO MÁXIMA: Usa APENAS os 2 mais baratos para o seu bolso
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
@@ -160,8 +172,8 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     let geracaoSucesso = false;
     let historicoErros: any[] = [];
 
-    // TENTA GERAR O SITE
-    for (const modelName of MODELOS_GEMINI) {
+    // TENTA GERAR O SITE USANDO A LISTA CORRETA DE MODELOS DE TEXTO
+    for (const modelName of modelosDeTextoParaUsar) {
         if (geracaoSucesso) break; 
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
             try {
