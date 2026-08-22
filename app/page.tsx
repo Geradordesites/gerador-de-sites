@@ -617,49 +617,64 @@ const UI_BLOCKS = {
 };
 
 // ========== CONTEÚDO DO TOUR INTERATIVO COM HIGHLIGHT ==========
+// Agora com IDs específicos e uma seta indicadora
 const passosTour = [
     {
         id: 1,
-        titulo: "Ative o Modo de Edição",
-        descricao: "Clique no botão 'Editar Site' no canto superior esquerdo para ativar o modo de edição visual. Você poderá clicar em qualquer elemento do site para modificá-lo.",
-        seletor: "button[class*='bg-indigo-600']", // seletor do botão "Editar Site"
-        posicao: "bottom" // posição do balão em relação ao elemento
-    },
-    {
-        id: 2,
-        titulo: "Edite qualquer elemento",
-        descricao: "Agora, clique em qualquer texto, imagem ou botão dentro do site. O painel lateral mostrará todas as opções de personalização para aquele elemento.",
-        seletor: "#previewFrame",
-        posicao: "left"
-    },
-    {
-        id: 3,
-        titulo: "Personalize com o painel lateral",
-        descricao: "Use o painel lateral para ajustar cores, fontes, tamanhos, espaçamentos e muito mais. Todas as alterações são aplicadas em tempo real.",
-        seletor: ".w-\\[360px\\]", // classe do painel lateral
-        posicao: "right"
-    },
-    {
-        id: 4,
-        titulo: "Baixe seu site",
-        descricao: "Quando estiver satisfeito com o resultado, clique em 'Baixar Site' para salvar o arquivo HTML completo em seu computador.",
-        seletor: "button[title='Baixar o arquivo do site para o seu computador']",
+        titulo: "✏️ Digite o tema do seu site",
+        descricao: "Comece escrevendo no campo abaixo o assunto do seu negócio. Quanto mais detalhes, melhor a IA entenderá e criará um site personalizado para você.",
+        seletor: "#tour-product-content", // ID que adicionaremos no textarea
         posicao: "bottom"
     },
     {
+        id: 2,
+        titulo: "🚀 Gere seu site com IA",
+        descricao: "Após preencher o tema, clique no botão 'Gerar Meu Site Agora'. A inteligência artificial criará uma página completa e otimizada em poucos segundos.",
+        seletor: "#tour-generate-btn", // ID do botão gerar
+        posicao: "bottom"
+    },
+    {
+        id: 3,
+        titulo: "🎨 Ative o modo de edição",
+        descricao: "Com o site gerado, clique em 'Editar Site' no canto superior esquerdo. Agora você poderá personalizar qualquer elemento visualmente.",
+        seletor: "#tour-toggle-edit", // ID do botão editar
+        posicao: "bottom"
+    },
+    {
+        id: 4,
+        titulo: "👆 Clique em qualquer elemento do site",
+        descricao: "No modo edição, clique sobre textos, imagens ou botões. O painel lateral mostrará todas as opções de personalização para aquele elemento.",
+        seletor: "#tour-iframe", // ID do iframe
+        posicao: "left"
+    },
+    {
         id: 5,
-        titulo: "Publique seu site",
-        descricao: "Por fim, clique em 'Como Hospedar' para aprender a colocar seu site no ar e compartilhá-lo com o mundo.",
-        seletor: "button[class*='Como Hospedar']",
+        titulo: "🛠️ Ajuste cores, fontes e tamanhos",
+        descricao: "Use o painel lateral para modificar cores, fontes, espaçamentos, sombras e muito mais. As alterações são aplicadas em tempo real.",
+        seletor: "#tour-sidebar", // ID do painel lateral
+        posicao: "right"
+    },
+    {
+        id: 6,
+        titulo: "💾 Baixe seu site completo",
+        descricao: "Quando estiver satisfeito, clique em 'Baixar Site' para salvar o arquivo HTML em seu computador. Você terá o código completo e limpo.",
+        seletor: "#tour-download-btn", // ID do botão baixar
+        posicao: "bottom"
+    },
+    {
+        id: 7,
+        titulo: "🌐 Publique seu site na internet",
+        descricao: "Para colocar seu site no ar, clique em 'Como Hospedar' e siga o guia simples para publicar. Seu site estará online em minutos!",
+        seletor: "#tour-hospedar-btn", // ID do botão hospedar
         posicao: "bottom"
     }
 ];
 
-// Componente de Highlight do Tour
+// Componente de Highlight do Tour com seta
 function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any) {
     const [rect, setRect] = useState<DOMRect | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
-    const passoRef = useRef<HTMLDivElement>(null);
+    const [arrowDir, setArrowDir] = useState('bottom');
 
     useEffect(() => {
         const encontrarElemento = () => {
@@ -668,13 +683,14 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 const r = el.getBoundingClientRect();
                 setRect(r);
                 
-                // Calcula posição do balão
+                // Calcula posição do balão e direção da seta
                 let top = r.top + window.scrollY;
                 let left = r.left + window.scrollX;
                 const larguraBalão = 320;
-                const alturaBalão = 200;
+                const alturaBalão = 220;
+                let dir = passo.posicao || 'bottom';
 
-                switch (passo.posicao) {
+                switch (dir) {
                     case 'bottom':
                         top = r.bottom + window.scrollY + 16;
                         left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
@@ -703,6 +719,10 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 if (top + alturaBalão > window.innerHeight - 16) top = window.innerHeight - alturaBalão - 16;
 
                 setTooltipPos({ top, left });
+                setArrowDir(dir);
+            } else {
+                // Se o elemento não for encontrado, tenta novamente após um curto intervalo
+                setTimeout(encontrarElemento, 500);
             }
         };
 
@@ -717,6 +737,12 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
     }, [passo]);
 
     if (!rect) return null;
+
+    // Define a classe para a seta
+    let arrowClass = 'after:bottom-full after:left-1/2 after:-translate-x-1/2 after:border-b-indigo-200';
+    if (arrowDir === 'top') arrowClass = 'after:top-full after:left-1/2 after:-translate-x-1/2 after:border-t-indigo-200';
+    else if (arrowDir === 'left') arrowClass = 'after:left-full after:top-1/2 after:-translate-y-1/2 after:border-l-indigo-200';
+    else if (arrowDir === 'right') arrowClass = 'after:right-full after:top-1/2 after:-translate-y-1/2 after:border-r-indigo-200';
 
     return (
         <>
@@ -741,9 +767,9 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 }}
             />
 
-            {/* Balão de dica */}
+            {/* Balão de dica com seta */}
             <div 
-                className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-200 p-6 max-w-sm"
+                className={`fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-200 p-6 max-w-sm after:absolute after:w-0 after:h-0 after:border-8 after:border-transparent ${arrowClass}`}
                 style={{
                     top: tooltipPos.top,
                     left: tooltipPos.left,
@@ -1548,12 +1574,12 @@ export default function Home() {
                   Builder<span className="text-indigo-600">Pro</span>
               </h1>
               
-              <button onClick={toggleInspetor} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+              <button id="tour-toggle-edit" onClick={toggleInspetor} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
                   <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse text-yellow-300' : ''}`}></i> {modoInspetor ? 'Editando...' : 'Editar Site'}
               </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
+          <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30" id="tour-sidebar">
               
               {modoInspetor ? (
                   <div className="animate-[fadeIn_0.2s_ease]">
@@ -2026,6 +2052,7 @@ export default function Home() {
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Texto / Copy / Prompt (Opcional)</label>
                                       <textarea 
+                                          id="tour-product-content"
                                           value={productContent} 
                                           maxLength={5000} 
                                           onChange={(e) => setProductContent(e.target.value)} 
@@ -2056,7 +2083,7 @@ export default function Home() {
                                       )}
                                   </div>
 
-                                  <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                  <button id="tour-generate-btn" onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                       <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Meu Site Agora
                                   </button>
                               </div>
@@ -2092,7 +2119,7 @@ export default function Home() {
                   <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
                       <i className="fas fa-search-dollar"></i> SEO & Scripts
                   </button>
-                  <button onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                  <button id="tour-hospedar-btn" onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
                       <i className="fas fa-globe"></i> Como Hospedar
                   </button>
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
@@ -2147,7 +2174,7 @@ export default function Home() {
                   )}
                   
                   <div className="flex items-center gap-2">
-                      <button 
+                      <button id="tour-download-btn" 
                           onClick={() => (window as any).baixarHtmlGerado()} 
                           className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm" 
                           title="Baixar o arquivo do site para o seu computador">
@@ -2177,7 +2204,7 @@ export default function Home() {
                           <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
                   )}
-                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
+                  <iframe id="tour-iframe" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
                   <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
                       <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
                           onBlur={(e) => {
