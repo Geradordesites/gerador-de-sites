@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
+// ========== SCRIPT DO IFRAME ==========
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -524,6 +525,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true); 
 </script>`;
 
+// ========== UI_BLOCKS ==========
 const UI_BLOCKS = {
     faq: `
     <section class="py-20 px-8 bg-slate-50" id="block-faq">
@@ -669,6 +671,7 @@ const UI_BLOCKS = {
 };
 
 export default function Home() {
+  // ========== ESTADOS ==========
   const [byokEnabled, setByokEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [userByok, setUserByok] = useState(false);
@@ -721,6 +724,7 @@ export default function Home() {
     }
   };
 
+  // ========== DEMAIS ESTADOS E FUNÇÕES (mantenha tudo igual) ==========
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
   const [listaSites, setListaSites] = useState<any[]>([]);
   const [carregandoSites, setCarregandoSites] = useState(false);
@@ -1821,7 +1825,7 @@ export default function Home() {
                                           </select>
                                       </div>
 
-                                      {/* BLOCO BYOK – APENAS APARECE SE AUTORIZADO PELO ADMIN */}
+                                      {/* ===== BLOCO BYOK – COM OS DOIS CAMPOS (AGORA UNSPLASH TAMBÉM) ===== */}
                                       {(byokEnabled || userByok) && (
                                           <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
                                               <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
@@ -1838,7 +1842,7 @@ export default function Home() {
                                                   <i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.
                                               </p>
 
-                                              {/* CAMPO UNSPLASH – DENTRO DO MESMO BLOCO CONDICIONAL */}
+                                              {/* ===== CAMPO UNSPLASH – AGORA AQUI ===== */}
                                               <label className="input-label mb-2 flex items-center text-indigo-700">
                                                   <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
                                               </label>
