@@ -1014,19 +1014,13 @@ export default function Home() {
     return "";
   };
 
-  const executarGeracaoSiteHibrida = async () => {
-    const content = productContent.trim();
-    if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error'); return; }
-    const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
-    let promptParts: any[] = [];
+  let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize no MÁXIMO 3 a 4 imagens estratégicas em todo o site para otimizar custos. Utilize APENAS imagens fotorrealistas de humanos (é expressamente proibido usar desenhos, animações ou elementos sci-fi/tecnologia).\n\n";
     
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize no MÁXIMO 3 a 4 imagens estratégicas em todo o site para otimizar performance. Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou tecnologia exagerada).\n\n";
+    commandText += "🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: É PROIBIDO criar caixas vazias, ícones (SVG) ou colocar textos como 'Espaço para Foto'. Use SEMPRE uma tag <img> simples e direta com uma fotografia fotorrealista de uma pessoa, puxando de uma URL estática (ex: <img src=\"https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80\" class=\"w-full h-full object-cover\" />). Isso garante que seja uma imagem pura, facilitando a edição ou exclusão isolada pelo usuário.\n\n";
     
-    commandText += "🚨 REGRA DE DEPOIMENTOS E AVATARES: NÃO crie seções de depoimentos a menos que o prompt principal forneça os textos reais dos clientes. Se for criar blocos de depoimentos ou a biografia do autor, É PROIBIDO pedir imagens via IA (NÃO use [UNSPLASH:...] nem [IMAGEM_IA:...]). Em vez disso, use EXATAMENTE imagens estáticas. Exemplo para depoimentos: src=\"https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80\". Exemplo para autor: src=\"https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80\". Isso manterá a tag <img> perfeita para o usuário trocar depois.\n\n";
+    commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É TOTALMENTE PROIBIDO criar links normais (<a>) para 'Termos de Uso' ou 'Políticas de Privacidade'. Você DEVE construir OBRIGATORIAMENTE uma estrutura de sanfona usando as tags HTML <details> e <summary> no rodapé. A sanfona deve conter parágrafos (<p>) de textos simulando os termos reais para não ficar vazia.\n\n";
     
-    commandText += "🚨 RODAPÉ (TERMOS E POLÍTICAS): Crie um rodapé com sanfonas (<details> e <summary>) para Dúvidas Frequentes ou Políticas. É OBRIGATÓRIO gerar parágrafos (<p>) de texto real dentro de cada <details>. Não deixe as sanfonas vazias, elas devem abrir exibindo os textos informativos gerados por você.\n\n";
-    
-    commandText += "Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n";
+    commandText += "Se houver narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente e exclusivamente no primeiro capítulo/seção.\n\n";
       
     
     if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
