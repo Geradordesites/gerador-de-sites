@@ -1135,67 +1135,51 @@ export default function Home() {
       e.target.value = ''; 
   };
 
-  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
-      if(!elementoSelecionado) return;
+ const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
+      if(!elementoSelecionado) return;
+      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
+      
+      let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
+      let orientation = 'landscape'; let w = 1280, h = 720;
+      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
+      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
+      
+      let termoContexto = elementoSelecionado.text || productContent || "business";
+      if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
-      // Se o cliente não preencheu a chave, avisa e limpa o espaço em vez de inventar foto
-      if (!unsplashKey || unsplashKey.trim() === '') {
-          (window as any).showNotification("Insira sua Chave Unsplash para buscar imagens reais automaticamente.", "error");
-          atualizarElemento(isBackground ? 'bgImage' : 'src', '');
-          return;
-      }
+      let contextModifier = "realistic photography, candid, natural";
+      if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
+      if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
+      if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
 
-      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
-      
-      let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
-      let orientation = 'landscape'; let w = 1280, h = 720;
-      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
-      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
-      
-      let termoContexto = elementoSelecionado.text || productContent || "business";
-      if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
-
-      let contextModifier = "realistic photography, candid, natural";
-      if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
-      if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
-      if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
-
-      try {
-          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
-          const iaRes = await fetch('/api/gerar', { 
-              method: 'POST', 
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify({ 
-                  systemInstruction: "Especialista Unsplash.", 
-                  promptParts: [{text: jsonPrompt}], 
-                  isElementRefinement: true,
-                  clientApiKey: apiKey,
-                  userId: userId,
-                  userEmail: userEmail
-              }) 
-          });
-          const iaData = await iaRes.json();
-          let keywordFinal = "professional business";
-          if(iaData && iaData.html) {
-              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
-          }
-          
-          // Passando a chave individual do cliente na requisição
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}&clientKey=${encodeURIComponent(unsplashKey)}`);
-          const data = await res.json();
-          
-          if(data && data.url) { 
-              atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); 
-              (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
-          } else { 
-              throw new Error("API não retornou foto"); 
-          }
-      } catch(err) { 
-          // REMOVIDO O FALLBACK: Se falhar ou não tiver chave, deixa o espaço vazio exatamente como você pediu
-          atualizarElemento(isBackground ? 'bgImage' : 'src', ''); 
-          (window as any).showNotification("Não foi possível carregar a imagem. O local ficou vazio.", "error"); 
-      }
-  };
+      try {
+          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
+          const iaRes = await fetch('/api/gerar', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                  systemInstruction: "Especialista Unsplash.", 
+                  promptParts: [{text: jsonPrompt}], 
+                  isElementRefinement: true,
+                  clientApiKey: apiKey,
+                  userId: userId,
+                  userEmail: userEmail
+              }) 
+          });
+          const iaData = await iaRes.json();
+          let keywordFinal = "professional business";
+          if(iaData && iaData.html) {
+              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
+          }
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
+          const data = await res.json();
+          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
+          } else { throw new Error("API não retornou foto"); }
+      } catch(err) { 
+          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
+      }
+  };
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
