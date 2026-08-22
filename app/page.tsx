@@ -624,7 +624,7 @@ export default function Home() {
   const [userCredits, setUserCredits] = useState<number | null>(null);
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
   const [unsplashKey, setUnsplashKey] = useState('');
-
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -1014,14 +1014,13 @@ export default function Home() {
     return "";
   };
 
-  let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize no MÁXIMO 3 a 4 imagens estratégicas em todo o site para otimizar custos. Utilize APENAS imagens fotorrealistas de humanos (é expressamente proibido usar desenhos, animações ou elementos sci-fi/tecnologia).\n\n";
+ let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. Utilize APENAS imagens fotorrealistas de humanos. É expressamente PROIBIDO usar desenhos, animações, vetores ou imagens de tecnologia.\n\n";
     
-    commandText += "🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: É PROIBIDO criar caixas vazias, ícones (SVG) ou colocar textos como 'Espaço para Foto'. Use SEMPRE uma tag <img> simples e direta com uma fotografia fotorrealista de uma pessoa, puxando de uma URL estática (ex: <img src=\"https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80\" class=\"w-full h-full object-cover\" />). Isso garante que seja uma imagem pura, facilitando a edição ou exclusão isolada pelo usuário.\n\n";
+    commandText += "🚨 REGRA FATAL PARA FOTO DO AUTOR E DEPOIMENTOS: Você está PROIBIDO de criar caixas (divs) vazias, PROIBIDO de usar ícones SVG e PROIBIDO de escrever textos como 'Espaço para foto da Autora'. Você OBRIGATORIAMENTE deve usar uma tag <img> real com uma URL estática. Cole EXATAMENTE este código HTML onde for a foto do autor ou de um cliente: <img src=\"https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80\" class=\"w-full h-full object-cover\" alt=\"Perfil\" />\n\n";
     
-    commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É TOTALMENTE PROIBIDO criar links normais (<a>) para 'Termos de Uso' ou 'Políticas de Privacidade'. Você DEVE construir OBRIGATORIAMENTE uma estrutura de sanfona usando as tags HTML <details> e <summary> no rodapé. A sanfona deve conter parágrafos (<p>) de textos simulando os termos reais para não ficar vazia.\n\n";
+    commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé. Coloque parágrafos (<p>) de textos reais dentro de cada sanfona simulando os termos.\n\n";
     
-    commandText += "Se houver narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente e exclusivamente no primeiro capítulo/seção.\n\n";
-      
+    commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente no primeiro capítulo/seção da página.\n\n";      
     
     if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
@@ -2037,6 +2036,71 @@ export default function Home() {
           </div>
         </div>
       )}
+        {/* ================= MODAL DE TUTORIAL ================= */}
+<button
+    onClick={() => setIsTutorialOpen(true)}
+    className="fixed bottom-6 left-6 z-50 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-3 border-2 border-indigo-400"
+    title="Como usar o Editor"
+>
+    <i className="fas fa-question-circle text-2xl"></i>
+    <span className="font-bold hidden md:inline">Guia Rápido</span>
+</button>
+
+{isTutorialOpen && (
+    <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
+                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                    <i className="fas fa-magic text-indigo-600"></i> Como usar o Construtor
+                </h2>
+                <button onClick={() => setIsTutorialOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                    <i className="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-8 text-slate-600">
+                <div className="flex gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-keyboard"></i></div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">1. Geração Inteligente</h3>
+                        <p className="leading-relaxed">Digite sobre o que é o seu negócio no campo principal e clique em "Gerar". A Inteligência Artificial criará toda a estrutura da sua página, textos persuasivos e o layout inicial em poucos segundos.</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-mouse-pointer"></i></div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">2. Edição de Textos e Botões</h3>
+                        <p className="leading-relaxed">Para alterar qualquer texto ou botão, basta <strong>clicar diretamente sobre ele</strong> na visualização do site. O painel lateral se abrirá permitindo que você reescreva o conteúdo, mude cores ou direcione links.</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-image"></i></div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">3. Trocando Imagens e Fotos</h3>
+                        <p className="leading-relaxed">Clique em qualquer imagem, foto de depoimento ou de autor. No painel de edição, você poderá colar a URL da sua foto real ou fazer o upload do seu computador. O formato do layout será mantido perfeitamente!</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-ban"></i></div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">4. Limpando a Seleção</h3>
+                        <p className="leading-relaxed">Terminou de editar um elemento? Clique em qualquer espaço vazio ou no fundo do site. A borda de edição sumirá na mesma hora, e você poderá visualizar sua página limpa.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onClick={() => setIsTutorialOpen(false)} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-lg">
+                    Entendi, vamos começar!
+                </button>
+            </div>
+        </div>
+    </div>
+)}
     </div>
   );
 }
