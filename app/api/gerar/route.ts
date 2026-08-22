@@ -29,7 +29,8 @@ const CUSTO_POR_ACAO = 10;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, userId, userEmail } = body;
+    // 👇 Modificado: Adicionada a variável clientUnsplashKey para receber a chave do cliente
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, clientUnsplashKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
     const MEU_EMAIL_ADMIN = 'josevg10@gmail.com';
@@ -89,10 +90,7 @@ export async function POST(req: Request) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
-        
-        // 👇 CORREÇÃO FEITA AQUI: A chave do cliente agora volta a usar imagens grátis (Unsplash)
         provedorDeImagens = 'unsplash'; 
-        
         modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
@@ -259,15 +257,21 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         let urlsToReplace = [];
         while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
 
-        if (urlsToReplace.length > 0 && process.env.UNSPLASH_API_KEY) {
+        // 👇 Modificado: Define qual chave do Unsplash usar (a do cliente ou a global do admin)
+        const unsplashKeyParaUsar = (clientUnsplashKey && clientUnsplashKey.trim().length > 10) 
+            ? clientUnsplashKey 
+            : process.env.UNSPLASH_API_KEY;
+
+        if (urlsToReplace.length > 0 && unsplashKeyParaUsar) {
             for (const item of urlsToReplace) {
                 let orient = 'landscape';
                 if (item.dimensao === '800x1200') orient = 'portrait';
                 if (item.dimensao === '800x800') orient = 'squarish';
                 const kwFormatada = encodeURIComponent(item.keywords.trim());
-                let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
+                let imagemFinal = `[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80)`; 
                 try {
-                    const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=15&orientation=${orient}&client_id=${process.env.UNSPLASH_API_KEY}`);
+                    // 👇 Modificado: Utiliza a variável unsplashKeyParaUsar na requisição da API
+                    const uRes = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){kwFormatada}&per_page=15&orientation=${orient}&client_id=${unsplashKeyParaUsar}`);
                     if (uRes.ok) {
                         const uData = await uRes.json();
                         if (uData.results && uData.results.length > 0) {
@@ -280,8 +284,8 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         }
     }
     
-    htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
-    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3');
+    htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3)');
+    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3)');
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
 
