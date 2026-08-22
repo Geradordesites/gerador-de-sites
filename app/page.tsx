@@ -486,7 +486,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
     window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
 
-    document.addEventListener('click', (e) => {
+   document.addEventListener('click', (e) => {
         let link = e.target.closest('a');
         let btn = e.target.closest('button');
         let form = e.target.closest('form');
@@ -495,6 +495,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (form && !summary && !btn) { e.preventDefault(); }
         
         if (modoEdicao) {
+            // Se clicar no espaço vazio do site, limpa a seleção e remove a borda
+            if (e.target === document.body || e.target === document.documentElement) {
+                if(elSelecionado) { 
+                    elSelecionado.style.outline = ''; 
+                    elSelecionado.style.outlineOffset = ''; 
+                    elSelecionado = null; 
+                }
+                window.parent.postMessage({ type: 'ELEMENT_SELECTED', id: null }, '*');
+                return;
+            }
+
             if (summary) {
                 setTimeout(() => selectElement(summary), 10);
                 return; 
@@ -522,7 +533,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
             return;
         }
-    }, true); 
+    }, true);
 </script>`;
 
 const UI_BLOCKS = {
