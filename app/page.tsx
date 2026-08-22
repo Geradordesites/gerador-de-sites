@@ -2041,7 +2041,7 @@ export default function Home() {
           </div>
         </div>
       )}
-     {/* ================= TOUR GUIADO PASSO A PASSO (UM POR VEZ) ================= */}
+   {/* ================= TOUR GUIADO PASSO A PASSO (WIZARD INTERATIVO) ================= */}
 <button
     onClick={() => setIsTutorialOpen(true)}
     className="fixed top-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
