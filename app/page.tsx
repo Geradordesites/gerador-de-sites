@@ -1137,6 +1137,14 @@ export default function Home() {
 
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
+
+      // Se o cliente não preencheu a chave, avisa e limpa o espaço em vez de inventar foto
+      if (!unsplashKey || unsplashKey.trim() === '') {
+          (window as any).showNotification("Insira sua Chave Unsplash para buscar imagens reais automaticamente.", "error");
+          atualizarElemento(isBackground ? 'bgImage' : 'src', '');
+          return;
+      }
+
       (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
@@ -1171,13 +1179,21 @@ export default function Home() {
           if(iaData && iaData.html) {
               try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
           }
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
+          
+          // Passando a chave individual do cliente na requisição
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}&clientKey=${encodeURIComponent(unsplashKey)}`);
           const data = await res.json();
-          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
-          } else { throw new Error("API não retornou foto"); }
+          
+          if(data && data.url) { 
+              atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); 
+              (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
+          } else { 
+              throw new Error("API não retornou foto"); 
+          }
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
+          // REMOVIDO O FALLBACK: Se falhar ou não tiver chave, deixa o espaço vazio exatamente como você pediu
+          atualizarElemento(isBackground ? 'bgImage' : 'src', ''); 
+          (window as any).showNotification("Não foi possível carregar a imagem. O local ficou vazio.", "error"); 
       }
   };
 
