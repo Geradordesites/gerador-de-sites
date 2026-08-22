@@ -536,47 +536,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true);
 </script>`;
 
-const UI_BLOCKS = {
-    faq: `
-    <section class="py-20 px-8 bg-slate-50" id="block-faq">
-        <div class="max-w-3xl mx-auto">
-            <h2 class="text-3xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2>
-            <p class="text-center text-slate-600 mb-12">Tire suas dúvidas e comece sua jornada com confiança.</p>
-            
-            <details class="mb-4 bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100 hover:border-indigo-300 transition-colors">
-                <summary class="font-bold text-slate-800 outline-none">Por quanto tempo tenho acesso?</summary>
-                <p class="mt-4 text-slate-600 leading-relaxed">Você terá acesso vitalício a todo o conteúdo, incluindo todas as atualizações futuras que fizermos no material.</p>
-            </details>
-            
-            <details class="mb-4 bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100 hover:border-indigo-300 transition-colors">
-                <summary class="font-bold text-slate-800 outline-none">Como funciona o suporte?</summary>
-                <p class="mt-4 text-slate-600 leading-relaxed">Nosso suporte funciona de segunda a sexta, em horário comercial. Temos uma equipe de especialistas pronta para te atender via e-mail ou WhatsApp.</p>
-            </details>
-
-            <details class="mb-4 bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100 hover:border-indigo-300 transition-colors">
-                <summary class="font-bold text-slate-800 outline-none">E se eu não gostar do conteúdo?</summary>
-                <p class="mt-4 text-slate-600 leading-relaxed">Oferecemos uma garantia incondicional de 7 dias. Basta nos enviar um e-mail que devolveremos 100% do seu investimento sem fazer perguntas.</p>
-            </details>
-        </div>
-    </section>`,
-    
-    garantia: `
-    <section class="py-20 px-8 bg-white" id="block-garantia">
-        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
-            <div class="flex-1 w-full relative">
-                <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
-                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Garantia" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-square md:aspect-[4/3]" />
-            </div>
-            <div class="flex-1 w-full text-center md:text-left">
-                <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Risco Zero: Garantia Incondicional de 7 Dias</h2>
-                <p class="text-slate-600 leading-relaxed mb-4 text-lg">Nós confiamos tanto na qualidade do nosso material que vamos assumir todo o risco por você.</p>
-                <p class="text-slate-600 leading-relaxed mb-8 text-lg">Experimente na prática. Se no período de 7 dias você achar que o conteúdo não é para você, basta solicitar o reembolso. Devolveremos centavo por centavo, sem letras miúdas.</p>
-                <button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-lg w-full md:w-auto">Sim, Quero Testar Sem Riscos</button>
-            </div>
-        </div>
-    </section>`,
-
-    depoimentos: `
+depoimentos: `
     <section class="py-20 px-8 bg-slate-900" id="block-depoimentos">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold text-center text-white mb-4">O Que Dizem Nossos Clientes</h2>
@@ -587,7 +547,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica gera novas vendas."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-400 overflow-hidden"><img src="" alt="Foto Cliente" class="w-full h-full object-cover" /></div>
+                        <img src="https://www.gravatar.com/avatar/0?d=mp&s=200" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600 bg-slate-700" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -599,7 +559,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Use as palavras exatas que seu cliente enviou no WhatsApp."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-400 overflow-hidden"><img src="" alt="Foto Cliente" class="w-full h-full object-cover" /></div>
+                        <img src="https://www.gravatar.com/avatar/0?d=mp&s=200" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600 bg-slate-700" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -611,7 +571,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui para fortalecer a credibilidade do seu método."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-400 overflow-hidden"><img src="" alt="Foto Cliente" class="w-full h-full object-cover" /></div>
+                        <img src="https://www.gravatar.com/avatar/0?d=mp&s=200" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600 bg-slate-700" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -622,37 +582,12 @@ const UI_BLOCKS = {
         </div>
     </section>`,
 
-    precoDestaque: `
-    <section class="py-20 px-8 bg-slate-50" id="block-preco">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl font-bold text-slate-900 mb-4">Acesso Imediato ao Método</h2>
-            <p class="text-slate-600 mb-12 text-lg">Tudo o que você precisa por um valor extremamente acessível.</p>
-            
-            <div class="bg-white rounded-3xl shadow-xl border border-indigo-100 p-8 md:p-12 max-w-lg mx-auto transform transition hover:scale-105 hover:shadow-2xl">
-                <div class="bg-indigo-100 text-indigo-700 font-black text-xs uppercase tracking-widest py-1.5 px-4 rounded-full inline-block mb-6">Oferta Especial</div>
-                <h3 class="text-2xl font-black text-slate-900 mb-2">Plano VIP Completo</h3>
-                <p class="text-slate-500 mb-6">Acesso vitalício e suporte premium para acelerar seus resultados.</p>
-                <div class="text-5xl font-black text-slate-900 mb-6">R$ 97<span class="text-lg text-slate-500 font-normal">/à vista</span></div>
-                
-                <ul class="text-left space-y-4 mb-8 text-slate-600">
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Todo o conteúdo prático do Método</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Acesso aos Bônus Exclusivos</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Suporte Prioritário para Dúvidas</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-lg"></i> Garantia de 7 Dias</li>
-                </ul>
-                
-                <a href="#" class="block w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 hover:shadow-indigo-500/30 transition-all text-lg">Quero Garantir Minha Vaga</a>
-                <p class="text-xs text-slate-400 mt-4"><i class="fas fa-lock mr-1"></i> Pagamento 100% seguro e criptografado</p>
-            </div>
-        </div>
-    </section>`,
-
     autorEsq: `
     <section class="py-20 px-8 bg-white" id="block-autor-esq">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <div class="w-full max-w-md mx-auto rounded-2xl shadow-xl bg-slate-100 border-4 border-white aspect-[3/4] relative z-10 flex items-center justify-center overflow-hidden"><img src="" alt="Sua Foto" class="w-full h-full object-cover" /></div>
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Sua Foto" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white cursor-pointer" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -668,7 +603,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <div class="w-full max-w-md mx-auto rounded-2xl shadow-xl bg-slate-100 border-4 border-white aspect-[3/4] relative z-10 flex items-center justify-center overflow-hidden"><img src="" alt="Sua Foto" class="w-full h-full object-cover" /></div>
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Sua Foto" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white cursor-pointer" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -1085,12 +1020,13 @@ export default function Home() {
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
     
-    let commandText = `Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. 
-
-🚨 REGRA CRÍTICA PARA FOTOS DE PERFIL (DEPOIMENTOS E AUTOR): 
-Para a seção de Depoimentos (Provas Sociais) e para a seção de Biografia do Autor, É TOTALMENTE PROIBIDO gerar tags [UNSPLASH] ou [IMAGEM_IA]. Nesses locais específicos, deixe o atributo src="" (vazio) ou crie um espaço estético reservado com fundo neutro e ícone, permitindo que o cliente envie sua foto real posteriormente pelo editor visual.
-
-O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4)...`;
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize no MÁXIMO 3 a 4 imagens estratégicas em todo o site para otimizar performance. Utilize APENAS imagens fotorrealistas de humanos.\n\n";
+    
+    commandText += "🚨 REGRA DE DEPOIMENTOS E AVATARES: NÃO crie seções de depoimentos a menos que o prompt principal forneça os textos reais dos clientes. Se for criar blocos de depoimentos ou a biografia do autor, É PROIBIDO pedir imagens via IA nessas fotos de perfil. Use EXATAMENTE esta URL de avatar genérico: src=\"https://www.gravatar.com/avatar/0?d=mp&s=200\". Isso manterá a foto clicável para ser trocada depois.\n\n";
+    
+    commandText += "🚨 RODAPÉ (TERMOS E POLÍTICAS): Crie um rodapé com sanfonas (<details> e <summary>) para Dúvidas Frequentes ou Políticas. É OBRIGATÓRIO gerar parágrafos (<p>) de texto real dentro de cada <details>. Não deixe as sanfonas vazias, elas devem abrir exibindo os textos informativos gerados por você.\n\n";
+    
+    commandText += "Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n";
       
     
     if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
