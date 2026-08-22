@@ -19,7 +19,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
-        let res = rgb.match(/\\d+/g);
+        let res = rgb.match(/\d+/g);
         if(!res || res.length < 3) return '';
         return "#" + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
     }
@@ -31,7 +31,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         timeoutSync = setTimeout(() => {
             let outlineAntigo = '';
             if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
-            let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+            let htmlStr = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
             if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
             window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
         }, 800);
@@ -59,7 +59,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         
         if (bgImg === undefined) {
             let rawBg = elSelecionado.style.backgroundImage || '';
-            let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+            let match = rawBg.match(/url\(['"]?([^'"]+)['"]?\)/);
             bgImg = match ? match[1] : '';
         }
 
@@ -72,7 +72,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         } else { 
             objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
             if (isNaN(objOpacity)) {
-                let bgMatch = compStyle.backgroundColor.match(/rgba\\(\\d+,\\s*\\d+,\\s*\\d+,\\s*([\\d.]+)\\)/);
+                let bgMatch = compStyle.backgroundColor.match(/rgba\((\d+,\s*\d+,\s*\d+,\s*([\d.]+)\))/);
                 objOpacity = bgMatch ? parseFloat(bgMatch[1]) : 0; 
             }
         }
@@ -105,7 +105,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
 
         let textoAtual = elSelecionado.innerHTML || '';
-        textoAtual = textoAtual.replace(/<br\\s*\\/?>/gi, '\\n').replace(/(<([^>]+)>)/gi, "");
+        textoAtual = textoAtual.replace(/<br\s*\/?>/gi, '\n').replace(/(<([^>]+)>)/gi, "");
 
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
@@ -242,11 +242,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = `<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="${newId}">`;
                 } else if(event.data.elementType === 'text') {
-                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
+                    newHtml = `<p class="text-slate-600 mb-4 text-base leading-relaxed" id="${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>`;
                 } else if(event.data.elementType === 'button') {
-                    newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
+                    newHtml = `<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="${newId}">Clique Aqui</a>`;
                 }
                 
                 let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
@@ -310,10 +310,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 let isImg = el.tagName === 'IMG';
                 let p = event.data.device === 'mobile' ? 'max-md:' : '';
-                let escP = p ? 'max-md\\\\:' : '';
+                let escP = p ? 'max-md\\:' : '';
 
                 if(event.data.text !== undefined && event.data.forceTextUpdate) {
-                    let novoTexto = event.data.text.replace(/\\n/g, '<br>');
+                    let novoTexto = event.data.text.replace(/\n/g, '<br>');
                     el.innerHTML = novoTexto;
                 }
 
@@ -322,7 +322,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 
                 if(event.data.fontSize !== undefined) {
                     el.style.fontSize = ''; 
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + 'text-\\\\[\\\\d+px\\\\]\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
                     if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
                 }
                 
@@ -367,7 +367,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     
                     let cBgImage = el.dataset.rawBgImage;
                     if (cBgImage === undefined) { 
-                        let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); 
+                        let match = (el.style.backgroundImage || '').match(/url\(['"]?([^'"]+)['"]?\)/); 
                         cBgImage = match ? match[1] : ''; 
                     }
                     
@@ -399,39 +399,39 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.paddingX !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(px-\\\\d+|px-\\\\[.*?\\\\]|w-full|text-center)\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
                     if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
                 }
                 if(event.data.paddingY !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(py-\\\\d+|py-\\\\[.*?\\\\])\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
                     if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
                 }
                 if(event.data.rounded !== undefined) {
-                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
+                    el.className = el.className.replace(/\brounded\b|\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\b/g, '').trim();
                     if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
                 }
                 if(event.data.shadow !== undefined) {
-                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
+                    el.className = el.className.replace(/\bshadow\b|\bshadow-(sm|md|lg|xl|2xl|none|inner)\b|\bshadow-[a-z]+-500\/50\b/g, '').trim();
                     if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
                 }
                 if(event.data.borderW !== undefined) {
-                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
+                    el.className = el.className.replace(/\bborder\b|\bborder-\d+\b/g, '').trim();
                     if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
                 }
 
                 if(event.data.textAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(text-left|text-center|text-right|text-justify)\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
                     if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
                 }
 
                 if(event.data.boxAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
                     if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
                     if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
                     if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
                     
                     if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
-                        el.className = el.className.replace(new RegExp('\\\\b' + escP + '(justify-start|justify-center|justify-end)\\\\b', 'g'), '').trim();
+                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
                         if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
                         if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
                         if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
@@ -448,7 +448,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if (event.data.imgFormat === '') {
                         el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
                     } else {
-                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
+                        el.className = el.className.replace(/\bh-(full|screen|auto|min|max|fit|px|\d+|\[.*?\])\b/g, '').trim();
                         el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
                     }
                 }
@@ -682,6 +682,7 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState('');
   const [userCredits, setUserCredits] = useState<number | null>(null);
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
+  const [unsplashKey, setUnsplashKey] = useState('');
 
   // Função adicionada para recarregar o saldo do usuário
   const recarregarDadosUsuario = async () => {
@@ -699,9 +700,10 @@ export default function Home() {
       if (session) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
-        const { data: profile } = await supabase.from('profiles').select('user_api_key, allow_byok, credits, plan_expiration').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('user_api_key, unsplash_api_key, allow_byok, credits, plan_expiration').eq('id', session.user.id).single();
         if (profile) {
             if (profile.user_api_key) setApiKey(profile.user_api_key);
+            if (profile.unsplash_api_key) setUnsplashKey(profile.unsplash_api_key);
             if (profile.allow_byok) setUserByok(profile.allow_byok);
             setUserCredits(profile.credits ?? 0);
             setUserExpiration(profile.plan_expiration);
@@ -714,11 +716,14 @@ export default function Home() {
     carregarConfiguracoesESessao();
   }, []);
 
-  const salvarChaveCliente = async (chave: string) => {
-    setApiKey(chave);
+  const salvarChaveCliente = async (chave: string, tipo: 'gemini' | 'unsplash' = 'gemini') => {
+    if (tipo === 'gemini') setApiKey(chave);
+    if (tipo === 'unsplash') setUnsplashKey(chave);
+    
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-        await supabase.from('profiles').update({ user_api_key: chave }).eq('id', session.user.id);
+        const updateData = tipo === 'gemini' ? { user_api_key: chave } : { unsplash_api_key: chave };
+        await supabase.from('profiles').update(updateData).eq('id', session.user.id);
         (window as any).showNotification("Chave vinculada à sua conta com sucesso!", "success");
     }
   };
@@ -951,6 +956,18 @@ export default function Home() {
     if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
   };
 
+  const handleHtmlFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev: any) => {
+          setCodigoExterno(ev.target.result);
+      };
+      reader.readAsText(file);
+      e.target.value = ''; 
+  };
+
+
   const otimizarComIA = async (comandoOverride?: string) => {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLTextAreaElement;
       const comando = comandoOverride || promptInput?.value.trim();
@@ -984,6 +1001,7 @@ export default function Home() {
                 promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
                 isSiteRefinement: true, 
                 clientApiKey: apiKey,
+                clientUnsplashKey: unsplashKey,
                 userId: userId,
                 userEmail: userEmail
             })
@@ -1015,6 +1033,7 @@ export default function Home() {
               dinamica: dinamicaStyle, 
               isElementRefinement,
               clientApiKey: apiKey,
+              clientUnsplashKey: unsplashKey,
               userId: userId,
               userEmail: userEmail
           }) 
@@ -1316,9 +1335,16 @@ export default function Home() {
                       <textarea 
                           value={codigoExterno} 
                           onChange={(e) => setCodigoExterno(e.target.value)} 
-                          className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"
+                          className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar mb-3"
                           placeholder="<!-- Cole seu código HTML aqui... -->"
                       ></textarea>
+                      <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">OU</span>
+                          <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2">
+                              <i className="fas fa-file-code"></i> Fazer Upload de Arquivo .HTML
+                              <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
+                          </label>
+                      </div>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
                       <button onClick={() => setModalImportarCodigo(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition">Cancelar</button>
@@ -1807,14 +1833,26 @@ export default function Home() {
                                                   <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
                                                   <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
                                                   <input 
-                                                    type="password" 
-                                                    value={apiKey}
-                                                    onChange={(e) => setApiKey(e.target.value)}
-                                                    onBlur={(e) => salvarChaveCliente(e.target.value)}
-                                                    placeholder="AIzaSy..." 
-                                                    className="input-standard font-mono text-xs" 
+                                                      type="password" 
+                                                      value={apiKey}
+                                                      onChange={(e) => setApiKey(e.target.value)}
+                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
+                                                      placeholder="AIzaSy..." 
+                                                      className="input-standard font-mono text-xs" 
                                                   />
-                                                  <p className="text-[9px] text-emerald-600 mt-1"><i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.</p>
+                                                  <p className="text-[9px] text-emerald-600 mt-1 mb-4"><i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.</p>
+                                                  
+                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)</label>
+                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.</p>
+                                                  <input 
+                                                      type="password" 
+                                                      value={unsplashKey}
+                                                      onChange={(e) => setUnsplashKey(e.target.value)}
+                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
+                                                      placeholder="Cole seu Client ID..." 
+                                                      className="input-standard font-mono text-xs" 
+                                                  />
+                                                  <p className="text-[9px] text-emerald-600 mt-1"><i className="fas fa-check-circle"></i> Fica salva automaticamente.</p>
                                               </div>
                                           )}
                                       </div>
