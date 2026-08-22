@@ -2041,14 +2041,14 @@ export default function Home() {
           </div>
         </div>
       )}
-        {/* ================= TOUR GUIADO PASSO A PASSO ================= */}
+      {/* ================= TOUR GUIADO PASSO A PASSO (UM POR VEZ) ================= */}
 <button
     onClick={() => setIsTutorialOpen(true)}
-    className="fixed bottom-6 left-6 z-50 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-3 border-2 border-indigo-400"
+    className="fixed top-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
     title="Guia Rápido"
 >
-    <i className="fas fa-compass text-2xl"></i>
-    <span className="font-bold hidden md:inline">Guia Rápido</span>
+    <i className="fas fa-question-circle"></i>
+    <span>Guia Rápido</span>
 </button>
 
 {isTutorialOpen && (() => {
@@ -2107,7 +2107,7 @@ export default function Home() {
                     </button>
                 </div>
                 
-                {/* Corpo do Passo */}
+                {/* Corpo do Passo (Mostra APENAS o passo atual) */}
                 <div className="p-8 text-center space-y-6">
                     <div className="w-20 h-20 mx-auto bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner transform rotate-3">
                         <i className={atual.icone}></i>
@@ -2132,7 +2132,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Rodapé com Navegação */}
+                {/* Rodapé com Navegação (Anterior / Próximo) */}
                 <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
                     <button 
                         onClick={() => setPassoAtual(p => Math.max(p - 1, 1))}
