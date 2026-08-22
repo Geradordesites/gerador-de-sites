@@ -41,6 +41,7 @@ export default function AdminPage() {
   }
 
   const carregarDadosAdmin = async () => {
+    // Garanta que a coluna 'unsplash_api_key' está no select
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
@@ -151,8 +152,8 @@ export default function AdminPage() {
     setSalvandoConfig(false)
   }
 
-  const toggleVisibilidadeChave = (userId: string) => {
-    setChavesVisiveis(prev => ({ ...prev, [userId]: !prev[userId] }))
+  const toggleVisibilidadeChave = (keyId: string) => {
+    setChavesVisiveis(prev => ({ ...prev, [keyId]: !prev[keyId] }))
   }
 
   if (loading || !isAuthorized) {
@@ -182,7 +183,7 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* CONTROLES GLOBAIS DE IA & BYOK (ATUALIZADO COM 3 COLUNAS) */}
+        {/* CONTROLES GLOBAIS DE IA & BYOK */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-10 shadow-sm">
           <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <Key className="size-5 text-amber-500" /> Controles Globais de IA & BYOK
@@ -240,7 +241,8 @@ export default function AdminPage() {
                   <th className="py-4 px-4 font-bold rounded-tl-lg">Cliente / E-mail</th>
                   <th className="py-4 px-4 font-bold">Gerenciar Créditos</th>
                   <th className="py-4 px-4 font-bold">Assinatura Mensal / Validade</th>
-                  <th className="py-4 px-4 font-bold">Chave Própria</th>
+                  <th className="py-4 px-4 font-bold">Chave Própria (Gemini)</th>
+                  <th className="py-4 px-4 font-bold">Chave Unsplash</th>
                   <th className="py-4 px-4 font-bold rounded-tr-lg">Permissões Especiais</th>
                 </tr>
               </thead>
@@ -318,17 +320,32 @@ export default function AdminPage() {
                       </td>
 
                       <td className="py-5 px-4 align-top">
-                        {user.user_api_key ? (
+                        {user.client_api_key ? (
                           <div className="flex items-center gap-2">
                             <code className="bg-slate-100 text-slate-700 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-mono max-w-[130px] overflow-hidden truncate block">
-                              {chavesVisiveis[user.id] ? user.user_api_key : `${user.user_api_key.substring(0, 6)}••••••••`}
+                              {chavesVisiveis[`${user.id}_gemini`] ? user.client_api_key : `${user.client_api_key.substring(0, 6)}••••••••`}
                             </code>
-                            <button onClick={() => toggleVisibilidadeChave(user.id)} className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Mostrar/Ocultar Chave">
-                              {chavesVisiveis[user.id] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            <button onClick={() => toggleVisibilidadeChave(`${user.id}_gemini`)} className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Mostrar/Ocultar Chave">
+                              {chavesVisiveis[`${user.id}_gemini`] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-1 rounded">Sem chave cadastrada</span>
+                          <span className="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-1 rounded">Sem chave Gemini</span>
+                        )}
+                      </td>
+                      
+                      <td className="py-5 px-4 align-top">
+                        {user.unsplash_api_key ? (
+                          <div className="flex items-center gap-2">
+                            <code className="bg-slate-100 text-slate-700 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-mono max-w-[130px] overflow-hidden truncate block">
+                              {chavesVisiveis[`${user.id}_unsplash`] ? user.unsplash_api_key : `${user.unsplash_api_key.substring(0, 6)}••••••••`}
+                            </code>
+                            <button onClick={() => toggleVisibilidadeChave(`${user.id}_unsplash`)} className="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Mostrar/Ocultar Chave Unsplash">
+                              {chavesVisiveis[`${user.id}_unsplash`] ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-1 rounded">Sem chave Unsplash</span>
                         )}
                       </td>
 
@@ -349,7 +366,7 @@ export default function AdminPage() {
                   )
                 })}
                 {usuarios.length === 0 && (
-                  <tr><td colSpan={5} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento.</td></tr>
+                  <tr><td colSpan={6} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento.</td></tr>
                 )}
               </tbody>
             </table>
