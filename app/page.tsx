@@ -19,19 +19,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
-        let res = rgb.match(/\d+/g);
+        let res = rgb.match(/\\d+/g);
         if(!res || res.length < 3) return '';
         return "#" + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
     }
 
     function sendCleanHtml() {
-        // Aumentamos o tempo de espera para 800ms. 
-        // Assim ele agrupa toda a sua digitação em um único "Desfazer".
         clearTimeout(timeoutSync);
         timeoutSync = setTimeout(() => {
             let outlineAntigo = '';
             if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
-            let htmlStr = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
             if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
             window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
         }, 800);
@@ -59,7 +57,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         
         if (bgImg === undefined) {
             let rawBg = elSelecionado.style.backgroundImage || '';
-            let match = rawBg.match(/url\(['"]?([^'"]+)['"]?\)/);
+            let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
             bgImg = match ? match[1] : '';
         }
 
@@ -72,7 +70,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         } else { 
             objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
             if (isNaN(objOpacity)) {
-                let bgMatch = compStyle.backgroundColor.match(/rgba\((\d+,\s*\d+,\s*\d+,\s*([\d.]+)\))/);
+                let bgMatch = compStyle.backgroundColor.match(/rgba\\((\\d+,\\s*\\d+,\\s*\\d+,\\s*([\\d.]+)\\))/);
                 objOpacity = bgMatch ? parseFloat(bgMatch[1]) : 0; 
             }
         }
@@ -105,7 +103,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }
 
         let textoAtual = elSelecionado.innerHTML || '';
-        textoAtual = textoAtual.replace(/<br\s*\/?>/gi, '\n').replace(/(<([^>]+)>)/gi, "");
+        textoAtual = textoAtual.replace(/<br\\s*\\/?>/gi, '\\n').replace(/(<([^>]+)>)/gi, "");
 
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
@@ -242,11 +240,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = `<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="${newId}">`;
+                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
-                    newHtml = `<p class="text-slate-600 mb-4 text-base leading-relaxed" id="${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>`;
+                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
                 } else if(event.data.elementType === 'button') {
-                    newHtml = `<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="${newId}">Clique Aqui</a>`;
+                    newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
                 }
                 
                 let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
@@ -310,10 +308,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 let isImg = el.tagName === 'IMG';
                 let p = event.data.device === 'mobile' ? 'max-md:' : '';
-                let escP = p ? 'max-md\\:' : '';
+                let escP = p ? 'max-md\\\\:' : '';
 
                 if(event.data.text !== undefined && event.data.forceTextUpdate) {
-                    let novoTexto = event.data.text.replace(/\n/g, '<br>');
+                    let novoTexto = event.data.text.replace(/\\n/g, '<br>');
                     el.innerHTML = novoTexto;
                 }
 
@@ -322,7 +320,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 
                 if(event.data.fontSize !== undefined) {
                     el.style.fontSize = ''; 
-                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + 'text-\\\\[\\\\d+px\\\\]\\\\b', 'g'), '').trim();
                     if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
                 }
                 
@@ -358,16 +356,13 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
                 }
 
-                // CORREÇÃO CRÍTICA DO TEXTO DOURADO (Background Override Bug)
-                // O fundo só será reprocessado se o usuário de fato mexer na aba de "Cor e Fundo".
-                // Isso impede que as edições de texto sobrescrevam as cores criadas pelo Tailwind.
                 if (!isImg && (event.data.bgColor !== undefined || event.data.bgImage !== undefined || event.data.opacity !== undefined)) {
                     let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
                     if (!cBgColor || cBgColor === '') cBgColor = '#000000'; 
                     
                     let cBgImage = el.dataset.rawBgImage;
                     if (cBgImage === undefined) { 
-                        let match = (el.style.backgroundImage || '').match(/url\(['"]?([^'"]+)['"]?\)/); 
+                        let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); 
                         cBgImage = match ? match[1] : ''; 
                     }
                     
@@ -399,39 +394,39 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.paddingX !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(px-\\\\d+|px-\\\\[.*?\\\\]|w-full|text-center)\\\\b', 'g'), '').trim();
                     if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
                 }
                 if(event.data.paddingY !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(py-\\\\d+|py-\\\\[.*?\\\\])\\\\b', 'g'), '').trim();
                     if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
                 }
                 if(event.data.rounded !== undefined) {
-                    el.className = el.className.replace(/\brounded\b|\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\b/g, '').trim();
+                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
                     if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
                 }
                 if(event.data.shadow !== undefined) {
-                    el.className = el.className.replace(/\bshadow\b|\bshadow-(sm|md|lg|xl|2xl|none|inner)\b|\bshadow-[a-z]+-500\/50\b/g, '').trim();
+                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
                     if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
                 }
                 if(event.data.borderW !== undefined) {
-                    el.className = el.className.replace(/\bborder\b|\bborder-\d+\b/g, '').trim();
+                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
                     if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
                 }
 
                 if(event.data.textAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(text-left|text-center|text-right|text-justify)\\\\b', 'g'), '').trim();
                     if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
                 }
 
                 if(event.data.boxAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\\\b', 'g'), '').trim();
                     if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
                     if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
                     if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
                     
                     if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
-                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
+                        el.className = el.className.replace(new RegExp('\\\\b' + escP + '(justify-start|justify-center|justify-end)\\\\b', 'g'), '').trim();
                         if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
                         if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
                         if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
@@ -448,7 +443,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if (event.data.imgFormat === '') {
                         el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
                     } else {
-                        el.className = el.className.replace(/\bh-(full|screen|auto|min|max|fit|px|\d+|\[.*?\])\b/g, '').trim();
+                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
                         el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
                     }
                 }
@@ -684,7 +679,6 @@ export default function Home() {
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
   const [unsplashKey, setUnsplashKey] = useState('');
 
-  // Função adicionada para recarregar o saldo do usuário
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -760,17 +754,17 @@ export default function Home() {
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
   const purificarHTML = (rawHtml: string) => {
-      let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
-      clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
-      clean = clean.replace(/\bbuilder-editing\b/gi, '');
-      clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
-                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
-                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
-                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
+      let clean = rawHtml.replace(/<script id="editor-magic-script">[\\s\\S]*?<\\/script>/gi, '');
+      clean = clean.replace(/<style id="builder-core-styles">[\\s\\S]*?<\\/style>/gi, '');
+      clean = clean.replace(/\\bbuilder-editing\\b/gi, '');
+      clean = clean.replace(/cursor:\\s*crosshair;?/gi, '')
+                    .replace(/outline:\\s*2px solid rgb\\(14, 165, 233\\);?/gi, '')
+                    .replace(/outline:\\s*3px solid rgb\\(79, 70, 229\\);?/gi, '')
+                    .replace(/outline-offset:\\s*-[234]px;?/gi, '')
                     .replace(/data-old-outline="[^"]*"/gi, '')
-                    .replace(/\s*style="\s*"/gi, ''); 
-      clean = clean.replace(/ class="\s*"/gi, ''); 
-      clean = clean.replace(/\[(http[^\]]+)\]\([^)]+\)/gi, '$1');
+                    .replace(/\\s*style="\\s*"/gi, ''); 
+      clean = clean.replace(/ class="\\s*"/gi, ''); 
+      clean = clean.replace(/\\[(http[^\\]]+)\\]\\([^)]+\\)/gi, '$1');
       return clean;
   };
 
@@ -874,25 +868,25 @@ export default function Home() {
           let htmlAtual = codEl.value;
           
           if(htmlAtual.includes('<title>')) {
-              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, `<title>${seoData.title}</title>`);
+              htmlAtual = htmlAtual.replace(/<title>.*<\\/title>/gi, `<title>${seoData.title}</title>`);
           } else {
-              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <title>${seoData.title}</title>`);
+              htmlAtual = htmlAtual.replace('<head>', `<head>\\n    <title>${seoData.title}</title>`);
           }
 
           if(htmlAtual.includes('name="description"')) {
               htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, `<meta name="description" content="${seoData.description}">`);
           } else {
-              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <meta name="description" content="${seoData.description}">`);
+              htmlAtual = htmlAtual.replace('<head>', `<head>\\n    <meta name="description" content="${seoData.description}">`);
           }
 
-          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\s\S]*?<!-- END_HEAD -->/gi, '');
-          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\s\S]*?<!-- END_BODY -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\\s\\S]*?<!-- END_HEAD -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\\s\\S]*?<!-- END_BODY -->/gi, '');
 
           if(seoData.headScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</head>', `<!-- INJECT_HEAD -->\n${seoData.headScripts}\n<!-- END_HEAD -->\n</head>`);
+              htmlAtual = htmlAtual.replace('</head>', `<!-- INJECT_HEAD -->\\n${seoData.headScripts}\\n<!-- END_HEAD -->\\n</head>`);
           }
           if(seoData.bodyScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</body>', `<!-- INJECT_BODY -->\n${seoData.bodyScripts}\n<!-- END_BODY -->\n</body>`);
+              htmlAtual = htmlAtual.replace('</body>', `<!-- INJECT_BODY -->\\n${seoData.bodyScripts}\\n<!-- END_BODY -->\\n</body>`);
           }
 
           codEl.value = htmlAtual;
@@ -922,9 +916,9 @@ export default function Home() {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
     let htmlFinal = codigoExterno;
-    htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    htmlFinal = htmlFinal.replace(/<script\\b[^<]*(?:(?!<\\/script>)<[^<]*)*<\\/script>/gi, '');
     htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
-    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
+    htmlFinal = htmlFinal.replace(/<iframe\\b[^<]*(?:(?!<\\/iframe>)<[^<]*)*<\\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
 
     if(!htmlFinal.toLowerCase().includes('<body')) {
         htmlFinal = `<!DOCTYPE html>
@@ -942,7 +936,7 @@ export default function Home() {
 </html>`;
     } else {
         if(htmlFinal.includes('</head>')) {
-            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
+            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\\n</head>');
         } else if(htmlFinal.includes('<body')) {
             htmlFinal = htmlFinal.replace('<body', '<head><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></head><body');
         }
@@ -975,13 +969,13 @@ export default function Home() {
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
       const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
       REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
-      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
+      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\\n${elementoSelecionado.outerHTML}`}], true);
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
           if(promptInput) promptInput.value = '';
-          recarregarDadosUsuario(); // <--- O SALDO ATUALIZA AQUI
+          recarregarDadosUsuario();
           (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
       }
   };
@@ -999,7 +993,7 @@ export default function Home() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", 
-                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
+                promptParts: [{ text: `COMANDO DO USUÁRIO:\\n${comando}\\n\\n=== CÓDIGO HTML DO SITE ATUAL ===\\n${currentHtml}` }], 
                 isSiteRefinement: true, 
                 clientApiKey: apiKey,
                 clientUnsplashKey: unsplashKey,
@@ -1013,7 +1007,7 @@ export default function Home() {
         if (!data.success) throw new Error(data.error);
         if (data.html && data.html.length > 50) {
             processarRespostaDOM(data); 
-            recarregarDadosUsuario(); // <--- O SALDO ATUALIZA AQUI
+            recarregarDadosUsuario();
             promptInput.value = ''; 
             (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
         } else { throw new Error("A IA falhou ao processar a modificação global."); }
@@ -1080,51 +1074,26 @@ export default function Home() {
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
     
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n IMPORTANTE: Nas tags <img src='...'> NUNCA use formatação markdown [url](url). Retorne APENAS a URL HTTP pura da imagem diretamente no atributo src.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\\n\\n IMPORTANTE: Nas tags <img src='...'> NUNCA use formatação markdown [url](url). Retorne APENAS a URL HTTP pura da imagem diretamente no atributo src.\\n\\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\\n\\n";
     
-    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
+    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\\n"""\\n${content}\\n"""\\n\\n`; }
     if (uploadedImages.length > 0) {
         commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
-    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `${basePrompt} \\n${isMenu} \\n${getMegaPromptEstilo()} \\n${getMegaPromptHero()} \\n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     
     if (data && data.html) {
         let hHtml = data.html;
         if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
+            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\\n</head>`);
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         data.html = hHtml;
         processarRespostaDOM(data);
-        recarregarDadosUsuario();
-    }
-  };
-    
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
-    
-    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
-    if (uploadedImages.length > 0) {
-        commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
-        uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
-    }
-    promptParts.unshift({ text: commandText });
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
-    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
-    const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
-    
-    if (data && data.html) {
-        let hHtml = data.html;
-        if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
-            hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
-        }
-        data.html = hHtml;
-        processarRespostaDOM(data);
-        // Atualiza o saldo do usuário após a geração
         recarregarDadosUsuario();
     }
   };
@@ -1147,7 +1116,6 @@ export default function Home() {
           img.onload = () => {
               const canvas = document.createElement('canvas');
               let w = img.width; let h = img.height; const maxDim = 1200; 
-              // Otimiza o tamanho para não travar o banco de dados
               if (w > maxDim || h > maxDim) { 
                   if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } 
                   else { w = Math.round((w * maxDim) / h); h = maxDim; } 
@@ -1156,7 +1124,6 @@ export default function Home() {
               const ctx = canvas.getContext('2d');
               if (ctx) { 
                   ctx.drawImage(img, 0, 0, w, h); 
-                  // Comprime a imagem em JPEG com 80% de qualidade
                   const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
                   atualizarElemento(isBg ? 'bgImage' : 'src', dataUrl); 
               }
@@ -1316,7 +1283,7 @@ export default function Home() {
       if (!session) { alert('Sua conta desconectou. Entre novamente.'); return; }
       await supabase.from('sites_gerados').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
       navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
-      alert(`Parabéns! Seu site já está no ar.\nO link foi copiado:\n${window.location.origin}/${slug}`);
+      alert(`Parabéns! Seu site já está no ar.\\nO link foi copiado:\\n${window.location.origin}/${slug}`);
     };
   }, [siteEditando]); 
 
@@ -1614,7 +1581,7 @@ export default function Home() {
                                                   <div>
                                                       <div className="flex justify-between items-center mb-1">
                                                           <label className="text-[9px] text-slate-500">Largura (Lateral)</label>
-                                                          {elementoSelecionado.paddingX?.startsWith('px-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingX.match(/\d+/)?.[0]}px</span>}
+                                                          {elementoSelecionado.paddingX?.startsWith('px-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingX.match(/\\d+/)?.[0]}px</span>}
                                                       </div>
                                                       <select value={elementoSelecionado.paddingX?.startsWith('px-[') ? 'custom' : (elementoSelecionado.paddingX || 'none')} onChange={(e) => {
                                                           if(e.target.value === 'custom') { atualizarElemento('paddingX', 'px-[40px]'); }
@@ -1630,13 +1597,13 @@ export default function Home() {
                                                           <option value="custom">Personalizado (Slider)</option>
                                                       </select>
                                                       {elementoSelecionado.paddingX?.startsWith('px-[') && (
-                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', `px-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', `px-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                                       )}
                                                   </div>
                                                   <div>
                                                       <div className="flex justify-between items-center mb-1">
                                                           <label className="text-[9px] text-slate-500">Altura (Vertical)</label>
-                                                          {elementoSelecionado.paddingY?.startsWith('py-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingY.match(/\d+/)?.[0]}px</span>}
+                                                          {elementoSelecionado.paddingY?.startsWith('py-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingY.match(/\\d+/)?.[0]}px</span>}
                                                       </div>
                                                       <select value={elementoSelecionado.paddingY?.startsWith('py-[') ? 'custom' : (elementoSelecionado.paddingY || 'none')} onChange={(e) => {
                                                           if(e.target.value === 'custom') { atualizarElemento('paddingY', 'py-[16px]'); }
@@ -1651,7 +1618,7 @@ export default function Home() {
                                                           <option value="custom">Personalizado (Slider)</option>
                                                       </select>
                                                       {elementoSelecionado.paddingY?.startsWith('py-[') && (
-                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', `py-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', `py-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                                       )}
                                                   </div>
                                               </div>
@@ -1853,39 +1820,45 @@ export default function Home() {
                                               <option value="agressivo">Venda Agressiva (Lançamentos)</option>
                                               <option value="terapia">Acolhedor e Suave (Saúde)</option>
                                           </select>
-
-                                          {/* NOVA LÓGICA: APARECE SE ADMIN LIBEROU O GLOBAL OU O INDIVIDUAL DO USUÁRIO */}
-                                          {(byokEnabled || userByok) && (
-                                              <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
-                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
-                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
-                                                  <input 
-                                                      type="password" 
-                                                      value={apiKey}
-                                                      onChange={(e) => setApiKey(e.target.value)}
-                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
-                                                      placeholder="AIzaSy..." 
-                                                      className="input-standard font-mono text-xs" 
-                                                  />
-                                                  <p className="text-[9px] text-emerald-600 mt-1 mb-4"><i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.</p>
-                                                  <label className="input-label mt-4 mb-2 flex items-center text-indigo-700">
-    <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
-</label>
-<p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-    Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
-</p>
-<input 
-    type="password" 
-    value={unsplashKey}
-    onChange={(e) => setUnsplashKey(e.target.value)}
-    onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
-    placeholder="Cole seu Client ID..." 
-    className="input-standard font-mono text-xs" 
-/>
-                                                     
-                                              </div>
-                                          )}
                                       </div>
+
+                                      {/* NOVO BLOCO: CHAVE UNSPLASH – SEMPRE VISÍVEL */}
+                                      <div className="pt-4 border-t border-slate-100 mb-4">
+                                          <label className="input-label mb-2 flex items-center text-indigo-700">
+                                              <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
+                                          </label>
+                                          <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                                              Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
+                                          </p>
+                                          <input 
+                                              type="password" 
+                                              value={unsplashKey}
+                                              onChange={(e) => setUnsplashKey(e.target.value)}
+                                              onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
+                                              placeholder="Cole seu Client ID..." 
+                                              className="input-standard font-mono text-xs" 
+                                          />
+                                          <p className="text-[9px] text-emerald-600 mt-1">
+                                              <i className="fas fa-check-circle"></i> Fica salva automaticamente.
+                                          </p>
+                                      </div>
+
+                                      {/* BLOCO BYOK – APENAS A CHAVE GEMINI (UNSPLASH REMOVIDO) */}
+                                      {(byokEnabled || userByok) && (
+                                          <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
+                                              <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
+                                              <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
+                                              <input 
+                                                  type="password" 
+                                                  value={apiKey}
+                                                  onChange={(e) => setApiKey(e.target.value)}
+                                                  onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
+                                                  placeholder="AIzaSy..." 
+                                                  className="input-standard font-mono text-xs" 
+                                              />
+                                              <p className="text-[9px] text-emerald-600 mt-1"><i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.</p>
+                                          </div>
+                                      )}
                                   </div>
                               </div>
 
