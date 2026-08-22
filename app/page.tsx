@@ -655,7 +655,7 @@ const passosTour = [
         titulo: "👆 Clique em qualquer elemento do site",
         descricao: "No modo edição, clique sobre textos, imagens ou botões. O painel lateral mostrará todas as opções de personalização para aquele elemento.",
         seletor: "#tour-iframe",
-        posicao: "bottom"  // mudado para bottom para não cobrir o iframe
+        posicao: "bottom"
     },
     {
         id: 5,
@@ -692,6 +692,7 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
     const [rect, setRect] = useState<DOMRect | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
     const [arrowDir, setArrowDir] = useState('bottom');
+    const [fallbackTimer, setFallbackTimer] = useState<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const encontrarElemento = () => {
@@ -704,7 +705,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 const alturaBalão = 220;
                 const margem = 16;
                 const posicoes = ['bottom', 'top', 'left', 'right'];
-                // Tenta a posição definida, se falhar, tenta as outras
                 let posicoesParaTentar = [passo.posicao, ...posicoes.filter(p => p !== passo.posicao)];
 
                 for (let dir of posicoesParaTentar) {
@@ -734,13 +734,11 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                             left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
                     }
 
-                    // Verifica se o balão não sai da tela
                     if (left < 16) { left = 16; valido = false; }
                     if (left + larguraBalão > window.innerWidth - 16) { left = window.innerWidth - larguraBalão - 16; valido = false; }
                     if (top < 16) { top = 16; valido = false; }
                     if (top + alturaBalão > window.innerHeight - 16) { top = window.innerHeight - alturaBalão - 16; valido = false; }
 
-                    // Se a posição for válida, usa e sai
                     if (valido) {
                         setTooltipPos({ top, left });
                         setArrowDir(dir);
@@ -748,11 +746,10 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                     }
                 }
 
-                // Fallback: usa a posição padrão mesmo que saia da tela (já foi ajustada acima)
                 setTooltipPos({ top, left });
                 setArrowDir(passo.posicao || 'bottom');
             } else {
-                // Se o elemento não for encontrado, tenta novamente após um curto intervalo
+                // Se não encontrou, agenda nova tentativa
                 setTimeout(encontrarElemento, 500);
             }
         };
@@ -761,15 +758,24 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
         window.addEventListener('resize', encontrarElemento);
         window.addEventListener('scroll', encontrarElemento);
 
+        // Fallback: se após 2 segundos o elemento ainda não foi encontrado, pula para o próximo passo
+        const timer = setTimeout(() => {
+            if (!rect) {
+                // Elemento não encontrado, pula
+                if (onNext) onNext();
+            }
+        }, 2000);
+        setFallbackTimer(timer);
+
         return () => {
             window.removeEventListener('resize', encontrarElemento);
             window.removeEventListener('scroll', encontrarElemento);
+            if (fallbackTimer) clearTimeout(fallbackTimer);
         };
-    }, [passo]);
+    }, [passo, rect, onNext]);
 
     if (!rect) return null;
 
-    // Define a classe para a seta
     let arrowClass = 'after:bottom-full after:left-1/2 after:-translate-x-1/2 after:border-b-indigo-200';
     if (arrowDir === 'top') arrowClass = 'after:top-full after:left-1/2 after:-translate-x-1/2 after:border-t-indigo-200';
     else if (arrowDir === 'left') arrowClass = 'after:left-full after:top-1/2 after:-translate-y-1/2 after:border-l-indigo-200';
@@ -777,7 +783,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
 
     return (
         <>
-            {/* Overlay escuro com recorte no elemento */}
             <div 
                 className="fixed inset-0 z-[9998] pointer-events-none"
                 style={{
@@ -786,8 +791,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                     borderRadius: '8px'
                 }}
             />
-            
-            {/* Destaque do elemento (borda pulsante) */}
             <div 
                 className="fixed z-[9999] pointer-events-none border-2 border-indigo-500 rounded-lg animate-pulse"
                 style={{
@@ -797,8 +800,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                     height: rect.height + 8,
                 }}
             />
-
-            {/* Balão de dica com seta */}
             <div 
                 className={`fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-200 p-6 max-w-sm after:absolute after:w-0 after:h-0 after:border-8 after:border-transparent ${arrowClass}`}
                 style={{
@@ -814,7 +815,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                     <h3 className="text-lg font-black text-slate-800">{passo.titulo}</h3>
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed">{passo.descricao}</p>
-                
                 <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
                     <button 
                         onClick={onPrev}
@@ -827,7 +827,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                     >
                         <i className="fas fa-arrow-left mr-1"></i> Voltar
                     </button>
-                    
                     {!isLast ? (
                         <button 
                             onClick={onNext}
@@ -1281,14 +1280,22 @@ export default function Home() {
         data.html = hHtml;
         processarRespostaDOM(data);
         recarregarDadosUsuario();
+    } else {
+        (window as any).showNotification("Falha ao gerar o site. Tente novamente.", "error");
     }
   };
 
   function processarRespostaDOM(data: any) {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
-      if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
+      const htmlLimpo = purificarHTML(data.html);
+      if (codEl) { 
+          setHistoricoCodigo(prev => [...prev, codEl.value]); 
+          codEl.value = htmlLimpo; 
+      }
+      if (prevEl) {
+          prevEl.srcdoc = htmlLimpo + SCRIPT_PREVIEW; 
+      }
       (window as any).showNotification(`Pronto! Operação concluída com sucesso.`, 'success');
       if (modoInspetor) toggleInspetor(); 
   }
@@ -2297,30 +2304,29 @@ export default function Home() {
         </div>
       )}
 
-{/* ================= TOUR INTERATIVO COM HIGHLIGHT ================= */}
-<button
-    onClick={() => {
-        setIsTutorialOpen(true);
-        setPassoAtualTutorial(0);
-    }}
-    className="fixed top-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
-    title="Iniciar Tour Guiado"
->
-    <i className="fas fa-compass"></i>
-    <span>Guia Interativo</span>
-</button>
+      {/* ================= TOUR INTERATIVO COM HIGHLIGHT ================= */}
+      <button
+          onClick={() => {
+              setIsTutorialOpen(true);
+              setPassoAtualTutorial(0);
+          }}
+          className="fixed bottom-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
+          title="Iniciar Tour Guiado"
+      >
+          <i className="fas fa-compass"></i>
+          <span>Guia Interativo</span>
+      </button>
 
-{isTutorialOpen && (
-    <TourHighlight
-        passo={passosTour[passoAtualTutorial]}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        onFinish={handleFinish}
-        isFirst={passoAtualTutorial === 0}
-        isLast={passoAtualTutorial === totalPassosTutorial - 1}
-    />
-)}
-
+      {isTutorialOpen && (
+          <TourHighlight
+              passo={passosTour[passoAtualTutorial]}
+              onNext={handleNext}
+              onPrev={handlePrev}
+              onFinish={handleFinish}
+              isFirst={passoAtualTutorial === 0}
+              isLast={passoAtualTutorial === totalPassosTutorial - 1}
+          />
+      )}
     </div>
   );
 }
