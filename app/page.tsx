@@ -671,7 +671,6 @@ const UI_BLOCKS = {
 };
 
 export default function Home() {
-  // ========== ESTADOS ==========
   const [byokEnabled, setByokEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [userByok, setUserByok] = useState(false);
@@ -724,7 +723,6 @@ export default function Home() {
     }
   };
 
-  // ========== DEMAIS ESTADOS E FUNÇÕES (mantenha tudo igual) ==========
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
   const [listaSites, setListaSites] = useState<any[]>([]);
   const [carregandoSites, setCarregandoSites] = useState(false);
@@ -756,7 +754,7 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-const purificarHTML = (rawHtml: string) => {
+  const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
@@ -871,25 +869,25 @@ const purificarHTML = (rawHtml: string) => {
           let htmlAtual = codEl.value;
           
           if(htmlAtual.includes('<title>')) {
-              htmlAtual = htmlAtual.replace(/<title>.*<\\/title>/gi, `<title>${seoData.title}</title>`);
+              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, `<title>${seoData.title}</title>`);
           } else {
-              htmlAtual = htmlAtual.replace('<head>', `<head>\\n    <title>${seoData.title}</title>`);
+              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <title>${seoData.title}</title>`);
           }
 
           if(htmlAtual.includes('name="description"')) {
               htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, `<meta name="description" content="${seoData.description}">`);
           } else {
-              htmlAtual = htmlAtual.replace('<head>', `<head>\\n    <meta name="description" content="${seoData.description}">`);
+              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <meta name="description" content="${seoData.description}">`);
           }
 
-          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\\s\\S]*?<!-- END_HEAD -->/gi, '');
-          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\\s\\S]*?<!-- END_BODY -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\s\S]*?<!-- END_HEAD -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\s\S]*?<!-- END_BODY -->/gi, '');
 
           if(seoData.headScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</head>', `<!-- INJECT_HEAD -->\\n${seoData.headScripts}\\n<!-- END_HEAD -->\\n</head>`);
+              htmlAtual = htmlAtual.replace('</head>', `<!-- INJECT_HEAD -->\n${seoData.headScripts}\n<!-- END_HEAD -->\n</head>`);
           }
           if(seoData.bodyScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</body>', `<!-- INJECT_BODY -->\\n${seoData.bodyScripts}\\n<!-- END_BODY -->\\n</body>`);
+              htmlAtual = htmlAtual.replace('</body>', `<!-- INJECT_BODY -->\n${seoData.bodyScripts}\n<!-- END_BODY -->\n</body>`);
           }
 
           codEl.value = htmlAtual;
@@ -919,9 +917,9 @@ const purificarHTML = (rawHtml: string) => {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
     let htmlFinal = codigoExterno;
-    htmlFinal = htmlFinal.replace(/<script\\b[^<]*(?:(?!<\\/script>)<[^<]*)*<\\/script>/gi, '');
+    htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
-    htmlFinal = htmlFinal.replace(/<iframe\\b[^<]*(?:(?!<\\/iframe>)<[^<]*)*<\\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
+    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
 
     if(!htmlFinal.toLowerCase().includes('<body')) {
         htmlFinal = `<!DOCTYPE html>
@@ -939,7 +937,7 @@ const purificarHTML = (rawHtml: string) => {
 </html>`;
     } else {
         if(htmlFinal.includes('</head>')) {
-            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\\n</head>');
+            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
         } else if(htmlFinal.includes('<body')) {
             htmlFinal = htmlFinal.replace('<body', '<head><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></head><body');
         }
@@ -972,7 +970,7 @@ const purificarHTML = (rawHtml: string) => {
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
       const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
       REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
-      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\\n${elementoSelecionado.outerHTML}`}], true);
+      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -996,7 +994,7 @@ const purificarHTML = (rawHtml: string) => {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", 
-                promptParts: [{ text: `COMANDO DO USUÁRIO:\\n${comando}\\n\\n=== CÓDIGO HTML DO SITE ATUAL ===\\n${currentHtml}` }], 
+                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
                 isSiteRefinement: true, 
                 clientApiKey: apiKey,
                 clientUnsplashKey: unsplashKey,
@@ -1077,22 +1075,22 @@ const purificarHTML = (rawHtml: string) => {
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
     
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\\n\\n IMPORTANTE: Nas tags <img src='...'> NUNCA use formatação markdown [url](url). Retorne APENAS a URL HTTP pura da imagem diretamente no atributo src.\\n\\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\\n\\n";
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n IMPORTANTE: Nas tags <img src='...'> NUNCA use formatação markdown [url](url). Retorne APENAS a URL HTTP pura da imagem diretamente no atributo src.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
     
-    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\\n"""\\n${content}\\n"""\\n\\n`; }
+    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
         commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
-    const instrucoesFinais = `${basePrompt} \\n${isMenu} \\n${getMegaPromptEstilo()} \\n${getMegaPromptHero()} \\n${getMegaPromptCores()}`;
+    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     
     if (data && data.html) {
         let hHtml = data.html;
         if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\\n</head>`);
+            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         data.html = hHtml;
@@ -1286,7 +1284,7 @@ const purificarHTML = (rawHtml: string) => {
       if (!session) { alert('Sua conta desconectou. Entre novamente.'); return; }
       await supabase.from('sites_gerados').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
       navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
-      alert(`Parabéns! Seu site já está no ar.\\nO link foi copiado:\\n${window.location.origin}/${slug}`);
+      alert(`Parabéns! Seu site já está no ar.\nO link foi copiado:\n${window.location.origin}/${slug}`);
     };
   }, [siteEditando]); 
 
@@ -1315,7 +1313,7 @@ const purificarHTML = (rawHtml: string) => {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-     {/* MODAIS (SEO E IMPORTAÇÃO) */}
+     {/* MODAL DE IMPORTAR CÓDIGO COM O BOTÃO DE UPLOAD */}
       {modalImportarCodigo && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
@@ -1328,19 +1326,17 @@ const purificarHTML = (rawHtml: string) => {
                           Cole qualquer código HTML, blocos do Tailwind UI ou código gerado pelo ChatGPT. O sistema vai aplicar o <strong>Tailwind CSS</strong> automaticamente para você poder editar tudo visualmente!
                       </p>
                       <textarea 
-    value={codigoExterno} 
-    onChange={(e) => setCodigoExterno(e.target.value)} 
-    className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar mb-3"
-    placeholder="<!-- Cole seu código HTML aqui... -->"
-></textarea>
-<div className="flex items-center gap-3 mt-3">
-    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">OU</span>
-    <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2">
-        <i className="fas fa-file-code"></i> Fazer Upload de Arquivo .HTML
-        <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
-    </label>
-</div>
-
+                          value={codigoExterno} 
+                          onChange={(e) => setCodigoExterno(e.target.value)} 
+                          className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar mb-3"
+                          placeholder="<!-- Cole seu código HTML aqui... -->"
+                      ></textarea>
+                      <div className="flex items-center gap-3 mt-3">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">OU</span>
+                          <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2">
+                              <i className="fas fa-file-code"></i> Fazer Upload de Arquivo .HTML
+                              <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
+                          </label>
                       </div>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
@@ -1387,7 +1383,6 @@ const purificarHTML = (rawHtml: string) => {
           </div>
       )}
 
-      {/* OVERLAY DE CARREGAMENTO AMIGÁVEL */}
       {statusApis.processing && (
           <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
               <div className="w-14 h-14 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-5"></div>
@@ -1458,7 +1453,6 @@ const purificarHTML = (rawHtml: string) => {
                                       <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                                   
-                                  {/* CONTROLES DE SEÇÃO E FLEX */}
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
                                       <button onClick={() => moverSecaoInteira('UP')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover Seção para Cima"><i className="fas fa-level-up-alt"></i> Subir Seção</button>
                                       <button onClick={() => moverSecaoInteira('DOWN')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover Seção para Baixo"><i className="fas fa-level-down-alt"></i> Descer Seção</button>
@@ -1466,7 +1460,6 @@ const purificarHTML = (rawHtml: string) => {
                                   </div>
                               </div>
 
-                              {/* PAINEL GLOBAL DE LINKS E ORDENAMENTO SIMPLES */}
                               <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
                                   <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Link de Destino</label>
                                   <input type="text" placeholder="Cole o link (Deixe vazio para remover)" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
@@ -1575,7 +1568,6 @@ const purificarHTML = (rawHtml: string) => {
                                           </div>
                                       </div>
 
-                                      {/* FORMATADOR DE BOTÕES, LINKS E CAIXAS */}
                                       {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button' || elementoSelecionado.tagName === 'div') && (
                                           <div className="panel-section border-t border-slate-100 bg-slate-50/30">
                                               <label className="input-label mb-3"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Tamanho e Estrutura</label>
@@ -1584,7 +1576,7 @@ const purificarHTML = (rawHtml: string) => {
                                                   <div>
                                                       <div className="flex justify-between items-center mb-1">
                                                           <label className="text-[9px] text-slate-500">Largura (Lateral)</label>
-                                                          {elementoSelecionado.paddingX?.startsWith('px-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingX.match(/\\d+/)?.[0]}px</span>}
+                                                          {elementoSelecionado.paddingX?.startsWith('px-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingX.match(/\d+/)?.[0]}px</span>}
                                                       </div>
                                                       <select value={elementoSelecionado.paddingX?.startsWith('px-[') ? 'custom' : (elementoSelecionado.paddingX || 'none')} onChange={(e) => {
                                                           if(e.target.value === 'custom') { atualizarElemento('paddingX', 'px-[40px]'); }
@@ -1600,13 +1592,13 @@ const purificarHTML = (rawHtml: string) => {
                                                           <option value="custom">Personalizado (Slider)</option>
                                                       </select>
                                                       {elementoSelecionado.paddingX?.startsWith('px-[') && (
-                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', `px-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', `px-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                                       )}
                                                   </div>
                                                   <div>
                                                       <div className="flex justify-between items-center mb-1">
                                                           <label className="text-[9px] text-slate-500">Altura (Vertical)</label>
-                                                          {elementoSelecionado.paddingY?.startsWith('py-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingY.match(/\\d+/)?.[0]}px</span>}
+                                                          {elementoSelecionado.paddingY?.startsWith('py-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingY.match(/\d+/)?.[0]}px</span>}
                                                       </div>
                                                       <select value={elementoSelecionado.paddingY?.startsWith('py-[') ? 'custom' : (elementoSelecionado.paddingY || 'none')} onChange={(e) => {
                                                           if(e.target.value === 'custom') { atualizarElemento('paddingY', 'py-[16px]'); }
@@ -1621,7 +1613,7 @@ const purificarHTML = (rawHtml: string) => {
                                                           <option value="custom">Personalizado (Slider)</option>
                                                       </select>
                                                       {elementoSelecionado.paddingY?.startsWith('py-[') && (
-                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', `py-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', `py-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                                       )}
                                                   </div>
                                               </div>
@@ -1730,7 +1722,6 @@ const purificarHTML = (rawHtml: string) => {
                                       </div>
                                   )}
                                   
-                                  {/* CAMPO DE PROMPT AUMENTADO */}
                                   <div className="relative mt-2">
                                       <textarea 
                                           id="ai_prompt_element" 
@@ -1748,7 +1739,6 @@ const purificarHTML = (rawHtml: string) => {
                   
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
                       
-                      {/* NOVAS ABAS DE NAVEGAÇÃO */}
                       <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
                           <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
                           <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-pen mr-1.5"></i> Modificar</button>
@@ -1823,45 +1813,44 @@ const purificarHTML = (rawHtml: string) => {
                                               <option value="agressivo">Venda Agressiva (Lançamentos)</option>
                                               <option value="terapia">Acolhedor e Suave (Saúde)</option>
                                           </select>
+
+                                          {/* BLOCO BYOK COM GEMINI E UNSPLASH */}
+                                          {(byokEnabled || userByok) && (
+                                              <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
+                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
+                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
+                                                  <input 
+                                                      type="password" 
+                                                      value={apiKey}
+                                                      onChange={(e) => setApiKey(e.target.value)}
+                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
+                                                      placeholder="AIzaSy..." 
+                                                      className="input-standard font-mono text-xs" 
+                                                  />
+                                                  <p className="text-[9px] text-emerald-600 mt-1 mb-4">
+                                                      <i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.
+                                                  </p>
+
+                                                  <label className="input-label mb-2 flex items-center text-indigo-700">
+                                                      <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
+                                                  </label>
+                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                                                      Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
+                                                  </p>
+                                                  <input 
+                                                      type="password" 
+                                                      value={unsplashKey}
+                                                      onChange={(e) => setUnsplashKey(e.target.value)}
+                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
+                                                      placeholder="Cole seu Client ID..." 
+                                                      className="input-standard font-mono text-xs" 
+                                                  />
+                                                  <p className="text-[9px] text-emerald-600 mt-1">
+                                                      <i className="fas fa-check-circle"></i> Fica salva automaticamente.
+                                                  </p>
+                                              </div>
+                                          )}
                                       </div>
-
-                                      {/* ===== BLOCO BYOK – COM OS DOIS CAMPOS (AGORA UNSPLASH TAMBÉM) ===== */}
-                                      {(byokEnabled || userByok) && (
-                                          <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
-                                              <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
-                                              <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
-                                              <input 
-                                                  type="password" 
-                                                  value={apiKey}
-                                                  onChange={(e) => setApiKey(e.target.value)}
-                                                  onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
-                                                  placeholder="AIzaSy..." 
-                                                  className="input-standard font-mono text-xs" 
-                                              />
-                                              <p className="text-[9px] text-emerald-600 mt-1 mb-4">
-                                                  <i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.
-                                              </p>
-
-                                              {/* ===== CAMPO UNSPLASH – AGORA AQUI ===== */}
-                                              <label className="input-label mb-2 flex items-center text-indigo-700">
-                                                  <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
-                                              </label>
-                                              <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-                                                  Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
-                                              </p>
-                                              <input 
-                                                  type="password" 
-                                                  value={unsplashKey}
-                                                  onChange={(e) => setUnsplashKey(e.target.value)}
-                                                  onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
-                                                  placeholder="Cole seu Client ID..." 
-                                                  className="input-standard font-mono text-xs" 
-                                              />
-                                              <p className="text-[9px] text-emerald-600 mt-1">
-                                                  <i className="fas fa-check-circle"></i> Fica salva automaticamente.
-                                              </p>
-                                          </div>
-                                      )}
                                   </div>
                               </div>
 
@@ -1883,11 +1872,9 @@ const purificarHTML = (rawHtml: string) => {
                                   </div>
                               </div>
 
-                              {/* A NOVA SEÇÃO 3: HÍBRIDA (COPY + REFERÊNCIA) */}
                               <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
                                   <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">3</span> Base de Conhecimento</h3>
                                   
-                                  {/* Área de Texto / Prompt */}
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Texto / Copy / Prompt (Opcional)</label>
                                       <textarea 
@@ -1900,7 +1887,6 @@ const purificarHTML = (rawHtml: string) => {
                                       <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/5000</div>
                                   </div>
 
-                                  {/* Área de Imagem */}
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Imagem de Referência (Opcional)</label>
                                       <div className="bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-colors rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm" onClick={() => document.getElementById('imageUploadInput')?.click()}>
@@ -1943,7 +1929,6 @@ const purificarHTML = (rawHtml: string) => {
                       <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
                   </div>
                   
-                  {/* SIMULADOR DE DISPOSITIVOS RESPONSIVOS */}
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                   <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                       <button onClick={() => setDeviceView('desktop')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Computador"><i className="fas fa-desktop text-xs"></i></button>
@@ -1952,8 +1937,6 @@ const purificarHTML = (rawHtml: string) => {
                   </div>
 
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  
-                  {/* ===== BOTÃO IMPORTAR HTML – AGORA SEMPRE VISÍVEL ===== */}
                   <button onClick={() => setModalImportarCodigo(true)} className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
                       <i className="fas fa-file-import"></i> <span className="hidden sm:inline">Importar HTML</span>
                   </button>
@@ -1968,10 +1951,8 @@ const purificarHTML = (rawHtml: string) => {
                   <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
               
-              {/* LADO DIREITO DA BARRA SUPERIOR */}
               <div className="flex items-center gap-3 md:gap-4">
                   
-                  {/* SELO DE CRÉDITOS / VALIDADE (EXIBIDO PARA TODOS) */}
                   <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200 gap-3">
                       <div className="flex flex-col text-right">
                           {userByok ? (
@@ -1991,7 +1972,6 @@ const purificarHTML = (rawHtml: string) => {
                           )}
                       </div>
 
-                      {/* BOTÃO PARA COMPRAR MAIS CRÉDITOS (Só aparece para quem usa Saldo) */}
                       {!userByok && (
                           <a href="/planos" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5" title="Comprar pacote de créditos">
                               <i className="fas fa-plus"></i> Comprar Mais Saldo
@@ -1999,7 +1979,6 @@ const purificarHTML = (rawHtml: string) => {
                       )}
                   </div>
 
-                  {/* BOTÕES EXCLUSIVOS DO ADMINISTRADOR (MEUS PROJETOS E PUBLICAR) */}
                   {userEmail === 'josevg10@gmail.com' && (
                       <div className="flex items-center gap-3">
                           <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition flex items-center">
@@ -2019,7 +1998,6 @@ const purificarHTML = (rawHtml: string) => {
                       </div>
                   )}
                   
-                  {/* BOTÕES DE BAIXAR E COPIAR CÓDIGO GRANDES E CLAROS */}
                   <div className="flex items-center gap-2">
                       <button 
                           onClick={() => (window as any).baixarHtmlGerado()} 
