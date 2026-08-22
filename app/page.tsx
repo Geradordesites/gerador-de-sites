@@ -756,18 +756,18 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-  const purificarHTML = (rawHtml: string) => {
-      let clean = rawHtml.replace(/<script id="editor-magic-script">[\\s\\S]*?<\\/script>/gi, '');
-      clean = clean.replace(/<style id="builder-core-styles">[\\s\\S]*?<\\/style>/gi, '');
-      clean = clean.replace(/\\bbuilder-editing\\b/gi, '');
-      clean = clean.replace(/cursor:\\s*crosshair;?/gi, '')
-                    .replace(/outline:\\s*2px solid rgb\\(14, 165, 233\\);?/gi, '')
-                    .replace(/outline:\\s*3px solid rgb\\(79, 70, 229\\);?/gi, '')
-                    .replace(/outline-offset:\\s*-[234]px;?/gi, '')
+const purificarHTML = (rawHtml: string) => {
+      let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
+      clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
+      clean = clean.replace(/\bbuilder-editing\b/gi, '');
+      clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
+                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
+                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
+                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
                     .replace(/data-old-outline="[^"]*"/gi, '')
-                    .replace(/\\s*style="\\s*"/gi, ''); 
-      clean = clean.replace(/ class="\\s*"/gi, ''); 
-      clean = clean.replace(/\\[(http[^\\]]+)\\]\\([^)]+\\)/gi, '$1');
+                    .replace(/\s*style="\s*"/gi, ''); 
+      clean = clean.replace(/ class="\s*"/gi, ''); 
+      clean = clean.replace(/\[(http[^\]]+)\]\([^)]+\)/gi, '$1');
       return clean;
   };
 
