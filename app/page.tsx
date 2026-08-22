@@ -707,9 +707,12 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 const posicoes = ['bottom', 'top', 'left', 'right'];
                 let posicoesParaTentar = [passo.posicao, ...posicoes.filter(p => p !== passo.posicao)];
 
+                // Declarar top e left fora do loop para que estejam disponíveis após o loop
+                let top = 0;
+                let left = 0;
+                let posicaoEncontrada = false;
+
                 for (let dir of posicoesParaTentar) {
-                    let top = r.top + window.scrollY;
-                    let left = r.left + window.scrollX;
                     let valido = true;
 
                     switch (dir) {
@@ -742,12 +745,16 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                     if (valido) {
                         setTooltipPos({ top, left });
                         setArrowDir(dir);
-                        return;
+                        posicaoEncontrada = true;
+                        break;
                     }
                 }
 
-                setTooltipPos({ top, left });
-                setArrowDir(passo.posicao || 'bottom');
+                if (!posicaoEncontrada) {
+                    // Fallback: usar a última posição calculada (que pode ser inválida, mas evitamos erro)
+                    setTooltipPos({ top, left });
+                    setArrowDir(passo.posicao || 'bottom');
+                }
             } else {
                 // Se não encontrou, agenda nova tentativa
                 setTimeout(encontrarElemento, 500);
