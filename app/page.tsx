@@ -1841,7 +1841,17 @@ export default function Home() {
                                                       className="input-standard font-mono text-xs" 
                                                   />
                                                   <p className="text-[9px] text-emerald-600 mt-1 mb-4"><i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.</p>
-                                                  
+                                                  <label className="input-label mt-4 mb-2 flex items-center text-indigo-700"><i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)</label>
+<p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.</p>
+<input 
+    type="password" 
+    value={unsplashKey}
+    onChange={(e) => setUnsplashKey(e.target.value)}
+    onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
+    placeholder="Cole seu Client ID..." 
+    className="input-standard font-mono text-xs" 
+/>
+<p className="text-[9px] text-emerald-600 mt-1"><i className="fas fa-check-circle"></i> Fica salva automaticamente.</p>
                                                   <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)</label>
                                                   <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.</p>
                                                   <input 
