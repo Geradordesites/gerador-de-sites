@@ -525,7 +525,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true); 
 </script>`;
 
-// ========== UI_BLOCKS ==========
 const UI_BLOCKS = {
     faq: `
     <section class="py-20 px-8 bg-slate-50" id="block-faq">
@@ -555,7 +554,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
-                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-square md:aspect-[4/3]" />
+                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Garantia" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-square md:aspect-[4/3]" />
             </div>
             <div class="flex-1 w-full text-center md:text-left">
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">Risco Zero: Garantia Incondicional de 7 Dias</h2>
@@ -575,9 +574,9 @@ const UI_BLOCKS = {
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica é o maior gatilho para gerar confiança e novas vendas no seu site."</p>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica gera novas vendas."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-400 overflow-hidden"><img src="" alt="Foto Cliente" class="w-full h-full object-cover" /></div>
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -587,9 +586,9 @@ const UI_BLOCKS = {
                 
                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Copie exatamente as palavras que seu cliente usou no WhatsApp ou nos comentários para manter a naturalidade e a transparência."</p>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Use as palavras exatas que seu cliente enviou no WhatsApp."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-400 overflow-hidden"><img src="" alt="Foto Cliente" class="w-full h-full object-cover" /></div>
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -599,9 +598,9 @@ const UI_BLOCKS = {
                 
                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui. Lembre-se que avaliações honestas valem muito mais do que promessas exageradas e evitam qualquer indução a erros."</p>
+                    <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui para fortalecer a credibilidade do seu método."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-400 overflow-hidden"><img src="" alt="Foto Cliente" class="w-full h-full object-cover" /></div>
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -642,13 +641,13 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <div class="w-full max-w-md mx-auto rounded-2xl shadow-xl bg-slate-100 border-4 border-white aspect-[3/4] relative z-10 flex items-center justify-center overflow-hidden"><img src="" alt="Sua Foto" class="w-full h-full object-cover" /></div>
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Conheça Sua História</h2>
-                <p class="text-slate-600 mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
-                <p class="text-slate-600 text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
+                <p class="text-slate-600 mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial.</p>
+                <p class="text-slate-600 text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando.</p>
             </div>
         </div>
     </section>`,
@@ -658,13 +657,13 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <div class="w-full max-w-md mx-auto rounded-2xl shadow-xl bg-slate-100 border-4 border-white aspect-[3/4] relative z-10 flex items-center justify-center overflow-hidden"><img src="" alt="Sua Foto" class="w-full h-full object-cover" /></div>
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
                 <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Conheça Sua História</h2>
-                <p class="text-slate-600 mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial, mantendo o resto da página focado apenas nas dicas e benefícios para o seu cliente.</p>
-                <p class="text-slate-600 text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando para gerar conexão imediata.</p>
+                <p class="text-slate-600 mb-4 text-lg">Escreva sua história e jornada aqui. Concentre toda a sua narrativa biográfica exclusivamente neste bloco inicial.</p>
+                <p class="text-slate-600 text-lg">Fale sobre os desafios que superou e como desenvolveu o método que agora está compartilhando.</p>
             </div>
         </div>
     </section>`
