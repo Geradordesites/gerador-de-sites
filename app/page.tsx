@@ -1332,7 +1332,7 @@ export default function Home() {
                       <p className="text-sm text-slate-600 mb-4 leading-relaxed">
                           Cole qualquer código HTML, blocos do Tailwind UI ou código gerado pelo ChatGPT. O sistema vai aplicar o <strong>Tailwind CSS</strong> automaticamente para você poder editar tudo visualmente!
                       </p>
-                      <<textarea 
+                      <textarea 
     value={codigoExterno} 
     onChange={(e) => setCodigoExterno(e.target.value)} 
     className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar mb-3"
@@ -1346,12 +1346,6 @@ export default function Home() {
         <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
     </label>
 </div>
-                      <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">OU</span>
-                          <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2">
-                              <i className="fas fa-file-code"></i> Fazer Upload de Arquivo .HTML
-                              <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
-                          </label>
                       </div>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
