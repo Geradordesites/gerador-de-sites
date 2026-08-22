@@ -547,7 +547,7 @@ depoimentos: `
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica gera novas vendas."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://www.gravatar.com/avatar/0?d=mp&s=200" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600 bg-slate-700" />
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -559,7 +559,7 @@ depoimentos: `
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Use as palavras exatas que seu cliente enviou no WhatsApp."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://www.gravatar.com/avatar/0?d=mp&s=200" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600 bg-slate-700" />
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -571,7 +571,7 @@ depoimentos: `
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui para fortalecer a credibilidade do seu método."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://www.gravatar.com/avatar/0?d=mp&s=200" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600 bg-slate-700" />
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -587,7 +587,7 @@ depoimentos: `
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Sua Foto" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white cursor-pointer" />
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -603,7 +603,7 @@ depoimentos: `
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Sua Foto" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white cursor-pointer" />
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
