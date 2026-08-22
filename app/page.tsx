@@ -615,6 +615,7 @@ const UI_BLOCKS = {
         </div>
     </section>`
 };
+
 // ========== CONTEÚDO DO TOUR GUIADO ==========
 const conteudosPassos = [
     {
@@ -642,6 +643,7 @@ const conteudosPassos = [
         dica: "Dica: Revise todos os links de checkout antes de colocar no ar!"
     }
 ];
+
 export default function Home() {
   const [byokEnabled, setByokEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -2157,3 +2159,6 @@ export default function Home() {
         </div>
     </div>
 )}
+    </div>
+  );
+}
