@@ -1075,7 +1075,13 @@ export default function Home() {
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
     
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n IMPORTANTE: Nas tags <img src='...'> NUNCA use formatação markdown [url](url). Retorne APENAS a URL HTTP pura da imagem diretamente no atributo src.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
+    let commandText = `Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. 
+
+🚨 REGRA CRÍTICA PARA FOTOS DE PERFIL (DEPOIMENTOS E AUTOR): 
+Para a seção de Depoimentos (Provas Sociais) e para a seção de Biografia do Autor, É TOTALMENTE PROIBIDO gerar tags [UNSPLASH] ou [IMAGEM_IA]. Nesses locais específicos, deixe o atributo src="" (vazio) ou crie um espaço estético reservado com fundo neutro e ícone, permitindo que o cliente envie sua foto real posteriormente pelo editor visual.
+
+O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4)...`;
+      
     
     if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
