@@ -770,6 +770,7 @@ export default function Home() {
                     .replace(/data-old-outline="[^"]*"/gi, '')
                     .replace(/\s*style="\s*"/gi, ''); 
       clean = clean.replace(/ class="\s*"/gi, ''); 
+      clean = clean.replace(/\[(http[^\]]+)\]\([^)]+\)/gi, '$1');
       return clean;
   };
 
@@ -1078,6 +1079,30 @@ export default function Home() {
     if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Por favor, anexe uma imagem OU digite um texto para a IA gerar o site.', 'error'); return; }
     const isMenu = terMenuTexto ? "O site OBRIGATORIAMENTE deve conter um Menu Superior fixo no topo com a tag <nav>." : "NÃO crie menu no topo do site, vá direto ao conteúdo.";
     let promptParts: any[] = [];
+    
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n IMPORTANTE: Nas tags <img src='...'> NUNCA use formatação markdown [url](url). Retorne APENAS a URL HTTP pura da imagem diretamente no atributo src.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
+    
+    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
+    if (uploadedImages.length > 0) {
+        commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
+        uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
+    }
+    promptParts.unshift({ text: commandText });
+    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
+    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
+    
+    if (data && data.html) {
+        let hHtml = data.html;
+        if(fontFamily !== 'sans-serif') {
+            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
+            hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
+        }
+        data.html = hHtml;
+        processarRespostaDOM(data);
+        recarregarDadosUsuario();
+    }
+  };
     
     let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4). Utilize APENAS imagens fotorrealistas de humanos (sem elementos sci-fi ou ilustrações). Se houver história/biografia, coloque exclusivamente no primeiro capítulo/seção.\n\n RODAPÉ (FOOTER) OBRIGATÓRIO: No final do site, crie um rodapé profissional que contenha uma seção de links em formato de sanfona (accordion) utilizando as tags HTML <details> e <summary>. Regra vital: NÃO use 'Lorem Ipsum' ou textos genéricos. Você DEVE gerar textos úteis, reais e persuasivos dentro de cada item da sanfona (ex: Dúvidas Frequentes, Termos de Serviço resumidos ou Políticas do produto), tudo perfeitamente alinhado ao nicho do site. Use o Tailwind para deixar o <summary> bonito e interativo (cursor-pointer, hover, etc).\n\n";
     
