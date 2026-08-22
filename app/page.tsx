@@ -1320,7 +1320,7 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-      {/* MODAIS (SEO E IMPORTAÇÃO) */}
+     {/* MODAIS (SEO E IMPORTAÇÃO) */}
       {modalImportarCodigo && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
@@ -1353,7 +1353,7 @@ export default function Home() {
               </div>
           </div>
       )}
-
+        
       {modalSEO && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
