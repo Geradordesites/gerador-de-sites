@@ -536,7 +536,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true);
 </script>`;
 
-depoimentos: `
+depoimentos:`
     <section class="py-20 px-8 bg-slate-900" id="block-depoimentos">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold text-center text-white mb-4">O Que Dizem Nossos Clientes</h2>
