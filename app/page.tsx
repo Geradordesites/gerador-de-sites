@@ -1363,14 +1363,14 @@ export default function Home() {
     className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar mb-3"
     placeholder="<!-- Cole seu código HTML aqui... -->"
 ></textarea>
-
-<div className="flex items-center gap-3">
+<div className="flex items-center gap-3 mt-3">
     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">OU</span>
     <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2">
         <i className="fas fa-file-code"></i> Fazer Upload de Arquivo .HTML
         <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
     </label>
 </div>
+
                       </div>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
@@ -1882,8 +1882,6 @@ export default function Home() {
     placeholder="Cole seu Client ID..." 
     className="input-standard font-mono text-xs" 
 />
-<p className="text-[9px] text-emerald-600 mt-1">
-    <i className="fas fa-check-circle"></i> Fica salva automaticamente.</p>                                                      
                                                      
                                               </div>
                                           )}
