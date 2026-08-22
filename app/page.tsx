@@ -536,7 +536,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true);
 </script>`;
 
-depoimentos: `
+const UI_BLOCKS = {
+    depoimentos: `
     <section class="py-20 px-8 bg-slate-900" id="block-depoimentos">
         <div class="max-w-6xl mx-auto">
             <h2 class="text-3xl font-bold text-center text-white mb-4">O Que Dizem Nossos Clientes</h2>
@@ -1014,7 +1015,10 @@ export default function Home() {
     return "";
   };
 
- let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. Utilize APENAS imagens fotorrealistas de humanos. É expressamente PROIBIDO usar desenhos, animações, vetores ou imagens de tecnologia.\n\n";
+  // Função que estava faltando (era um bloco solto)
+  const executarGeracaoSiteHibrida = async () => {
+    const promptParts = [];
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. Utilize APENAS imagens fotorrealistas de humanos. É expressamente PROIBIDO usar desenhos, animações, vetores ou imagens de tecnologia.\n\n";
     
     commandText += "🚨 REGRA FATAL PARA FOTO DO AUTOR E DEPOIMENTOS: Você está PROIBIDO de criar caixas (divs) vazias, PROIBIDO de usar ícones SVG e PROIBIDO de escrever textos como 'Espaço para foto da Autora'. Você OBRIGATORIAMENTE deve usar uma tag <img> real com uma URL estática. Cole EXATAMENTE este código HTML onde for a foto do autor ou de um cliente: <img src=\"https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80\" class=\"w-full h-full object-cover\" alt=\"Perfil\" />\n\n";
     
@@ -1022,13 +1026,14 @@ export default function Home() {
     
     commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente no primeiro capítulo/seção da página.\n\n";      
     
-    if (content) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${content}\n"""\n\n`; }
+    if (productContent) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${productContent}\n"""\n\n`; }
     if (uploadedImages.length > 0) {
         commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
+    const isMenu = terMenuTexto ? "O site deve ter um menu de navegação no topo." : "";
     const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     
@@ -1081,50 +1086,50 @@ export default function Home() {
   };
 
  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
-      if(!elementoSelecionado) return;
-      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
-      
-      let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
-      let orientation = 'landscape'; let w = 1280, h = 720;
-      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
-      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
-      
-      let termoContexto = elementoSelecionado.text || productContent || "business";
-      if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
+      if(!elementoSelecionado) return;
+      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
+      
+      let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
+      let orientation = 'landscape'; let w = 1280, h = 720;
+      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
+      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
+      
+      let termoContexto = elementoSelecionado.text || productContent || "business";
+      if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
-      let contextModifier = "realistic photography, candid, natural";
-      if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
-      if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
-      if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
+      let contextModifier = "realistic photography, candid, natural";
+      if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
+      if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
+      if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
 
-      try {
-          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
-          const iaRes = await fetch('/api/gerar', { 
-              method: 'POST', 
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify({ 
-                  systemInstruction: "Especialista Unsplash.", 
-                  promptParts: [{text: jsonPrompt}], 
-                  isElementRefinement: true,
-                  clientApiKey: apiKey,
-                  userId: userId,
-                  userEmail: userEmail
-              }) 
-          });
-          const iaData = await iaRes.json();
-          let keywordFinal = "professional business";
-          if(iaData && iaData.html) {
-              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
-          }
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
-          const data = await res.json();
-          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
-          } else { throw new Error("API não retornou foto"); }
-      } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
-      }
-  };
+      try {
+          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
+          const iaRes = await fetch('/api/gerar', { 
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' }, 
+              body: JSON.stringify({ 
+                  systemInstruction: "Especialista Unsplash.", 
+                  promptParts: [{text: jsonPrompt}], 
+                  isElementRefinement: true,
+                  clientApiKey: apiKey,
+                  userId: userId,
+                  userEmail: userEmail
+              }) 
+          });
+          const iaData = await iaRes.json();
+          let keywordFinal = "professional business";
+          if(iaData && iaData.html) {
+              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
+          }
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
+          const data = await res.json();
+          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
+          } else { throw new Error("API não retornou foto"); }
+      } catch(err) { 
+          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
+      }
+  };
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
