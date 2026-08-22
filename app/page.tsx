@@ -2041,13 +2041,13 @@ export default function Home() {
           </div>
         </div>
       )}
-      {/* ================= TOUR GUIADO PASSO A PASSO (UM POR VEZ) ================= */}
+     {/* ================= TOUR GUIADO PASSO A PASSO (UM POR VEZ) ================= */}
 <button
     onClick={() => setIsTutorialOpen(true)}
     className="fixed top-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
     title="Guia Rápido"
 >
-    <i className="fas fa-question-circle"></i>
+    <i className="fas fa-compass"></i>
     <span>Guia Rápido</span>
 </button>
 
@@ -2059,30 +2059,30 @@ export default function Home() {
         {
             passo: 1,
             titulo: "1. Geração Inteligente por IA",
-            descricao: "Digite sobre o que é o seu negócio no campo principal e clique em 'Gerar'. A Inteligência Artificial criará toda a estrutura da sua página, textos persuasivos e o layout inicial em poucos segundos.",
+            descricao: "No painel lateral, digite o tema do seu produto no campo principal e clique em 'Gerar'. A Inteligência Artificial criará toda a estrutura da página e os textos de vendas instantaneamente.",
             icone: "fas fa-keyboard",
-            dica: "Dica: Quanto mais detalhes você colocar sobre o produto, mais persuasiva será a cópia gerada."
+            dica: "Dica: Quanto mais detalhes você colocar sobre o produto, mais persuasiva será a cópia."
         },
         {
             passo: 2,
-            titulo: "2. Edição de Textos e Botões",
-            descricao: "Para alterar qualquer texto ou botão, basta clicar diretamente sobre ele na visualização do site. O painel lateral se abrirá permitindo que você reescreva o conteúdo, mude cores ou direcione links.",
+            titulo: "2. Edição Direta na Tela",
+            descricao: "Quer mudar um título ou botão? Basta clicar diretamente sobre ele na visualização do site. O painel lateral se abrirá para você reescrever o texto ou alterar cores na hora.",
             icone: "fas fa-mouse-pointer",
-            dica: "Dica: Clique em qualquer área vazia do fundo para fechar a edição."
+            dica: "Dica: Clique em qualquer espaço vazio do fundo para fechar a edição."
         },
         {
             passo: 3,
-            titulo: "3. Trocando Imagens e Fotos",
-            descricao: "Clique em qualquer imagem, foto de depoimento ou de autor. No painel de edição, você poderá colar a URL da sua foto real. As fotos já vêm blindadas com imagens reais do Unsplash.",
+            titulo: "3. Gerenciamento de Imagens",
+            descricao: "As fotos do autor e dos depoimentos já vêm integradas com imagens reais do Unsplash para nunca quebrar o layout. Se preferir, cole o link de outra foto no painel.",
             icone: "fas fa-image",
-            dica: "Dica: Mantenha sempre imagens reais de pessoas para gerar maior conexão e credibilidade."
+            dica: "Dica: Sempre use fotos reais de pessoas para gerar maior conexão com o cliente."
         },
         {
             passo: 4,
-            titulo: "4. Limpando a Seleção",
-            descricao: "Terminou de editar um elemento? Clique em qualquer espaço vazio ou no fundo do site. A borda de edição sumirá na mesma hora, e você poderá visualizar sua página limpa.",
+            titulo: "4. Limpeza e Publicação",
+            descricao: "Terminou de ajustar? Clique no fundo do site para remover a seleção e visualize sua página 100% limpa pronta para exportar o código ou publicar.",
             icone: "fas fa-rocket",
-            dica: "Dica: Lembre-se de revisar tudo antes de exportar ou publicar!"
+            dica: "Dica: Revise todos os links de checkout antes de colocar no ar!"
         }
     ];
 
@@ -2090,9 +2090,9 @@ export default function Home() {
 
     return (
         <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-indigo-100">
+            <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-indigo-100 animate-fadeIn">
                 
-                {/* Cabeçalho com Progresso */}
+                {/* Cabeçalho */}
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
                     <div className="flex items-center gap-3">
                         <span className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-md">
@@ -2107,7 +2107,7 @@ export default function Home() {
                     </button>
                 </div>
                 
-                {/* Corpo do Passo (Mostra APENAS o passo atual) */}
+                {/* Conteúdo do Passo Atual */}
                 <div className="p-8 text-center space-y-6">
                     <div className="w-20 h-20 mx-auto bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner transform rotate-3">
                         <i className={atual.icone}></i>
@@ -2123,7 +2123,7 @@ export default function Home() {
                         <span>{atual.dica}</span>
                     </div>
 
-                    {/* Barra de Progresso visual */}
+                    {/* Barra de Progresso */}
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div 
                             className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
@@ -2132,7 +2132,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Rodapé com Navegação (Anterior / Próximo) */}
+                {/* Rodapé com Navegação */}
                 <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
                     <button 
                         onClick={() => setPassoAtual(p => Math.max(p - 1, 1))}
