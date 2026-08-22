@@ -2041,71 +2041,129 @@ export default function Home() {
           </div>
         </div>
       )}
-        {/* ================= MODAL DE TUTORIAL ================= */}
+        {/* ================= TOUR GUIADO PASSO A PASSO ================= */}
 <button
     onClick={() => setIsTutorialOpen(true)}
     className="fixed bottom-6 left-6 z-50 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-3 border-2 border-indigo-400"
-    title="Como usar o Editor"
+    title="Guia Rápido"
 >
-    <i className="fas fa-question-circle text-2xl"></i>
+    <i className="fas fa-compass text-2xl"></i>
     <span className="font-bold hidden md:inline">Guia Rápido</span>
 </button>
 
-{isTutorialOpen && (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
-                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                    <i className="fas fa-magic text-indigo-600"></i> Como usar o Construtor
-                </h2>
-                <button onClick={() => setIsTutorialOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
-                    <i className="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto space-y-8 text-slate-600">
-                <div className="flex gap-4">
-                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-keyboard"></i></div>
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">1. Geração Inteligente</h3>
-                        <p className="leading-relaxed">Digite sobre o que é o seu negócio no campo principal e clique em "Gerar". A Inteligência Artificial criará toda a estrutura da sua página, textos persuasivos e o layout inicial em poucos segundos.</p>
+{isTutorialOpen && (() => {
+    const [passoAtual, setPassoAtual] = React.useState(1);
+    const totalPassos = 4;
+
+    const conteudosPassos = [
+        {
+            passo: 1,
+            titulo: "1. Geração Inteligente por IA",
+            descricao: "Digite sobre o que é o seu negócio no campo principal e clique em 'Gerar'. A Inteligência Artificial criará toda a estrutura da sua página, textos persuasivos e o layout inicial em poucos segundos.",
+            icone: "fas fa-keyboard",
+            dica: "Dica: Quanto mais detalhes você colocar sobre o produto, mais persuasiva será a cópia gerada."
+        },
+        {
+            passo: 2,
+            titulo: "2. Edição de Textos e Botões",
+            descricao: "Para alterar qualquer texto ou botão, basta clicar diretamente sobre ele na visualização do site. O painel lateral se abrirá permitindo que você reescreva o conteúdo, mude cores ou direcione links.",
+            icone: "fas fa-mouse-pointer",
+            dica: "Dica: Clique em qualquer área vazia do fundo para fechar a edição."
+        },
+        {
+            passo: 3,
+            titulo: "3. Trocando Imagens e Fotos",
+            descricao: "Clique em qualquer imagem, foto de depoimento ou de autor. No painel de edição, você poderá colar a URL da sua foto real. As fotos já vêm blindadas com imagens reais do Unsplash.",
+            icone: "fas fa-image",
+            dica: "Dica: Mantenha sempre imagens reais de pessoas para gerar maior conexão e credibilidade."
+        },
+        {
+            passo: 4,
+            titulo: "4. Limpando a Seleção",
+            descricao: "Terminou de editar um elemento? Clique em qualquer espaço vazio ou no fundo do site. A borda de edição sumirá na mesma hora, e você poderá visualizar sua página limpa.",
+            icone: "fas fa-rocket",
+            dica: "Dica: Lembre-se de revisar tudo antes de exportar ou publicar!"
+        }
+    ];
+
+    const atual = conteudosPassos[passoAtual - 1];
+
+    return (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-indigo-100">
+                
+                {/* Cabeçalho com Progresso */}
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
+                    <div className="flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-md">
+                            {passoAtual}
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                            Passo {passoAtual} de {totalPassos}
+                        </span>
+                    </div>
+                    <button onClick={() => setIsTutorialOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                        <i className="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                {/* Corpo do Passo */}
+                <div className="p-8 text-center space-y-6">
+                    <div className="w-20 h-20 mx-auto bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner transform rotate-3">
+                        <i className={atual.icone}></i>
+                    </div>
+
+                    <div className="space-y-3">
+                        <h3 className="text-2xl font-black text-slate-800">{atual.titulo}</h3>
+                        <p className="text-slate-600 leading-relaxed text-base">{atual.descricao}</p>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 text-left text-xs text-amber-800 flex items-start gap-3">
+                        <i className="fas fa-lightbulb text-amber-500 text-lg mt-0.5"></i>
+                        <span>{atual.dica}</span>
+                    </div>
+
+                    {/* Barra de Progresso visual */}
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div 
+                            className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
+                            style={{ width: `${(passoAtual / totalPassos) * 100}%` }}
+                        ></div>
                     </div>
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-mouse-pointer"></i></div>
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">2. Edição de Textos e Botões</h3>
-                        <p className="leading-relaxed">Para alterar qualquer texto ou botão, basta <strong>clicar diretamente sobre ele</strong> na visualização do site. O painel lateral se abrirá permitindo que você reescreva o conteúdo, mude cores ou direcione links.</p>
-                    </div>
+                {/* Rodapé com Navegação */}
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <button 
+                        onClick={() => setPassoAtual(p => Math.max(p - 1, 1))}
+                        disabled={passoAtual === 1}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                            passoAtual === 1 
+                                ? 'opacity-40 cursor-not-allowed text-slate-400 bg-slate-200' 
+                                : 'text-slate-700 bg-white border border-slate-200 hover:bg-slate-100'
+                        }`}
+                    >
+                        <i className="fas fa-arrow-left"></i> Anterior
+                    </button>
+
+                    {passoAtual < totalPassos ? (
+                        <button 
+                            onClick={() => setPassoAtual(p => Math.min(p + 1, totalPassos))}
+                            className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                        >
+                            Próximo <i className="fas fa-arrow-right"></i>
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => setIsTutorialOpen(false)}
+                            className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                        >
+                            Concluir <i className="fas fa-check"></i>
+                        </button>
+                    )}
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-image"></i></div>
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">3. Trocando Imagens e Fotos</h3>
-                        <p className="leading-relaxed">Clique em qualquer imagem, foto de depoimento ou de autor. No painel de edição, você poderá colar a URL da sua foto real ou fazer o upload do seu computador. O formato do layout será mantido perfeitamente!</p>
-                    </div>
-                </div>
-
-                <div className="flex gap-4">
-                    <div className="w-12 h-12 shrink-0 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black text-xl"><i className="fas fa-ban"></i></div>
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">4. Limpando a Seleção</h3>
-                        <p className="leading-relaxed">Terminou de editar um elemento? Clique em qualquer espaço vazio ou no fundo do site. A borda de edição sumirá na mesma hora, e você poderá visualizar sua página limpa.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
-                <button onClick={() => setIsTutorialOpen(false)} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-lg">
-                    Entendi, vamos começar!
-                </button>
             </div>
         </div>
-    </div>
-)}
-    </div>
-  );
-}
+    );
+})()}
