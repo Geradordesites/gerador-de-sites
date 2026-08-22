@@ -11,11 +11,10 @@ const MODELOS_GEMINI = [
   "gemini-3-flash-preview"
 ];
 
+// OTIMIZADO: Apenas os 2 modelos de imagem mais econômicos e rápidos da linha Flash
 const MODELOS_IMAGEM_GEMINI = [
   "gemini-3.1-flash-image",
-  "gemini-3.1-flash-lite-image",
-  "gemini-3-pro-image",
-  "gemini-2.5-flash-image"
+  "gemini-3.1-flash-lite-image"
 ];
 
 const CUSTO_POR_ACAO = 10; 
@@ -91,7 +90,7 @@ export async function POST(req: Request) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Modo Pago Central: 100% IA (Gemini Image)
+        provedorDeImagens = 'ai_paid'; // Modo Pago Central: 100% IA (Gemini Image Econômico)
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
@@ -106,7 +105,7 @@ Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 `;
     } else {
         regraImagens = `
-=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE OBRIGATÓRIO) ===
+=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE ECONÔMICO) ===
 🚨 REGRA ABSOLUTA: Para QUALQUER imagem gerada ou modificada, você DEVE utilizar exclusivamente a tag de IA do Gemini.
 Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 Exemplo: <img src="[IMAGEM_IA: realistic photography of a professional human baker holding a cake, photorealistic, 8k]" />
@@ -127,7 +126,6 @@ Exemplo: <img src="[IMAGEM_IA: realistic photography of a professional human bak
 
     let regrasObrigatorias = "";
     if (isSiteRefinement) {
-        regraImagens
         regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva TODO o código HTML estruturado no JSON.\n${regraImagens}`;
     } else if (isElementRefinement || isBlockRefinement) {
         regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado, dentro do JSON.\n${regraImagens}`;
@@ -196,7 +194,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE COM ROTAÇÃO E 100% IA)
+    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE ECONÔMICO)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
@@ -235,7 +233,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
             if (imagemGeradaComSucesso && base64Image) {
                 htmlCode = htmlCode.replace(item.fullMatch, base64Image);
             } else {
-                throw new Error(`Falha no modo pago: Nenhum modelo de imagem do Gemini conseguiu processar o prompt: "${item.prompt}".`);
+                throw new Error(`Falha no modo pago: Nenhum modelo econômico de imagem do Gemini conseguiu processar o prompt: "${item.prompt}".`);
             }
         }
     } 
