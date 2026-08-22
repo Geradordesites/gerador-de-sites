@@ -29,7 +29,6 @@ const CUSTO_POR_ACAO = 10;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // 👇 Modificado: Adicionada a variável clientUnsplashKey para receber a chave do cliente
     const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, clientUnsplashKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
@@ -80,9 +79,8 @@ export async function POST(req: Request) {
     let provedorDeImagens = 'unsplash'; 
     let modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
 
-   // VERIFICA O SALDO E DEFINE A CHAVE E OS MODELOS NA ORDEM CORRETA (SEM FALLBACKS SILENCIOSOS)
     if (isAdmin) {
-        chaveParaUsar = process.env.GEMINI_API_KEY!; // EXCLUSIVO API GRÁTIS
+        chaveParaUsar = process.env.GEMINI_API_KEY!;
         provedorDeImagens = 'unsplash'; 
         modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
@@ -95,20 +93,19 @@ export async function POST(req: Request) {
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
-        chaveParaUsar = process.env.GEMINI_API_KEY!; // EXCLUSIVO API GRÁTIS
+        chaveParaUsar = process.env.GEMINI_API_KEY!;
         provedorDeImagens = 'unsplash'; 
         modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isAdminKeyEnabled) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
-        chaveParaUsar = process.env.API_KEY_PAGA!; // EXCLUSIVO API PAGA
-        provedorDeImagens = 'ai_paid'; // APENAS a sua API Paga gera imagens por IA
+        chaveParaUsar = process.env.API_KEY_PAGA!;
+        provedorDeImagens = 'ai_paid';
         modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
 
-    // REGRAS DE IMAGEM UNIFICADAS PARA TODAS AS OPÇÕES (GERAÇÃO E EDIÇÃO)
     let regraImagens = "";
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `
@@ -121,8 +118,6 @@ Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 === SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE ECONÔMICO) ===
 🚨 REGRA ABSOLUTA: Para QUALQUER imagem gerada ou modificada, você DEVE utilizar exclusivamente a tag de IA do Gemini.
 Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
-Exemplo: <img src="[IMAGEM_IA: realistic photography of a professional human baker holding a cake, photorealistic, 8k]" />
-🚨 PROIBIDO USAR UNSPLASH OU LINKS EXTERNOS NO MODO PAGO. Exija sempre fotografias hiper-realistas de humanos interagindo com o tema.
 `;
     }
 
@@ -173,7 +168,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     let geracaoSucesso = false;
     let historicoErros: any[] = [];
 
-    // TENTA GERAR O SITE USANDO A LISTA CORRETA DE MODELOS DE TEXTO
     for (const modelName of modelosDeTextoParaUsar) {
         if (geracaoSucesso) break; 
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
@@ -201,13 +195,11 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
 
     if (!geracaoSucesso) throw new Error("Nossos motores de IA retornaram erro. Nenhum crédito foi descontado. Tente novamente.");
 
-    // DESCONTO DE CRÉDITOS
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } 
         catch (e) {}
     }
 
-    // PROCESSAMENTO DE IMAGENS - MODO PAGO (GEMINI IMAGE ECONÔMICO)
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
@@ -257,10 +249,10 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         let urlsToReplace = [];
         while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
 
-        // 👇 Modificado: Define qual chave do Unsplash usar (a do cliente ou a global do admin)
+        // EXIGÊNCIA ERICTA: Usa APENAS a chave informada pelo cliente. Sem fallback para chave global do admin!
         const unsplashKeyParaUsar = (clientUnsplashKey && clientUnsplashKey.trim().length > 10) 
             ? clientUnsplashKey 
-            : process.env.UNSPLASH_API_KEY;
+            : null;
 
         if (urlsToReplace.length > 0 && unsplashKeyParaUsar) {
             for (const item of urlsToReplace) {
@@ -268,10 +260,9 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 if (item.dimensao === '800x1200') orient = 'portrait';
                 if (item.dimensao === '800x800') orient = 'squarish';
                 const kwFormatada = encodeURIComponent(item.keywords.trim());
-                let imagemFinal = `[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80)`; 
+                let imagemFinal = ''; // Deixa vazio se não encontrar
                 try {
-                    // 👇 Modificado: Utiliza a variável unsplashKeyParaUsar na requisição da API
-                    const uRes = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){kwFormatada}&per_page=15&orientation=${orient}&client_id=${unsplashKeyParaUsar}`);
+                    const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=15&orientation=${orient}&client_id=${unsplashKeyParaUsar}`);
                     if (uRes.ok) {
                         const uData = await uRes.json();
                         if (uData.results && uData.results.length > 0) {
@@ -281,11 +272,17 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 } catch (e) {}
                 htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
             }
+        } else {
+            // Se o cliente não colocou a chave do Unsplash, limpa e remove as tags deixando sem imagem (vazio)
+            for (const item of urlsToReplace) {
+                htmlCode = htmlCode.replace(item.fullMatch, '');
+            }
         }
     }
     
-    htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3)');
-    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '[https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3](https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3)');
+    // Limpeza final de qualquer tag remanescente, transformando em string vazia para o local ficar sem imagem
+    htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
+    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '');
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
 
