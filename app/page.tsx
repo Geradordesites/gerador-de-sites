@@ -2,7 +2,7 @@
 
 import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 // ========== SCRIPT DO IFRAME ==========
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
@@ -616,33 +616,181 @@ const UI_BLOCKS = {
     </section>`
 };
 
-// ========== CONTEÚDO DO TOUR GUIADO ==========
-const conteudosPassos = [
+// ========== CONTEÚDO DO TOUR INTERATIVO COM HIGHLIGHT ==========
+const passosTour = [
     {
-        titulo: "1. Geração Inteligente por IA",
-        descricao: "No painel lateral, digite o tema do seu produto no campo principal e clique em 'Gerar'. A Inteligência Artificial criará toda a estrutura da página e os textos de vendas instantaneamente.",
-        icone: "fas fa-keyboard",
-        dica: "Dica: Quanto mais detalhes você colocar sobre o produto, mais persuasiva será a cópia."
+        id: 1,
+        titulo: "Ative o Modo de Edição",
+        descricao: "Clique no botão 'Editar Site' no canto superior esquerdo para ativar o modo de edição visual. Você poderá clicar em qualquer elemento do site para modificá-lo.",
+        seletor: "button[class*='bg-indigo-600']", // seletor do botão "Editar Site"
+        posicao: "bottom" // posição do balão em relação ao elemento
     },
     {
-        titulo: "2. Edição Direta na Tela",
-        descricao: "Quer mudar um título ou botão? Basta clicar diretamente sobre ele na visualização do site. O painel lateral se abrirá para você reescrever o texto ou alterar cores na hora.",
-        icone: "fas fa-mouse-pointer",
-        dica: "Dica: Clique em qualquer espaço vazio do fundo para fechar a edição."
+        id: 2,
+        titulo: "Edite qualquer elemento",
+        descricao: "Agora, clique em qualquer texto, imagem ou botão dentro do site. O painel lateral mostrará todas as opções de personalização para aquele elemento.",
+        seletor: "#previewFrame",
+        posicao: "left"
     },
     {
-        titulo: "3. Gerenciamento de Imagens",
-        descricao: "As fotos do autor e dos depoimentos já vêm integradas com imagens reais do Unsplash para nunca quebrar o layout. Se preferir, cole o link de outra foto no painel.",
-        icone: "fas fa-image",
-        dica: "Dica: Sempre use fotos reais de pessoas para gerar maior conexão com o cliente."
+        id: 3,
+        titulo: "Personalize com o painel lateral",
+        descricao: "Use o painel lateral para ajustar cores, fontes, tamanhos, espaçamentos e muito mais. Todas as alterações são aplicadas em tempo real.",
+        seletor: ".w-\\[360px\\]", // classe do painel lateral
+        posicao: "right"
     },
     {
-        titulo: "4. Limpeza e Publicação",
-        descricao: "Terminou de ajustar? Clique no fundo do site para remover a seleção e visualize sua página 100% limpa pronta para exportar o código ou publicar.",
-        icone: "fas fa-rocket",
-        dica: "Dica: Revise todos os links de checkout antes de colocar no ar!"
+        id: 4,
+        titulo: "Baixe seu site",
+        descricao: "Quando estiver satisfeito com o resultado, clique em 'Baixar Site' para salvar o arquivo HTML completo em seu computador.",
+        seletor: "button[title='Baixar o arquivo do site para o seu computador']",
+        posicao: "bottom"
+    },
+    {
+        id: 5,
+        titulo: "Publique seu site",
+        descricao: "Por fim, clique em 'Como Hospedar' para aprender a colocar seu site no ar e compartilhá-lo com o mundo.",
+        seletor: "button[class*='Como Hospedar']",
+        posicao: "bottom"
     }
 ];
+
+// Componente de Highlight do Tour
+function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any) {
+    const [rect, setRect] = useState<DOMRect | null>(null);
+    const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+    const passoRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const encontrarElemento = () => {
+            const el = document.querySelector(passo.seletor) as HTMLElement;
+            if (el) {
+                const r = el.getBoundingClientRect();
+                setRect(r);
+                
+                // Calcula posição do balão
+                let top = r.top + window.scrollY;
+                let left = r.left + window.scrollX;
+                const larguraBalão = 320;
+                const alturaBalão = 200;
+
+                switch (passo.posicao) {
+                    case 'bottom':
+                        top = r.bottom + window.scrollY + 16;
+                        left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                        break;
+                    case 'top':
+                        top = r.top + window.scrollY - alturaBalão - 16;
+                        left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                        break;
+                    case 'left':
+                        top = r.top + window.scrollY + (r.height / 2) - (alturaBalão / 2);
+                        left = r.left + window.scrollX - larguraBalão - 16;
+                        break;
+                    case 'right':
+                        top = r.top + window.scrollY + (r.height / 2) - (alturaBalão / 2);
+                        left = r.right + window.scrollX + 16;
+                        break;
+                    default:
+                        top = r.bottom + window.scrollY + 16;
+                        left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                }
+
+                // Garantir que o balão não saia da tela
+                if (left < 16) left = 16;
+                if (left + larguraBalão > window.innerWidth - 16) left = window.innerWidth - larguraBalão - 16;
+                if (top < 16) top = 16;
+                if (top + alturaBalão > window.innerHeight - 16) top = window.innerHeight - alturaBalão - 16;
+
+                setTooltipPos({ top, left });
+            }
+        };
+
+        encontrarElemento();
+        window.addEventListener('resize', encontrarElemento);
+        window.addEventListener('scroll', encontrarElemento);
+
+        return () => {
+            window.removeEventListener('resize', encontrarElemento);
+            window.removeEventListener('scroll', encontrarElemento);
+        };
+    }, [passo]);
+
+    if (!rect) return null;
+
+    return (
+        <>
+            {/* Overlay escuro com recorte no elemento */}
+            <div 
+                className="fixed inset-0 z-[9998] pointer-events-none"
+                style={{
+                    boxShadow: `0 0 0 9999px rgba(0,0,0,0.6)`,
+                    clipPath: `inset(${rect.top}px ${window.innerWidth - rect.right}px ${window.innerHeight - rect.bottom}px ${rect.left}px)`,
+                    borderRadius: '8px'
+                }}
+            />
+            
+            {/* Destaque do elemento (borda pulsante) */}
+            <div 
+                className="fixed z-[9999] pointer-events-none border-2 border-indigo-500 rounded-lg animate-pulse"
+                style={{
+                    top: rect.top - 4,
+                    left: rect.left - 4,
+                    width: rect.width + 8,
+                    height: rect.height + 8,
+                }}
+            />
+
+            {/* Balão de dica */}
+            <div 
+                className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-indigo-200 p-6 max-w-sm"
+                style={{
+                    top: tooltipPos.top,
+                    left: tooltipPos.left,
+                    width: 320,
+                }}
+            >
+                <div className="flex items-start gap-3 mb-3">
+                    <span className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm flex-shrink-0">
+                        {passo.id}
+                    </span>
+                    <h3 className="text-lg font-black text-slate-800">{passo.titulo}</h3>
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed">{passo.descricao}</p>
+                
+                <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+                    <button 
+                        onClick={onPrev}
+                        disabled={isFirst}
+                        className={`px-4 py-2 rounded-xl font-bold text-sm transition ${
+                            isFirst 
+                                ? 'opacity-40 cursor-not-allowed text-slate-400 bg-slate-100' 
+                                : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                        }`}
+                    >
+                        <i className="fas fa-arrow-left mr-1"></i> Voltar
+                    </button>
+                    
+                    {!isLast ? (
+                        <button 
+                            onClick={onNext}
+                            className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition text-sm flex items-center gap-2"
+                        >
+                            Próximo <i className="fas fa-arrow-right"></i>
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={onFinish}
+                            className="px-5 py-2 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition text-sm flex items-center gap-2"
+                        >
+                            Concluir <i className="fas fa-check"></i>
+                        </button>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}
 
 export default function Home() {
   const [byokEnabled, setByokEnabled] = useState(false);
@@ -654,8 +802,9 @@ export default function Home() {
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
   const [unsplashKey, setUnsplashKey] = useState('');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const [passoAtualTutorial, setPassoAtualTutorial] = useState(1);
-  const totalPassosTutorial = 4;  
+  const [passoAtualTutorial, setPassoAtualTutorial] = useState(0); // índice do passo
+  const totalPassosTutorial = passosTour.length;
+
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -1272,6 +1421,25 @@ export default function Home() {
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
   const totalPaginas = Math.ceil(listaSites.length / SITES_POR_PAGINA);
+
+  // Navegação do tour
+  const handleNext = () => {
+    if (passoAtualTutorial < totalPassosTutorial - 1) {
+      setPassoAtualTutorial(passoAtualTutorial + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (passoAtualTutorial > 0) {
+      setPassoAtualTutorial(passoAtualTutorial - 1);
+    }
+  };
+
+  const handleFinish = () => {
+    setIsTutorialOpen(false);
+    setPassoAtualTutorial(0);
+    (window as any).showNotification("🎉 Tour concluído! Agora você já sabe como criar e publicar seu site.", "success");
+  };
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
@@ -2071,94 +2239,31 @@ export default function Home() {
           </div>
         </div>
       )}
-{/* ================= TOUR GUIADO PASSO A PASSO (WIZARD INTERATIVO) ================= */}
+
+{/* ================= TOUR INTERATIVO COM HIGHLIGHT ================= */}
 <button
-    onClick={() => setIsTutorialOpen(true)}
+    onClick={() => {
+        setIsTutorialOpen(true);
+        setPassoAtualTutorial(0);
+    }}
     className="fixed top-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-2 text-sm font-bold border border-indigo-400"
-    title="Guia Rápido"
+    title="Iniciar Tour Guiado"
 >
     <i className="fas fa-compass"></i>
-    <span>Guia Rápido</span>
+    <span>Guia Interativo</span>
 </button>
 
 {isTutorialOpen && (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-indigo-100 animate-fadeIn">
-            
-            {/* Cabeçalho */}
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
-                <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-md">
-                        {passoAtualTutorial}
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-                        Passo {passoAtualTutorial} de {totalPassosTutorial}
-                    </span>
-                </div>
-                <button onClick={() => setIsTutorialOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
-                    <i className="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            {/* Conteúdo do Passo Atual */}
-            <div className="p-8 text-center space-y-6">
-                <div className="w-20 h-20 mx-auto bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner transform rotate-3">
-                    <i className={conteudosPassos[passoAtualTutorial - 1].icone}></i>
-                </div>
-
-                <div className="space-y-3">
-                    <h3 className="text-2xl font-black text-slate-800">{conteudosPassos[passoAtualTutorial - 1].titulo}</h3>
-                    <p className="text-slate-600 leading-relaxed text-base">{conteudosPassos[passoAtualTutorial - 1].descricao}</p>
-                </div>
-
-                <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 text-left text-xs text-amber-800 flex items-start gap-3">
-                    <i className="fas fa-lightbulb text-amber-500 text-lg mt-0.5"></i>
-                    <span>{conteudosPassos[passoAtualTutorial - 1].dica}</span>
-                </div>
-
-                {/* Barra de Progresso */}
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div 
-                        className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
-                        style={{ width: `${(passoAtualTutorial / totalPassosTutorial) * 100}%` }}
-                    ></div>
-                </div>
-            </div>
-
-            {/* Rodapé com Navegação */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                <button 
-                    onClick={() => setPassoAtualTutorial(p => Math.max(p - 1, 1))}
-                    disabled={passoAtualTutorial === 1}
-                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-                        passoAtualTutorial === 1 
-                            ? 'opacity-40 cursor-not-allowed text-slate-400 bg-slate-200' 
-                            : 'text-slate-700 bg-white border border-slate-200 hover:bg-slate-100'
-                    }`}
-                >
-                    <i className="fas fa-arrow-left"></i> Anterior
-                </button>
-
-                {passoAtualTutorial < totalPassosTutorial ? (
-                    <button 
-                        onClick={() => setPassoAtualTutorial(p => Math.min(p + 1, totalPassosTutorial))}
-                        className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
-                    >
-                        Próximo <i className="fas fa-arrow-right"></i>
-                    </button>
-                ) : (
-                    <button 
-                        onClick={() => setIsTutorialOpen(false)}
-                        className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
-                    >
-                        Concluir <i className="fas fa-check"></i>
-                    </button>
-                )}
-            </div>
-
-        </div>
-    </div>
+    <TourHighlight
+        passo={passosTour[passoAtualTutorial]}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        onFinish={handleFinish}
+        isFirst={passoAtualTutorial === 0}
+        isLast={passoAtualTutorial === totalPassosTutorial - 1}
+    />
 )}
+
     </div>
   );
 }
