@@ -2039,7 +2039,7 @@ export default function Home() {
         {/* ================= MODAL DE TUTORIAL ================= */}
 <button
     onClick={() => setIsTutorialOpen(true)}
-    className="fixed bottom-6 left-6 z-50 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-3 border-2 border-indigo-400"
+    className="fixed bottom-6 right-6 z-50 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all flex items-center gap-3 border-2 border-indigo-400"
     title="Como usar o Editor"
 >
     <i className="fas fa-question-circle text-2xl"></i>
