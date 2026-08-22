@@ -139,14 +139,25 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 document.body.classList.add('builder-editing');
             } else {
                 document.body.classList.remove('builder-editing');
-                if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; elSelecionado = null; }
+                // Remove completamente todas as marcações visuais
+                if(elSelecionado) { 
+                    elSelecionado.style.outline = ''; 
+                    elSelecionado.style.outlineOffset = ''; 
+                    elSelecionado = null; 
+                }
                 document.querySelectorAll('[data-old-outline]').forEach(el => {
                     el.style.outline = el.dataset.oldOutline || '';
                     el.style.outlineOffset = '';
                     delete el.dataset.oldOutline;
                 });
+                // Remove outlines que podem ter ficado em elementos por outros motivos
                 document.querySelectorAll('*').forEach(el => {
                     if (el.style.cursor === 'crosshair') el.style.cursor = '';
+                    const outline = el.style.outline;
+                    if (outline === '2px solid rgb(14, 165, 233)' || outline === '3px solid rgb(79, 70, 229)') {
+                        el.style.outline = '';
+                        el.style.outlineOffset = '';
+                    }
                 });
             }
         }
@@ -617,60 +628,66 @@ const UI_BLOCKS = {
 };
 
 // ========== CONTEÚDO DO TOUR INTERATIVO COM HIGHLIGHT ==========
-// Agora com IDs específicos e uma seta indicadora
 const passosTour = [
     {
         id: 1,
         titulo: "✏️ Digite o tema do seu site",
         descricao: "Comece escrevendo no campo abaixo o assunto do seu negócio. Quanto mais detalhes, melhor a IA entenderá e criará um site personalizado para você.",
-        seletor: "#tour-product-content", // ID que adicionaremos no textarea
+        seletor: "#tour-product-content",
         posicao: "bottom"
     },
     {
         id: 2,
         titulo: "🚀 Gere seu site com IA",
         descricao: "Após preencher o tema, clique no botão 'Gerar Meu Site Agora'. A inteligência artificial criará uma página completa e otimizada em poucos segundos.",
-        seletor: "#tour-generate-btn", // ID do botão gerar
+        seletor: "#tour-generate-btn",
         posicao: "bottom"
     },
     {
         id: 3,
         titulo: "🎨 Ative o modo de edição",
         descricao: "Com o site gerado, clique em 'Editar Site' no canto superior esquerdo. Agora você poderá personalizar qualquer elemento visualmente.",
-        seletor: "#tour-toggle-edit", // ID do botão editar
+        seletor: "#tour-toggle-edit",
         posicao: "bottom"
     },
     {
         id: 4,
         titulo: "👆 Clique em qualquer elemento do site",
         descricao: "No modo edição, clique sobre textos, imagens ou botões. O painel lateral mostrará todas as opções de personalização para aquele elemento.",
-        seletor: "#tour-iframe", // ID do iframe
-        posicao: "left"
+        seletor: "#tour-iframe",
+        posicao: "bottom"  // mudado para bottom para não cobrir o iframe
     },
     {
         id: 5,
         titulo: "🛠️ Ajuste cores, fontes e tamanhos",
         descricao: "Use o painel lateral para modificar cores, fontes, espaçamentos, sombras e muito mais. As alterações são aplicadas em tempo real.",
-        seletor: "#tour-sidebar", // ID do painel lateral
+        seletor: "#tour-sidebar",
         posicao: "right"
     },
     {
         id: 6,
-        titulo: "💾 Baixe seu site completo",
-        descricao: "Quando estiver satisfeito, clique em 'Baixar Site' para salvar o arquivo HTML em seu computador. Você terá o código completo e limpo.",
-        seletor: "#tour-download-btn", // ID do botão baixar
+        titulo: "🤖 Edite com Inteligência Artificial",
+        descricao: "Depois de selecionar uma seção, você pode usar o campo 'Otimização com IA' no painel lateral. Escreva o que deseja modificar e a IA reescreverá ou ajustará o elemento para você.",
+        seletor: "#tour-ai-editor",
         posicao: "bottom"
     },
     {
         id: 7,
+        titulo: "💾 Baixe seu site completo",
+        descricao: "Quando estiver satisfeito, clique em 'Baixar Site' para salvar o arquivo HTML em seu computador. Você terá o código completo e limpo.",
+        seletor: "#tour-download-btn",
+        posicao: "bottom"
+    },
+    {
+        id: 8,
         titulo: "🌐 Publique seu site na internet",
         descricao: "Para colocar seu site no ar, clique em 'Como Hospedar' e siga o guia simples para publicar. Seu site estará online em minutos!",
-        seletor: "#tour-hospedar-btn", // ID do botão hospedar
+        seletor: "#tour-hospedar-btn",
         posicao: "bottom"
     }
 ];
 
-// Componente de Highlight do Tour com seta
+// Componente de Highlight do Tour com seta e posicionamento inteligente
 function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any) {
     const [rect, setRect] = useState<DOMRect | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
@@ -683,43 +700,57 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 const r = el.getBoundingClientRect();
                 setRect(r);
                 
-                // Calcula posição do balão e direção da seta
-                let top = r.top + window.scrollY;
-                let left = r.left + window.scrollX;
                 const larguraBalão = 320;
                 const alturaBalão = 220;
-                let dir = passo.posicao || 'bottom';
+                const margem = 16;
+                const posicoes = ['bottom', 'top', 'left', 'right'];
+                // Tenta a posição definida, se falhar, tenta as outras
+                let posicoesParaTentar = [passo.posicao, ...posicoes.filter(p => p !== passo.posicao)];
 
-                switch (dir) {
-                    case 'bottom':
-                        top = r.bottom + window.scrollY + 16;
-                        left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
-                        break;
-                    case 'top':
-                        top = r.top + window.scrollY - alturaBalão - 16;
-                        left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
-                        break;
-                    case 'left':
-                        top = r.top + window.scrollY + (r.height / 2) - (alturaBalão / 2);
-                        left = r.left + window.scrollX - larguraBalão - 16;
-                        break;
-                    case 'right':
-                        top = r.top + window.scrollY + (r.height / 2) - (alturaBalão / 2);
-                        left = r.right + window.scrollX + 16;
-                        break;
-                    default:
-                        top = r.bottom + window.scrollY + 16;
-                        left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                for (let dir of posicoesParaTentar) {
+                    let top = r.top + window.scrollY;
+                    let left = r.left + window.scrollX;
+                    let valido = true;
+
+                    switch (dir) {
+                        case 'bottom':
+                            top = r.bottom + window.scrollY + margem;
+                            left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                            break;
+                        case 'top':
+                            top = r.top + window.scrollY - alturaBalão - margem;
+                            left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                            break;
+                        case 'left':
+                            top = r.top + window.scrollY + (r.height / 2) - (alturaBalão / 2);
+                            left = r.left + window.scrollX - larguraBalão - margem;
+                            break;
+                        case 'right':
+                            top = r.top + window.scrollY + (r.height / 2) - (alturaBalão / 2);
+                            left = r.right + window.scrollX + margem;
+                            break;
+                        default:
+                            top = r.bottom + window.scrollY + margem;
+                            left = r.left + window.scrollX + (r.width / 2) - (larguraBalão / 2);
+                    }
+
+                    // Verifica se o balão não sai da tela
+                    if (left < 16) { left = 16; valido = false; }
+                    if (left + larguraBalão > window.innerWidth - 16) { left = window.innerWidth - larguraBalão - 16; valido = false; }
+                    if (top < 16) { top = 16; valido = false; }
+                    if (top + alturaBalão > window.innerHeight - 16) { top = window.innerHeight - alturaBalão - 16; valido = false; }
+
+                    // Se a posição for válida, usa e sai
+                    if (valido) {
+                        setTooltipPos({ top, left });
+                        setArrowDir(dir);
+                        return;
+                    }
                 }
 
-                // Garantir que o balão não saia da tela
-                if (left < 16) left = 16;
-                if (left + larguraBalão > window.innerWidth - 16) left = window.innerWidth - larguraBalão - 16;
-                if (top < 16) top = 16;
-                if (top + alturaBalão > window.innerHeight - 16) top = window.innerHeight - alturaBalão - 16;
-
+                // Fallback: usa a posição padrão mesmo que saia da tela (já foi ajustada acima)
                 setTooltipPos({ top, left });
-                setArrowDir(dir);
+                setArrowDir(passo.posicao || 'bottom');
             } else {
                 // Se o elemento não for encontrado, tenta novamente após um curto intervalo
                 setTimeout(encontrarElemento, 500);
@@ -828,7 +859,7 @@ export default function Home() {
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
   const [unsplashKey, setUnsplashKey] = useState('');
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const [passoAtualTutorial, setPassoAtualTutorial] = useState(0); // índice do passo
+  const [passoAtualTutorial, setPassoAtualTutorial] = useState(0);
   const totalPassosTutorial = passosTour.length;
 
   const recarregarDadosUsuario = async () => {
@@ -1220,7 +1251,6 @@ export default function Home() {
     return "";
   };
 
-  // Função que estava faltando (era um bloco solto)
   const executarGeracaoSiteHibrida = async () => {
     const promptParts = [];
     let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. Utilize APENAS imagens fotorrealistas de humanos. É expressamente PROIBIDO usar desenhos, animações, vetores ou imagens de tecnologia.\n\n";
@@ -1886,7 +1916,7 @@ export default function Home() {
                               )}
 
                               {/* PAINEL DO COPYWRITER IA */}
-                              <div className="m-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-xl text-white">
+                              <div id="tour-ai-editor" className="m-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-xl text-white">
                                   <label className="text-[11px] font-black uppercase tracking-widest text-indigo-300 mb-4 flex items-center"><i className="fas fa-robot text-xl mr-2 text-white"></i> Otimização com IA</label>
                                   
                                   {elementoSelecionado.tagName !== 'img' && !elementoSelecionado.bloqueiaTexto && (
