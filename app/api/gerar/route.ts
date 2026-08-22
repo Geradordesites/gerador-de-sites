@@ -77,32 +77,35 @@ export async function POST(req: Request) {
     let chaveParaUsar = "";
     let isUsingCredits = false;
     let provedorDeImagens = 'unsplash'; 
-    let modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Define o padrão
+    let modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
 
-    // VERIFICA O SALDO E DEFINE A CHAVE E OS MODELOS NA ORDEM CORRETA
+   // VERIFICA O SALDO E DEFINE A CHAVE E OS MODELOS NA ORDEM CORRETA (SEM FALLBACKS SILENCIOSOS)
     if (isAdmin) {
-        chaveParaUsar = process.env.GEMINI_API_KEY!;
+        chaveParaUsar = process.env.GEMINI_API_KEY!; // EXCLUSIVO API GRÁTIS
         provedorDeImagens = 'unsplash'; 
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Admin usa API Grátis (6 modelos)
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
         chaveParaUsar = clientApiKey;
-        provedorDeImagens = 'ai_paid'; // Chave própria do cliente gera imagem via IA na conta dele
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Cliente com chave própria tem acesso aos 6 modelos
+        
+        // 👇 CORREÇÃO FEITA AQUI: A chave do cliente agora volta a usar imagens grátis (Unsplash)
+        provedorDeImagens = 'unsplash'; 
+        
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
-        chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash'; // Usuário no modo grátis
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; // Usa API Grátis (6 modelos)
+        chaveParaUsar = process.env.GEMINI_API_KEY!; // EXCLUSIVO API GRÁTIS
+        provedorDeImagens = 'unsplash'; 
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isAdminKeyEnabled) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
-        chaveParaUsar = process.env.API_KEY_PAGA || process.env.GEMINI_API_KEY_CLIENTES!;
-        provedorDeImagens = 'ai_paid'; // Modo Pago: 100% Imagem IA
-        modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; // <--- PROTEÇÃO MÁXIMA: Usa APENAS os 2 mais baratos para o seu bolso
+        chaveParaUsar = process.env.API_KEY_PAGA!; // EXCLUSIVO API PAGA
+        provedorDeImagens = 'ai_paid'; // APENAS a sua API Paga gera imagens por IA
+        modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
     } else {
         throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
     }
