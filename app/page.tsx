@@ -1336,59 +1336,31 @@ export default function Home() {
 
  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("A IA está buscando a melhor foto no Unsplash...", "success");
+      (window as any).showNotification("Buscando nova foto profissional...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
-      let orientation = 'landscape'; let w = 1280, h = 720;
-      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
-      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
+      let w = 1280, h = 720;
+      if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
+      else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
 
-      let termoContexto = elementoSelecionado.text || productContent || "business";
-      if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
+      // Banco de imagens reais e profissionais do Unsplash divididas por proporção
+      const fotosUnsplash = [
+          `https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=${w}&h=${h}&q=80`,
+          `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&h=${h}&q=80`,
+          `https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=${w}&h=${h}&q=80`,
+          `https://images.unsplash.com/photo-1534528741775-53994a69daeb?fit=crop&w=${w}&h=${h}&q=80`,
+          `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=${w}&h=${h}&q=80`,
+          `https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?fit=crop&w=${w}&h=${h}&q=80`,
+          `https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=${w}&h=${h}&q=80`
+      ];
 
-      try {
-          // 1. Extrair palavra-chave com a IA
-          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
-          const iaRes = await fetch('/api/gerar', { 
-              method: 'POST', 
-              headers: { 'Content-Type': 'application/json' }, 
-              body: JSON.stringify({ 
-                  systemInstruction: "Retorne apenas o JSON solicitado.", 
-                  promptParts: [{text: jsonPrompt}], 
-                  isElementRefinement: true,
-                  clientApiKey: apiKey,
-                  userId: userId,
-                  userEmail: userEmail
-              }) 
-          });
-          
-          let keywordFinal = "professional corporate";
-          try {
-              const iaData = await iaRes.json();
-              if(iaData && iaData.html) {
-                  const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim());
-                  if (kwJson.keyword) keywordFinal = kwJson.keyword;
-              }
-          } catch(e) {}
+      // Sorteia uma foto real de alta qualidade
+      const fotoEscolhida = fotosUnsplash[Math.floor(Math.random() * fotosUnsplash.length)];
 
-          // 2. Buscar no Unsplash da sua API (Respeitando BYOK)
-          const unsplashRes = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
-          const unsplashData = await unsplashRes.json();
-
-          // Validação forte: só aplica se a URL for válida
-          if(unsplashData && unsplashData.url && unsplashData.url.startsWith('http')) {
-              atualizarElemento(isBackground ? 'bgImage' : 'src', unsplashData.url); 
-              (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
-          } else {
-              throw new Error("URL inválida retornada pelo Unsplash");
-          }
-
-      } catch(err) { 
-          // Fallback 100% seguro (Imagem Estática do Unsplash, sem Pollinations)
-          const fallback = `https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=${w}&q=80`; 
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); 
-          (window as any).showNotification("Foto padrão aplicada (Verifique o limite da sua API Unsplash).", "success"); 
-      }
+      setTimeout(() => {
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fotoEscolhida);
+          (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
+      }, 250);
   };
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
