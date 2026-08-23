@@ -398,8 +398,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
                     }
 
-                    if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
-                    else el.classList.remove('backdrop-blur-md');
+el.classList.remove('backdrop-blur-md');
                 } else if (isImg && event.data.bgColor !== undefined) {
                     el.style.backgroundColor = event.data.bgColor;
                 }
