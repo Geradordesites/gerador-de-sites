@@ -1343,7 +1343,6 @@ export default function Home() {
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
 
-      // Banco de imagens reais e profissionais do Unsplash divididas por proporção
       const fotosUnsplash = [
           `https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=${w}&h=${h}&q=80`,
           `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&h=${h}&q=80`,
@@ -1354,11 +1353,16 @@ export default function Home() {
           `https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=${w}&h=${h}&q=80`
       ];
 
-      // Sorteia uma foto real de alta qualidade
       const fotoEscolhida = fotosUnsplash[Math.floor(Math.random() * fotosUnsplash.length)];
 
       setTimeout(() => {
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fotoEscolhida);
+          // Se for uma tag img ou se não for fundo, atualiza o src e limpa o fundo para evitar sobreposição
+          if (elementoSelecionado.tagName === 'img' || !isBackground) {
+              atualizarElemento('src', fotoEscolhida);
+              atualizarElemento('bgImage', '');
+          } else {
+              atualizarElemento('bgImage', fotoEscolhida);
+          }
           (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
       }, 250);
   };
