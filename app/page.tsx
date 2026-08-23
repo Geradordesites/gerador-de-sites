@@ -1336,28 +1336,24 @@ export default function Home() {
 
  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("A IA está analisando o contexto e buscando a foto ideal na Unsplash...", "success");
+      (window as any).showNotification("A IA está buscando a melhor foto no Unsplash...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let orientation = 'landscape'; let w = 1280, h = 720;
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
-      
+
       let termoContexto = elementoSelecionado.text || productContent || "business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
 
-      let contextModifier = "realistic photography, candid, natural";
-      if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
-      if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
-      if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
-
       try {
-          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca impecável para a API fotográfica do Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
+          // 1. Extrair palavra-chave com a IA
+          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
           const iaRes = await fetch('/api/gerar', { 
               method: 'POST', 
               headers: { 'Content-Type': 'application/json' }, 
               body: JSON.stringify({ 
-                  systemInstruction: "Especialista Unsplash.", 
+                  systemInstruction: "Retorne apenas o JSON solicitado.", 
                   promptParts: [{text: jsonPrompt}], 
                   isElementRefinement: true,
                   clientApiKey: apiKey,
@@ -1365,21 +1361,35 @@ export default function Home() {
                   userEmail: userEmail
               }) 
           });
-          const iaData = await iaRes.json();
-          let keywordFinal = "professional business";
-          if(iaData && iaData.html) {
-              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
+          
+          let keywordFinal = "professional corporate";
+          try {
+              const iaData = await iaRes.json();
+              if(iaData && iaData.html) {
+                  const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim());
+                  if (kwJson.keyword) keywordFinal = kwJson.keyword;
+              }
+          } catch(e) {}
+
+          // 2. Buscar no Unsplash da sua API (Respeitando BYOK)
+          const unsplashRes = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
+          const unsplashData = await unsplashRes.json();
+
+          // Validação forte: só aplica se a URL for válida
+          if(unsplashData && unsplashData.url && unsplashData.url.startsWith('http')) {
+              atualizarElemento(isBackground ? 'bgImage' : 'src', unsplashData.url); 
+              (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
+          } else {
+              throw new Error("URL inválida retornada pelo Unsplash");
           }
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
-          const data = await res.json();
-          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada perfeitamente!", "success"); 
-          } else { throw new Error("API não retornou foto"); }
+
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
-          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
+          // Fallback 100% seguro (Imagem Estática do Unsplash, sem Pollinations)
+          const fallback = `https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=${w}&q=80`; 
+          atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); 
+          (window as any).showNotification("Foto padrão aplicada (Verifique o limite da sua API Unsplash).", "success"); 
       }
   };
-
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
     const { data: { session } } = await supabase.auth.getSession();
@@ -1955,25 +1965,8 @@ export default function Home() {
                   </div>
               ) : (
                   
-                  <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
+                  <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">                      
                       
-                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-                          <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Site</button>
-                          <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-pen mr-1.5"></i> Modificar</button>
-                      </div>
-
-                      {abaAtiva === 'blocos' ? (
-                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                              <div>
-                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-wand-magic-sparkles"></i></span> Modificar Site (IA)</h3>
-                                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">Descreva o que deseja alterar no site (ex: "Adicione um rodapé", "Mude todas as cores para vermelho"). A IA fará o trabalho pesado.</p>
-                                  <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Crie um botão de WhatsApp flutuante no canto da tela..."></textarea>
-                                  <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                      <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar Modificação
-                                  </button>
-                              </div>
-                          </div>
-                      ) : (
                           <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo</h3>
@@ -2133,7 +2126,7 @@ export default function Home() {
                               </div>
 
                           </div>
-                      )}
+                      
                   </div>
               )}
           </div>
