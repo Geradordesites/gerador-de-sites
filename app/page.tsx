@@ -654,7 +654,7 @@ const passosTour = [
         id: 4,
         titulo: "👆 Clique em qualquer elemento do site",
         descricao: "No modo edição, clique sobre textos, imagens ou botões. O painel lateral mostrará todas as opções de personalização para aquele elemento.",
-        seletor: "#tour-iframe",
+        seletor: "#previewFrame",
         posicao: "bottom"
     },
     {
@@ -2248,7 +2248,7 @@ export default function Home() {
                           <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Site</div>
                       </div>
                   )}
-                  <iframe id="tour-iframe" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
+                 <iframe id="previewFrame" className="w-full flex-1 border-none active bg-white" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
                   <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
                       <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
                           onBlur={(e) => {
