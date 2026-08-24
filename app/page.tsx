@@ -214,14 +214,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
        if (event.data.type === 'REVERSE_FLEX') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div'));
+                // Procura a caixa estrutural que segura as 2 colunas do layout
+                let target = el.closest('.grid') || el.closest('section > div, header > div') || el.closest('.flex');
+                
                 if(target) {
-                    if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) {
-                        target.classList.remove('md:flex-row-reverse', 'flex-row-reverse');
-                        target.classList.add('md:flex-row');
+                    // O pulo do gato: Troca os blocos fisicamente no HTML! 
+                    // Isso inverte texto/imagem com perfeição em 100% dos layouts.
+                    if (target.children.length >= 2) {
+                        target.appendChild(target.firstElementChild);
                     } else {
-                        target.classList.remove('md:flex-row', 'flex-row');
-                        target.classList.add('md:flex-row-reverse');
+                        // Fallback de segurança 
+                        target.classList.toggle('md:flex-row-reverse');
                     }
                     sendCleanHtml();
                 }
