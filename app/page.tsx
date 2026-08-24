@@ -1634,26 +1634,32 @@ export default function Home() {
                           </div>
                       ) : (
                           <div className="pb-10 bg-white">
-                              <div className="panel-section bg-slate-50/50">
-                                  <div className="flex justify-between items-center">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md shadow-sm">{elementoSelecionado.tagName}</span>
-                                          <button onClick={() => {
-                                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-                                              iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
-                                          }} className="text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition flex items-center bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">
-                                              <i className="fas fa-level-up-alt mr-1"></i> Pai
-                                          </button>
-                                          
-                                          <button onClick={duplicarElementoSelecionado} className="text-[9px] font-bold text-blue-600 hover:text-blue-800 transition flex items-center bg-blue-50 border border-blue-200 hover:border-blue-400 px-2 py-1 rounded shadow-sm" title="Clonar Elemento">
-                                              <i className="fas fa-copy"></i>
-                                          </button>
-                                          <button onClick={deletarElementoSelecionado} className="text-[9px] font-bold text-red-500 hover:text-red-700 transition flex items-center bg-red-50 border border-red-200 hover:border-red-400 px-2 py-1 rounded shadow-sm" title="Excluir Elemento">
-                                              <i className="fas fa-trash-alt"></i>
-                                          </button>
-                                      </div>
-                                  </div>
-                              </div>
+                              <div className="panel-section bg-slate-50/50 pb-4">
+    <label className="input-label mb-3 text-[9px] text-slate-500 flex justify-between items-center">
+        Ações do Elemento
+        <span className="text-[9px] font-black uppercase text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded shadow-sm border border-indigo-200" title="Tag HTML do elemento">{elementoSelecionado.tagName}</span>
+    </label>
+    
+    <div className="flex gap-2 w-full">
+        <button onClick={() => {
+            const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+            iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
+        }} className="flex-1 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5" title="Seleciona a caixa maior que segura este item">
+            <i className="fas fa-expand-arrows-alt text-sm"></i>
+            <span>Caixa Inteira</span>
+        </button>
+        
+        <button onClick={duplicarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
+            <i className="fas fa-copy text-sm"></i>
+            <span>Duplicar</span>
+        </button>
+        
+        <button onClick={deletarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
+            <i className="fas fa-trash-alt text-sm"></i>
+            <span>Excluir</span>
+        </button>
+    </div>
+</div>
 
                               <div className="panel-section bg-slate-50/50 border-t border-slate-100">
                                   <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo/Dentro)</label>
