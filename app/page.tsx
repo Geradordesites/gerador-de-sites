@@ -1021,7 +1021,8 @@ export default function Home() {
   const moverElemento = (direcao: 'UP' | 'DOWN') => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'MOVE_UP', id: elementoSelecionado.id }, '*'); 
+      // Agora ele verifica qual botão você apertou antes de mandar a ordem!
+      iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*'); 
   };
 
   const moverSecaoInteira = (direcao: 'UP' | 'DOWN') => {
