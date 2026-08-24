@@ -1278,12 +1278,21 @@ export default function Home() {
     commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente no primeiro capítulo/seção da página.\n\n";      
     
     if (productContent) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${productContent}\n"""\n\n`; }
+    
+    // Configuração base da IA
+    let basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
+
+    // 🛑 O SEGREDO ESTÁ AQUI: Ativa o MODO CLONE se tiver imagem anexada
     if (uploadedImages.length > 0) {
-        commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura de layout e a paleta de cores.`;
+        commandText += `\n\n🚨 MODO CLONE DE INTERFACE ATIVADO: O usuário anexou imagens de referência de design. Você DEVE atuar como um conversor de 'Design para Código'. Analise visualmente a imagem e RECRIE o layout e a estrutura EXATAMENTE como na arte. Copie fielmente as cores de fundo, cores das fontes, cores dos botões, alinhamentos, disposições de colunas e o estilo geral. Não invente um layout genérico, use a imagem como planta baixa rigorosa do seu HTML!\n\n`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
+        
+        // Altera a personalidade da IA para focar estritamente em copiar a imagem
+        basePrompt = `Atue como um Desenvolvedor Front-end Sênior especialista em Tailwind CSS. Sua missão principal é converter a imagem de design fornecida em código HTML funcional e responsivo, mantendo a mais alta fidelidade visual possível (Pixel Perfect) com a imagem em anexo.`;
     }
+
     promptParts.unshift({ text: commandText });
-    const basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
+    
     const isMenu = terMenuTexto ? "O site deve ter um menu de navegação no topo." : "";
     const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
