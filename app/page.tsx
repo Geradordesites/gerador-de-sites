@@ -329,8 +329,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     el.innerHTML = novoTexto;
                 }
 
-                if(event.data.src !== undefined) el.src = event.data.src;
-                if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
+if(event.data.src !== undefined) {
+    el.src = event.data.src;
+    el.removeAttribute('srcset');
+    el.removeAttribute('sizes');
+    el.style.backgroundImage = 'none';
+}                if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 
                 if(event.data.fontSize !== undefined) {
                     el.style.fontSize = ''; 
