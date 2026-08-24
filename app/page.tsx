@@ -211,7 +211,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
 
-        if (event.data.type === 'REVERSE_FLEX') {
+       if (event.data.type === 'REVERSE_FLEX') {
             let el = document.getElementById(event.data.id);
             if(el) {
                 let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div'));
