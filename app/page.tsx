@@ -941,16 +941,19 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
   const [terMenuTexto, setTerMenuTexto] = useState(true);
 
-  const purificarHTML = (rawHtml: string) => {
+ const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
+      
+      // Faxina agressiva: caça o HEX e o RGB da cor de foco em qualquer ordem que o navegador jogar
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
-                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
-                    .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
-                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
-                    .replace(/data-old-outline="[^"]*"/gi, '')
-                    .replace(/\s*style="\s*"/gi, ''); 
+                   .replace(/outline:\s*[^;]*(?:rgb\(14,\s*165,\s*233\)|#0ea5e9)[^;]*;?/gi, '')
+                   .replace(/outline:\s*[^;]*(?:rgb\(79,\s*70,\s*229\)|#4f46e5)[^;]*;?/gi, '')
+                   .replace(/outline-offset:\s*-[234]px;?/gi, '')
+                   .replace(/data-old-outline="[^"]*"/gi, '')
+                   .replace(/\s*style="\s*"/gi, ''); 
+                   
       clean = clean.replace(/ class="\s*"/gi, ''); 
       clean = clean.replace(/\[(http[^\]]+)\]\([^)]+\)/gi, '$1');
       return clean;
