@@ -4,12 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 
 // 1. MODELOS DE TEXTO PARA API GRÁTIS OU CHAVE DO CLIENTE (6 Modelos)
 const MODELOS_TEXTO_GRATIS = [
-  "gemini-3.7-flash",
-  "gemini-3.5-flash", 
-  "gemini-3.6-flash",
-  "gemini-3.5-flash-lite",
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash-preview"
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash"
 ];
 
 // 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA (2 Modelos)
