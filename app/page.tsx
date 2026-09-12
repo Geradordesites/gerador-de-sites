@@ -946,7 +946,6 @@ export default function Home() {
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [heroLayout, setHeroLayout] = useState('auto');
   const [productContent, setProductContent] = useState('');
-  const [terMenuTexto, setTerMenuTexto] = useState(true);
 
  const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
@@ -1293,8 +1292,7 @@ export default function Home() {
 
     promptParts.unshift({ text: commandText });
     
-    const isMenu = terMenuTexto ? "O site deve ter um menu de navegação no topo." : "";
-    const instrucoesFinais = `${basePrompt} \n${isMenu} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = `${basePrompt} \n${getMegaPromptEstilo()} \n${getMegaPromptHero()} \n${getMegaPromptCores()}`;
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     
     if (data && data.html) {
@@ -2077,10 +2075,6 @@ export default function Home() {
                                               <option value="split">Texto de um lado, Imagem do outro</option>
                                           </select>
                                       </div>
-                                      <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 p-2.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
-                                          <input type="checkbox" checked={terMenuTexto} onChange={(e) => setTerMenuTexto(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                                          <span className="text-xs font-bold text-slate-700">Ter um Menu no Topo do Site</span>
-                                      </label>
                                   </div>
                               </div>
 

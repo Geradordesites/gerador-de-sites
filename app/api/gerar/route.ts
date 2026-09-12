@@ -120,20 +120,9 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 `;
     }
 
-    let regraMenu = "";
-    if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
-        regraMenu = `🚨 REGRA FATAL E NAVEGAÇÃO DO MENU: 
-O HTML DEVE OBRIGATORIAMENTE INICIAR COM UMA TAG <nav> CONTENDO UM MENU FIXO, LOGOTIPO, LINKS DE ÂNCORA E UM BOTÃO CTA. SE VOCÊ NÃO CRIAR O MENU, O SISTEMA IRÁ FALHAR.
-
-💡 REGRA OBRIGATÓRIA DE ÂNCORAS (COMPATIBILIDADE COM GOOGLE SITES/IFRAMES):
-1. No Botão do Menu (O Gatilho): Use o atributo href começando com uma hashtag (#) seguida do nome do destino, e OBRIGATORIAMENTE inclua o atributo target="_self".
-Exemplo de Código: <a href="#quem-somos" target="_self">Quem Somos</a>
-2. Na Seção de Destino (O Alvo): Use o atributo id com exatamente o mesmo nome (sem a hashtag).
-Exemplo de Código: <section id="quem-somos" class="section bg-white">
-Isso garante que ao clicar na âncora, o navegador procure o elemento com o id correspondente e role a tela até ele automaticamente dentro do mesmo ambiente, sem abrir novas janelas.`;
-    } else if (textoDoPrompt.includes("NÃO crie menu")) {
-        regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>. O site deve começar diretamente no conteúdo (Hero Section).";
-    }
+    // === BLINDAGEM CONTRA MENUS ===
+    // O sistema agora proíbe terminantemente a criação de menus em qualquer situação.
+    const regraMenu = "🚨 REGRA FATAL E INQUEBRÁVEL: É ESTRITAMENTE PROIBIDO CRIAR QUALQUER TIPO DE MENU SUPERIOR, BARRA DE NAVEGAÇÃO OU TAG <nav>. O site DEVE começar diretamente no conteúdo principal (Hero Section). Ignorar essa regra causará falha crítica na renderização.";
     
     let instrucaoDinamica = "";
     if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais principais.";
