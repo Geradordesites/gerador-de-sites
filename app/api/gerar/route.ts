@@ -48,6 +48,90 @@ export async function POST(req: Request) {
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
+<<<<<<< HEAD
+=======
+    // === ATUALIZAÇÃO: REGRA DE MENU E ÂNCORAS (TARGET="_SELF") INSERIDA AQUI ===
+    let regraMenu = "";
+    if (textoDoPrompt.includes("OBRIGATORIAMENTE deve conter um Menu Superior")) {
+        regraMenu = `🚨 REGRA FATAL E NAVEGAÇÃO DO MENU: 
+O HTML DEVE OBRIGATORIAMENTE INICIAR COM UMA TAG <nav> CONTENDO UM MENU FIXO, LOGOTIPO, LINKS DE ÂNCORA E UM BOTÃO CTA. SE VOCÊ NÃO CRIAR O MENU, O SISTEMA IRÁ FALHAR.
+
+💡 REGRA OBRIGATÓRIA DE ÂNCORAS (COMPATIBILIDADE COM GOOGLE SITES/IFRAMES):
+1. No Botão do Menu (O Gatilho): Use o atributo href começando com uma hashtag (#) seguida do nome do destino, e OBRIGATORIAMENTE inclua o atributo target="_self".
+Exemplo de Código: <a href="#quem-somos" target="_self">Quem Somos</a>
+2. Na Seção de Destino (O Alvo): Use o atributo id com exatamente o mesmo nome (sem a hashtag).
+Exemplo de Código: <section id="quem-somos" class="section bg-white">
+Isso garante que ao clicar na âncora, o navegador procure o elemento com o id correspondente e role a tela até ele automaticamente dentro do mesmo ambiente, sem abrir novas janelas.`;
+    } else if (textoDoPrompt.includes("NÃO crie menu")) {
+        regraMenu = "🚨 REGRA FATAL: É TOTALMENTE PROIBIDO CRIAR MENU OU TAG <nav>. O site deve começar diretamente no conteúdo (Hero Section).";
+    }
+
+    const regraImagens = `
+=== SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
+🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr, desenhos, vetores ou ilustrações sci-fi.
+Você DEVE utilizar a nossa tag de requisição para TODAS as imagens geradas. Use APENAS fotografias realistas de humanos em situações cotidianas ou de negócios.
+Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
+
+Tamanhos Obrigatórios de Resolução:
+- 1280x720 (Paisagem/Landscape): Para fundos largos, Hero Section e Banners.
+- 800x1200 (Retrato/Portrait): Para fotos de pessoas, equipe, mentores ou cards verticais.
+- 800x800 (Quadrado/Squarish): Para ícones, logos, serviços ou avatares pequenos.
+Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto.
+Exemplo: <img src="[UNSPLASH: 800x1200: confident business professional]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Profissional" />
+`;
+    
+    let instrucaoDinamica = "";
+    if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais principais (<section>, <header>, <div> principais).";
+    else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e hover:scale-105 nos botões.";
+
+    let regrasObrigatorias = "";
+    if (isSiteRefinement) {
+        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML estruturado no JSON. NÃO CORTE O CÓDIGO DO SITE.`;
+    } else if (isElementRefinement || isBlockRefinement) {
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido perfeitamente otimizado, dentro do JSON. Sem explicações adicionais.`;
+    } else {
+        regrasObrigatorias = `
+=== REGRA DE OURO 1: ARQUITETURA LONGA E COMPLETA ===
+Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
+🚨 ATENÇÃO: GERE UMA LANDING PAGE EXTENSA E PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES. NÃO corte o código pela metade. O valor DEVE conter do <!DOCTYPE html> até o fechamento </html>.
+Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
+
+🚨 PROIBIÇÃO DE FORMULÁRIOS: É ESTRITAMENTE PROIBIDO gerar formulários, campos de captura, tags <form>, <input> ou <textarea> no corpo. Use APENAS Botões de Ação (CTA) diretos.
+
+${regraMenu}
+
+=== REGRA DE OURO 2: MOBILE-FIRST RESPONSIVO ===
+O site DEVE ser perfeito no celular. Use flex-col para empilhar no celular e md:flex-row para parear no PC.
+${regraImagens}
+${instrucaoDinamica}
+
+=== COMPLIANCE: RODAPÉ JURÍDICO E CORES HARMONIOSAS ===
+🚨 REGRA VITAL DE CORES: O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de texto do restante do site. É ESTRITAMENTE PROIBIDO gerar rodapés neutros, azuis ou escuros se o site tiver outra identidade. Mantenha a harmonia de 100%.
+
+Estrutura OBRIGATÓRIA do rodapé (Ajuste o Tailwind para combinar com a paleta do site):
+<footer class="w-full font-sans py-16 mt-12 border-t">
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-10"><h3 class="text-xl font-bold mb-4">Informações Legais Importantes</h3><p class="text-sm">Clique nos links abaixo para ler a íntegra de cada política.</p></div>
+        <div class="space-y-4 max-w-4xl mx-auto mb-12" id="rodape-sanfonas">
+            <details id="det-privacidade" class="rounded-2xl border transition-colors cursor-pointer" onclick="const e = document.getElementById('det-termos'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
+                <summary class="p-6 font-bold text-lg outline-none select-none flex items-center justify-between">Política de Privacidade <i class="fas fa-chevron-down text-sm opacity-60"></i></summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t opacity-90"><p class="mb-4"><strong>1. Coleta e Uso de Dados:</strong> Em conformidade com a LGPD, coletamos informações de navegação exclusivamente para otimizar sua experiência neste site e melhorar o direcionamento dos nossos anúncios.</p><p class="mb-4"><strong>2. Segurança:</strong> Seus dados de pagamento (se houver transação) são processados diretamente pelas plataformas de pagamento certificadas. Nós não temos acesso aos dados do seu cartão.</p><p><strong>3. Contato:</strong> Para requisições de exclusão de dados ou dúvidas legais, utilize nosso e-mail oficial de suporte.</p></div>
+            </details>
+            <details id="det-termos" class="rounded-2xl border transition-colors cursor-pointer" onclick="const e = document.getElementById('det-privacidade'); if(e.hasAttribute('open')) { e.removeAttribute('open'); }">
+                <summary class="p-6 font-bold text-lg outline-none select-none flex items-center justify-between">Termos de Uso <i class="fas fa-chevron-down text-sm opacity-60"></i></summary>
+                <div class="p-6 pt-2 text-sm leading-relaxed border-t opacity-90"><p class="mb-4"><strong>1. Isenção de Responsabilidade:</strong> Os resultados obtidos dependem do esforço individual de cada usuário e da correta aplicação do método. Casos de sucesso relatados não configuram garantia de ganhos idênticos.</p><p class="mb-4"><strong>2. Redes Sociais:</strong> Este portal não é endossado, administrado ou patrocinado por plataformas de terceiros.</p><p><strong>3. Direitos Autorais:</strong> É terminantemente proibida a cópia, pirataria, rateio ou distribuição ilegal de qualquer conteúdo desta página sob pena de processos judiciais severos.</p></div>
+            </details>
+        </div>
+        <div class="text-center pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4"><p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p><div class="flex gap-4 text-xl opacity-80"><i class="fab fa-cc-visa"></i><i class="fab fa-cc-mastercard"></i><i class="fas fa-lock"></i></div></div>
+    </div>
+    <script>document.querySelectorAll('#rodape-sanfonas summary').forEach(s => { s.style.listStyle = 'none'; if(s.childNodes[0] && s.childNodes[0].nodeName === "#text" && s.childNodes[0].nodeValue.includes('▶')) s.childNodes[0].nodeValue = ''; });</script>
+</footer>
+`;
+    }
+
+    const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
+    
+>>>>>>> aa1c495 (aaa)
     // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
