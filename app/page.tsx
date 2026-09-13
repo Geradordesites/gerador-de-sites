@@ -1342,6 +1342,11 @@ export default function Home() {
       const file = e.target.files?.[0];
       if (!file) return;
 
+      // Detecta se a imagem original é um PNG para manter o fundo transparente
+      const isPNG = file.type === 'image/png';
+      const mimeType = isPNG ? 'image/png' : 'image/jpeg';
+      const fileExt = isPNG ? 'png' : 'jpg';
+
       (window as any).showNotification("Enviando imagem para a nuvem...", "success");
 
       const reader = new FileReader();
@@ -1360,27 +1365,24 @@ export default function Home() {
               if (ctx) { 
                   ctx.drawImage(img, 0, 0, w, h); 
                   
-                  // Converte o canvas para Blob (arquivo real) em vez de texto Base64
+                  // O Segredo está aqui: Se for PNG, salva como PNG. Se não, comprime como JPEG.
                   canvas.toBlob(async (blob) => {
                       if (!blob) return;
                       
-                      const fileName = `upload_pc_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                      const fileName = `upload_pc_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                       
                       try {
-                          // Faz o upload direto do navegador para o Supabase Storage
                           const { error } = await supabase.storage
                               .from('imagens-geradas')
                               .upload(fileName, blob, {
-                                  contentType: 'image/jpeg',
+                                  contentType: mimeType,
                                   upsert: false
                               });
                               
                           if (error) throw error;
                           
-                          // Pega a URL pública gerada
                           const { data: pubData } = supabase.storage.from('imagens-geradas').getPublicUrl(fileName);
                           
-                          // Aplica a URL limpa e curta no site
                           atualizarElemento(isBg ? 'bgImage' : 'src', pubData.publicUrl);
                           (window as any).showNotification("Imagem aplicada com sucesso!", "success");
                           
@@ -1388,7 +1390,7 @@ export default function Home() {
                           console.error(err);
                           (window as any).showNotification("Erro ao salvar imagem na nuvem.", "error");
                       }
-                  }, 'image/jpeg', 0.8);
+                  }, mimeType, isPNG ? undefined : 0.8); 
               }
           };
           img.src = ev.target.result;
