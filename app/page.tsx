@@ -1338,13 +1338,16 @@ export default function Home() {
       if (modoInspetor) toggleInspetor(); 
   }
 
-  const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
+  const handleUploadImgElem = async (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      (window as any).showNotification("Enviando imagem para a nuvem...", "success");
+
       const reader = new FileReader();
       reader.onload = (ev: any) => {
           const img = new Image();
-          img.onload = () => {
+          img.onload = async () => {
               const canvas = document.createElement('canvas');
               let w = img.width; let h = img.height; const maxDim = 1200; 
               if (w > maxDim || h > maxDim) { 
@@ -1353,10 +1356,39 @@ export default function Home() {
               }
               canvas.width = w; canvas.height = h;
               const ctx = canvas.getContext('2d');
+              
               if (ctx) { 
                   ctx.drawImage(img, 0, 0, w, h); 
-                  const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
-                  atualizarElemento(isBg ? 'bgImage' : 'src', dataUrl); 
+                  
+                  // Converte o canvas para Blob (arquivo real) em vez de texto Base64
+                  canvas.toBlob(async (blob) => {
+                      if (!blob) return;
+                      
+                      const fileName = `upload_pc_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                      
+                      try {
+                          // Faz o upload direto do navegador para o Supabase Storage
+                          const { error } = await supabase.storage
+                              .from('imagens-geradas')
+                              .upload(fileName, blob, {
+                                  contentType: 'image/jpeg',
+                                  upsert: false
+                              });
+                              
+                          if (error) throw error;
+                          
+                          // Pega a URL pública gerada
+                          const { data: pubData } = supabase.storage.from('imagens-geradas').getPublicUrl(fileName);
+                          
+                          // Aplica a URL limpa e curta no site
+                          atualizarElemento(isBg ? 'bgImage' : 'src', pubData.publicUrl);
+                          (window as any).showNotification("Imagem aplicada com sucesso!", "success");
+                          
+                      } catch (err) {
+                          console.error(err);
+                          (window as any).showNotification("Erro ao salvar imagem na nuvem.", "error");
+                      }
+                  }, 'image/jpeg', 0.8);
               }
           };
           img.src = ev.target.result;
