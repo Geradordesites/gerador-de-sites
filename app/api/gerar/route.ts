@@ -120,7 +120,6 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
     }
 
     // === BLINDAGEM CONTRA MENUS ===
-    // O sistema agora proíbe terminantemente a criação de menus em qualquer situação.
     const regraMenu = "🚨 REGRA FATAL E INQUEBRÁVEL: É ESTRITAMENTE PROIBIDO CRIAR QUALQUER TIPO DE MENU SUPERIOR, BARRA DE NAVEGAÇÃO OU TAG <nav>. O site DEVE começar diretamente no conteúdo principal (Hero Section). Ignorar essa regra causará falha crítica na renderização.";
     
     let instrucaoDinamica = "";
@@ -129,9 +128,22 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 
     let regrasObrigatorias = "";
     if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido e devolva TODO o código HTML estruturado no JSON.\n${regraImagens}`;
+        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL (MODIFICAÇÃO CIRÚRGICA) ===
+🚨 ATENÇÃO MÁXIMA: Você receberá o código HTML completo do site atual.
+1. Cumpra a solicitação do usuário realizando as mudanças exatas no HTML.
+2. DEVOLVA TODO O CÓDIGO HTML DE PONTA A PONTA. 
+3. É EXPRESSAMENTE PROIBIDO CORTAR, RESUMIR OU USAR PLACEHOLDERS COMO "<!-- resto do código aqui -->". Se você cortar o código, o site inteiro do usuário será corrompido!
+4. Mantenha todas as seções, classes do Tailwind e IDs exatamente como estão, alterando APENAS o que foi pedido no prompt.
+5. Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código final da página inteira. NENHUM texto fora do JSON.
+${regraImagens}`;
     } else if (isElementRefinement || isBlockRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado, dentro do JSON.\n${regraImagens}`;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO DE ELEMENTO ===
+🚨 ATENÇÃO: Você receberá o HTML de APENAS UM elemento.
+1. Aplique a modificação pedida com exatidão.
+2. PRESERVE OBRIGATORIAMENTE o atributo 'id' original do elemento (ex: id="node_xxxxx"). Se você remover o ID, a edição falhará.
+3. Não adicione tags globais como <html> ou <body>.
+4. Retorne EXCLUSIVAMENTE a tag HTML final otimizada, encapsulada em um objeto JSON contendo a chave "codigo_html".
+${regraImagens}`;
     } else {
         regrasObrigatorias = `
 === REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
@@ -170,7 +182,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
                 const result = await model.generateContent({ 
                     contents: [{ role: "user", parts: promptParts }], 
-                    generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } 
+                    generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } 
                 });
                 
                 htmlCode = extrairHtmlDeJson(result.response.text());

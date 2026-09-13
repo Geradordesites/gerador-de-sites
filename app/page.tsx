@@ -1111,6 +1111,20 @@ export default function Home() {
     (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
 
+  const resetarSite = () => {
+      if(!confirm('Tem certeza que deseja limpar tudo e começar um novo site do zero? Você perderá o que não foi salvo na nuvem.')) return;
+      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+      const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+      if (codEl) codEl.value = '';
+      if (prevEl) prevEl.srcdoc = SCRIPT_PREVIEW; 
+      setHistoricoCodigo([]);
+      setElementoSelecionado(null);
+      setProductContent('');
+      setUploadedImages([]);
+      setSiteEditando(null);
+      (window as any).showNotification("Pronto para criar um novo site do zero!", "success");
+  };
+
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
     let htmlFinal = codigoExterno;
@@ -2118,6 +2132,36 @@ export default function Home() {
                                   <button id="tour-generate-btn" onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                       <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Meu Site Agora
                                   </button>
+                                  
+                                  <button onClick={resetarSite} className="w-full mt-3 bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-200 transition-all text-xs flex items-center justify-center gap-2 shadow-sm">
+                                      <i className="fas fa-trash-alt"></i> Começar Novo Site do Zero
+                                  </button>
+                              </div>
+
+                              {/* BLOCO DE MODIFICAÇÃO COM IA (NOVO) */}
+                              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-4">
+                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3 tracking-wide flex items-center gap-2">
+                                      <i className="fas fa-magic text-indigo-500"></i> Modificar Site com IA
+                                  </h3>
+                                  <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                                      Peça para a IA alterar cores, adicionar seções ou mudar textos do site atual sem recriar o site inteiro.
+                                  </p>
+                                  
+                                  <div className="relative">
+                                      <textarea 
+                                          id="refineGlobalContent"
+                                          rows={3}
+                                          placeholder="Ex: Mude a cor de fundo da seção de preços para preto e adicione um rodapé..." 
+                                          className="w-full bg-white border border-slate-300 text-slate-700 text-xs rounded-xl pl-4 pr-12 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 placeholder-slate-400 resize-y custom-scrollbar shadow-inner" 
+                                      ></textarea>
+                                      <button 
+                                          onClick={executarRefinamentoGlobal} 
+                                          className="absolute right-2 bottom-2.5 w-9 h-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center transition shadow-sm hover:scale-105" 
+                                          title="Aplicar Alteração no Site"
+                                      >
+                                          <i className="fas fa-paper-plane"></i>
+                                      </button>
+                                  </div>
                               </div>
 
                           </div>
