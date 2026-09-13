@@ -119,8 +119,15 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 `;
     }
 
-    // === BLINDAGEM CONTRA MENUS ===
-    const regraMenu = "🚨 REGRA FATAL E INQUEBRÁVEL: É ESTRITAMENTE PROIBIDO CRIAR QUALQUER TIPO DE MENU SUPERIOR, BARRA DE NAVEGAÇÃO OU TAG <nav>. O site DEVE começar diretamente no conteúdo principal (Hero Section). Ignorar essa regra causará falha crítica na renderização.";
+    // === SISTEMA INTELIGENTE DE MENUS E ÂNCORAS (ROLAGEM SUAVE) ===
+    const regraMenu = `
+=== REGRAS DE NAVEGAÇÃO E MENUS (OBRIGATÓRIO) ===
+Se o layout exigir um menu de navegação, ele DEVE ser feito com links de âncora internos.
+1. No Botão/Link (Gatilho): Use o atributo href começando com hashtag e o target exato. Ex: <a href="#quem-somos" target="_self">Quem Somos</a>
+2. Na Seção (Alvo): A seção OBRIGATORIAMENTE precisa ter o mesmo ID. Ex: <section id="quem-somos" class="...">
+3. A tag principal do documento DEVE incluir a rolagem suave do Tailwind. Ex: <html lang="pt-BR" class="scroll-smooth">
+NUNCA crie links redirecionando para outras páginas (ex: href="/contato"). Tudo deve ser resolvido na mesma Landing Page.
+    `;
     
     let instrucaoDinamica = "";
     if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais principais.";
@@ -132,24 +139,24 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 🚨 ATENÇÃO MÁXIMA: Você receberá o código HTML completo do site atual.
 1. Cumpra a solicitação do usuário realizando as mudanças exatas no HTML.
 2. DEVOLVA TODO O CÓDIGO HTML DE PONTA A PONTA. 
-3. É EXPRESSAMENTE PROIBIDO CORTAR, RESUMIR OU USAR PLACEHOLDERS COMO "<!-- resto do código aqui -->". Se você cortar o código, o site inteiro do usuário será corrompido!
-4. Mantenha todas as seções, classes do Tailwind e IDs exatamente como estão, alterando APENAS o que foi pedido no prompt.
-5. Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html" com o código final da página inteira. NENHUM texto fora do JSON.
+3. É EXPRESSAMENTE PROIBIDO CORTAR, RESUMIR OU USAR PLACEHOLDERS COMO "<!-- resto do código aqui -->". Se cortar o código, o site será corrompido!
+4. Mantenha todas as seções, classes e IDs como estão, mudando APENAS o pedido.
+5. Retorne EXCLUSIVAMENTE um JSON contendo a chave "codigo_html".
+${regraMenu}
 ${regraImagens}`;
     } else if (isElementRefinement || isBlockRefinement) {
         regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO DE ELEMENTO ===
 🚨 ATENÇÃO: Você receberá o HTML de APENAS UM elemento.
 1. Aplique a modificação pedida com exatidão.
-2. PRESERVE OBRIGATORIAMENTE o atributo 'id' original do elemento (ex: id="node_xxxxx"). Se você remover o ID, a edição falhará.
-3. Não adicione tags globais como <html> ou <body>.
-4. Retorne EXCLUSIVAMENTE a tag HTML final otimizada, encapsulada em um objeto JSON contendo a chave "codigo_html".
+2. PRESERVE OBRIGATORIAMENTE o atributo 'id' original do elemento (ex: id="node_xxxxx").
+3. Retorne EXCLUSIVAMENTE a tag HTML final otimizada em um JSON com a chave "codigo_html".
 ${regraImagens}`;
     } else {
         regrasObrigatorias = `
 === REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ATENÇÃO: GERE UMA LANDING PAGE PROFISSIONAL COM NO MÍNIMO 6 SEÇÕES.
-🚨 ESPAÇAMENTO OBRIGATÓRIO: Organize o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos subsequentes (ex: mb-4 ou mb-6).
+🚨 ESPAÇAMENTO OBRIGATÓRIO: Organize o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos.
 🚨 PROIBIÇÃO DE FORMULÁRIOS: É PROIBIDO gerar tags <form>, <input> ou <textarea>. Use APENAS Botões de Ação (CTA).
 ${regraMenu}
 
@@ -173,7 +180,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     let htmlCode = '';
     let provedorTextoUsado = '';
     let geracaoSucesso = false;
-    let historicoErros: any[] = [];
 
     for (const modelName of modelosDeTextoParaUsar) {
         if (geracaoSucesso) break; 
@@ -194,9 +200,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 } else {
                     throw new Error("HTML gerado foi bloqueado, curto ou inválido.");
                 }
-            } catch (error: any) {
-                historicoErros.push({ modelo: modelName, tentativa: tentativa, erro: error.message || "Erro desconhecido" });
-            }
+            } catch (error: any) {}
         }
     }
 
@@ -207,6 +211,9 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         catch (e) {}
     }
 
+    // =========================================================================
+    // INTEGRAÇÃO SUPABASE STORAGE - Substituição do Base64 por Links Leves
+    // =========================================================================
     if (provedorDeImagens === 'ai_paid') {
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
@@ -219,7 +226,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         for (const item of iaUrlsToReplace) {
             const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
             let imagemGeradaComSucesso = false;
-            let base64Image = '';
+            let urlImagemBucket = '';
 
             for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
                 if (imagemGeradaComSucesso) break;
@@ -233,7 +240,31 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                     if (response.candidates && response.candidates[0]?.content?.parts) {
                         for (const part of response.candidates[0].content.parts) {
                             if (part.inlineData && part.inlineData.data) {
-                                base64Image = `data:${part.inlineData.mimeType || 'image/jpeg'};base64,${part.inlineData.data}`;
+                                // Pega o Base64 gerado pela IA
+                                const base64Data = part.inlineData.data;
+                                const mimeType = part.inlineData.mimeType || 'image/jpeg';
+                                
+                                // Converte o Base64 para um Buffer legível
+                                const buffer = Buffer.from(base64Data, 'base64');
+                                const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+
+                                // Faz o Upload para o Supabase Storage (Bucket "imagens-geradas")
+                                const { data: uploadData, error: uploadErr } = await supabaseAdmin.storage
+                                    .from('imagens-geradas') 
+                                    .upload(fileName, buffer, {
+                                        contentType: mimeType,
+                                        upsert: false
+                                    });
+
+                                if (uploadErr) {
+                                    console.error("Erro no Upload do Supabase:", uploadErr);
+                                    throw new Error("Falha ao salvar a imagem na nuvem.");
+                                }
+
+                                // Pega a URL pública leve
+                                const { data: pubData } = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName);
+                                
+                                urlImagemBucket = pubData.publicUrl;
                                 imagemGeradaComSucesso = true;
                                 break;
                             }
@@ -242,10 +273,11 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 } catch (modelErr: any) {}
             }
 
-            if (imagemGeradaComSucesso && base64Image) {
-                htmlCode = htmlCode.replace(item.fullMatch, base64Image);
+            if (imagemGeradaComSucesso && urlImagemBucket) {
+                // Injeta a URL pública no HTML ao invés do monstro em Base64
+                htmlCode = htmlCode.replace(item.fullMatch, urlImagemBucket);
             } else {
-                throw new Error(`Falha no modo pago: Nenhum modelo econômico de imagem do Gemini conseguiu processar o prompt: "${item.prompt}".`);
+                throw new Error(`Falha no modo pago: IA não conseguiu processar ou salvar a imagem: "${item.prompt}".`);
             }
         }
     } 
@@ -256,10 +288,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         let urlsToReplace = [];
         while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
 
-        // EXIGÊNCIA ERICTA: Usa APENAS a chave informada pelo cliente. Sem fallback para chave global do admin!
-        const unsplashKeyParaUsar = (clientUnsplashKey && clientUnsplashKey.trim().length > 10) 
-            ? clientUnsplashKey 
-            : null;
+        const unsplashKeyParaUsar = (clientUnsplashKey && clientUnsplashKey.trim().length > 10) ? clientUnsplashKey : null;
 
         if (urlsToReplace.length > 0 && unsplashKeyParaUsar) {
             for (const item of urlsToReplace) {
@@ -267,7 +296,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 if (item.dimensao === '800x1200') orient = 'portrait';
                 if (item.dimensao === '800x800') orient = 'squarish';
                 const kwFormatada = encodeURIComponent(item.keywords.trim());
-                let imagemFinal = ''; // Deixa vazio se não encontrar
+                let imagemFinal = ''; 
                 try {
                     const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=15&orientation=${orient}&client_id=${unsplashKeyParaUsar}`);
                     if (uRes.ok) {
@@ -280,14 +309,10 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
             }
         } else {
-            // Se o cliente não colocou a chave do Unsplash, limpa e remove as tags deixando sem imagem (vazio)
-            for (const item of urlsToReplace) {
-                htmlCode = htmlCode.replace(item.fullMatch, '');
-            }
+            for (const item of urlsToReplace) htmlCode = htmlCode.replace(item.fullMatch, '');
         }
     }
     
-    // Limpeza final de qualquer tag remanescente, transformando em string vazia para o local ficar sem imagem
     htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
     htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '');
 
