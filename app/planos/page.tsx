@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Check, Zap, Star, Crown, Loader2, ArrowRight, MessageCircle, AlertTriangle, X, Infinity, Image as ImageIcon, Rocket } from 'lucide-react'
+import { Check, Zap, Star, Crown, Loader2, ArrowRight, AlertTriangle, X, Infinity, Image as ImageIcon, Rocket } from 'lucide-react'
 
 export default function PlanosPage() {
   const router = useRouter()
@@ -343,16 +343,18 @@ export default function PlanosPage() {
           </div>
         </div>
 
-        {/* Rodapé Genérico de Contato */}
-        <div className="text-center mt-12 mb-8">
-          <a 
+        {/* Rodapé de Contato WhatsApp Otimizado */}
+        <div className="text-center mt-20 mb-8">
+          <p className="text-slate-500 text-sm mb-4 font-medium">Ainda com alguma dúvida sobre os planos?</p>
+          <a
             href="https://wa.me/5561982096982?text=Olá!%20Gostaria%20de%20falar%20sobre%20os%20planos%20do%20gerador%20de%20sites."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium transition-colors"
+            className="inline-flex items-center gap-2.5 px-8 py-4 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-[#25D366]/30 hover:-translate-y-1"
           >
-            <MessageCircle className="size-4" /> Dúvidas? Fale conosco no WhatsApp (61) 98209-6982
+            <i className="fab fa-whatsapp text-xl"></i> Fale conosco no WhatsApp
           </a>
+          <p className="text-slate-400 text-xs mt-4 font-medium">(61) 98209-6982</p>
         </div>
 
       </div>
