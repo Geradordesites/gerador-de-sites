@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Check, Zap, Star, Crown, Loader2, ArrowRight, MessageCircle, AlertTriangle, X, Infinity, Image as ImageIcon } from 'lucide-react'
+import { Check, Zap, Star, Crown, Loader2, ArrowRight, MessageCircle, AlertTriangle, X, Infinity, Image as ImageIcon, Rocket } from 'lucide-react'
 
 export default function PlanosPage() {
   const router = useRouter()
@@ -13,16 +13,17 @@ export default function PlanosPage() {
   
   // Estados para o Modal de Aviso de E-mail
   const [showModal, setShowModal] = useState(false)
-  const [planoSelecionado, setPlanoSelecionado] = useState<'mensal' | 'anual' | 'vitalicio' | 'iniciante' | 'pro' | 'agencia' | null>(null)
+  const [planoSelecionado, setPlanoSelecionado] = useState<'mensal' | 'anual' | 'iniciante' | 'pro' | 'agencia' | null>(null)
 
-  // Links de Checkout da Cakto (Substitua pelos links gerados no painel da Cakto)
+  // Links de Checkout da Cakto (Substitua pelos links reais gerados no painel da Cakto)
   const linksCheckout = {
     mensal: "https://pay.cakto.com.br/LINK_MENSAL",
     anual: "https://pay.cakto.com.br/LINK_ANUAL",
-    vitalicio: "https://pay.cakto.com.br/LINK_VITALICIO",
+    vitalicio: "https://pay.cakto.com.br/LINK_VITALICIO", // Link direto para o plano de instalação
     iniciante: "https://pay.cakto.com.br/LINK_INICIANTE",
     pro: "https://pay.cakto.com.br/LINK_PRO",
-    agencia: "https://pay.cakto.com.br/LINK_AGENCIA"
+    agencia: "https://pay.cakto.com.br/LINK_AGENCIA",
+    saas_completo: "https://pay.cakto.com.br/LINK_SAAS" // Link para quem comprar o sistema de 1.997
   }
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function PlanosPage() {
     setLoading(false)
   }
 
-  const handleAction = (plano: 'mensal' | 'anual' | 'vitalicio' | 'iniciante' | 'pro' | 'agencia') => {
+  const handleAction = (plano: 'mensal' | 'anual' | 'iniciante' | 'pro' | 'agencia') => {
     if (!userEmail) {
       // Se não estiver logado, manda para o cadastro avisando qual plano ele escolheu na URL
       router.push(`/cadastro?plano=${plano}`)
@@ -122,6 +123,9 @@ export default function PlanosPage() {
                 <p className="text-sm text-indigo-700 leading-relaxed">
                   Para garantir que você <strong>não tenha custos extras</strong> usando sua própria chave do Google Gemini, o sistema utilizará uma API gratuita de banco de imagens (Unsplash). Suas páginas serão geradas com fotografias reais e em alta qualidade sem gastar um centavo a mais.
                 </p>
+                <p className="text-sm text-indigo-700 font-semibold mt-2">
+                  Lembre-se: Após o site ser gerado pela IA, tudo pode ser editado! Textos (copys), imagens e cores podem ser alterados de forma muito fácil em nosso editor visual.
+                </p>
               </div>
             </div>
 
@@ -169,23 +173,32 @@ export default function PlanosPage() {
                 </button>
               </div>
 
-              {/* Vitalício */}
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow flex flex-col">
-                <div className="mb-6">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">Acesso Vitalício</span>
-                  <div className="mt-4 flex items-baseline text-5xl font-black text-slate-900">
+              {/* Vitalício (Instalação Independente - Não exige login) */}
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow flex flex-col relative overflow-hidden">
+                <div className="mb-6 relative z-10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                    Sua Própria Instalação
+                  </span>
+                  <div className="mt-5 flex items-baseline text-5xl font-black text-slate-900">
                     R$ 497<span className="text-lg text-slate-500 font-medium ml-1">/único</span>
                   </div>
-                  <p className="text-sm text-slate-500 mt-3">Pague uma vez, use para sempre.</p>
+                  <p className="text-sm text-slate-500 mt-3">Sistema instalado para seu uso independente. Não é cobrado mensalidade.</p>
                 </div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0 mt-0.5" /> Acesso eterno ao sistema</li>
+                <ul className="space-y-4 mb-8 flex-1 relative z-10">
+                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0 mt-0.5" /> Acesso vitalício e independente</li>
                   <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0 mt-0.5" /> Geração ilimitada de sites</li>
-                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0 mt-0.5" /> Todas as futuras atualizações grátis</li>
+                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-indigo-500 shrink-0 mt-0.5" /> Pagamento único no cartão ou PIX</li>
                 </ul>
-                <button onClick={() => handleAction('vitalicio')} className="w-full py-4 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors flex justify-center items-center gap-2">
-                  {userEmail ? 'Garantir Vitalício' : 'Criar Conta Primeiro'}
-                </button>
+                
+                {/* Link Direto sem handleAction - Ignora necessidade de conta */}
+                <a 
+                  href={linksCheckout.vitalicio} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="relative z-10 w-full py-4 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors flex justify-center items-center gap-2"
+                >
+                  Garantir Acesso Vitalício
+                </a>
               </div>
 
             </div>
@@ -288,17 +301,57 @@ export default function PlanosPage() {
           </div>
         )}
 
-        {/* Rodapé com Botão de WhatsApp */}
-        <div className="text-center bg-white border border-slate-200 rounded-3xl p-8 max-w-2xl mx-auto shadow-sm">
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Precisa de um pacote maior ou personalizado?</h3>
-          <p className="text-slate-600 text-sm mb-6">Fale diretamente conosco pelo WhatsApp para negociar condições especiais para grandes volumes.</p>
+        {/* ========================================================================= */}
+        {/* RODAPÉ ESPECIAL: OFERTA DO SISTEMA SAAS COMPLETO (WHITE LABEL) */}
+        {/* ========================================================================= */}
+        <div className="mt-16 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-8 md:p-12 max-w-5xl mx-auto shadow-2xl relative overflow-hidden border border-indigo-500/30">
+          {/* Elemento de Fundo Decorativo */}
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+            <Rocket className="w-96 h-96 text-white" />
+          </div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+            <div className="flex-1 text-center md:text-left">
+              <span className="bg-indigo-500/20 border border-indigo-500/50 text-indigo-300 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-lg mb-6 inline-block">
+                Oportunidade de Negócio Exclusiva
+              </span>
+              <h3 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">
+                Tenha o seu próprio SaaS Gerador de Sites com IA
+              </h3>
+              <p className="text-indigo-200 text-lg mb-0 leading-relaxed">
+                Quer empreender? Nós instalamos o sistema completo no seu nome (White Label), com área de painel Admin para você gerenciar planos, cobrar de clientes e faturar 100% das vendas.
+              </p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl text-center shrink-0 w-full md:w-80 shadow-2xl">
+              <div className="text-indigo-300 font-bold text-sm uppercase tracking-wider mb-2">Instalação Completa</div>
+              <div className="text-5xl font-black text-white mb-2">R$ 1.997</div>
+              <div className="text-slate-300 text-xs mb-6">Pagamento Único (PIX ou Cartão)</div>
+              
+              <a 
+                href={linksCheckout.saas_completo}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-emerald-500/30 hover:scale-105"
+              >
+                <Rocket className="size-5" /> Quero Empreender
+              </a>
+              <p className="text-[10px] text-slate-400 mt-4 leading-relaxed">
+                Após a confirmação do pagamento, nossa equipe entrará em contato para realizar a instalação no seu domínio.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Rodapé Genérico de Contato */}
+        <div className="text-center mt-12 mb-8">
           <a 
-            href="https://wa.me/5561982096982?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20pacotes%20personalizados%20de%20créditos%20no%20SiteGen%20AI."
+            href="https://wa.me/5561982096982?text=Olá!%20Gostaria%20de%20falar%20sobre%20os%20planos%20do%20gerador%20de%20sites."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-600/20"
+            className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium transition-colors"
           >
-            <MessageCircle className="size-5" /> Falar no WhatsApp (61) 98209-6982
+            <MessageCircle className="size-4" /> Dúvidas? Fale conosco no WhatsApp (61) 98209-6982
           </a>
         </div>
 
