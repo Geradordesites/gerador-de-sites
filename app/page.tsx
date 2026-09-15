@@ -2316,7 +2316,7 @@ export default function Home() {
                       <i className="fas fa-search-dollar"></i> SEO & Scripts
                   </button>
                   <button id="tour-hospedar-btn" onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-globe"></i> Como Hospedar
+                      <i className="fas fa-globe"></i> Como Hospedar e APIS
                   </button>
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
                   <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
