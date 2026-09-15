@@ -1469,51 +1469,37 @@ export default function Home() {
 
  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("Buscando foto contextualizada (via Inteligência)...", "success");
+      (window as any).showNotification("Buscando nova foto na API...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let w = 1280, h = 720;
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
 
-      // 1. Pega o alt da imagem ou usa o contexto geral do site como fallback
+      // 1. Pega o alt da imagem ou usa o contexto geral do site
       let termoContextual = '';
       if (elementoSelecionado.alt && elementoSelecionado.alt.trim() !== '' && elementoSelecionado.alt !== 'Perfil' && elementoSelecionado.alt !== 'Cliente') {
           termoContextual = elementoSelecionado.alt;
       } else {
-          termoContextual = productContent ? productContent.substring(0, 60).trim() : 'professional modern';
+          termoContextual = productContent ? productContent.substring(0, 50).trim() : 'professional';
       }
 
-      // 2. Une com o estilo escolhido no select do painel (Realista, Estúdio, etc.)
-      const estiloTraduzido = aiSearchType === 'realista' ? 'realistic photography' :
+      // 2. Une com o estilo escolhido no select do painel
+      const estiloTraduzido = aiSearchType === 'realista' ? 'portrait' :
                               aiSearchType === 'cinematografica' ? 'cinematic' :
-                              aiSearchType === 'estudio' ? 'studio portrait' : 'minimalist design';
+                              aiSearchType === 'estudio' ? 'studio' : 'clean';
                               
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
-      const paginaAleatoria = Math.floor(Math.random() * 30) + 1;
 
       try {
-          let fotoEscolhida = "";
+          // 3. Chama diretamente a nossa rota de API do servidor (a mesma que deu certo no site todo)
+          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
+          const data = await res.json();
 
-          // Usa a chave pessoal do Unsplash se configurada
-          if (unsplashKey) {
-              const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(termoBusca)}&page=${paginaAleatoria}&per_page=15&client_id=${unsplashKey}`);
-              const data = await res.json();
-              
-              if (data.results && data.results.length > 0) {
-                  const randomIndex = Math.floor(Math.random() * data.results.length);
-                  fotoEscolhida = data.results[randomIndex].urls.regular;
-              }
-          } 
-          
-          // Se não tiver chave própria, usa a rota da Vercel
-          if (!fotoEscolhida) {
-              const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
-              const data = await res.json();
-              if (data.url) fotoEscolhida = data.url;
-          }
+          if (data.url) {
+              let fotoEscolhida = data.url;
 
-          if (fotoEscolhida) {
+              // Ajusta o recorte proporcional para o formato da foto
               if (fotoEscolhida.includes('images.unsplash.com')) {
                   fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=${w}&h=${h}&fit=crop`;
               }
@@ -1526,19 +1512,12 @@ export default function Home() {
               }
               (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
           } else {
-              throw new Error("Nenhuma imagem encontrada");
+              throw new Error("Nenhuma imagem retornada pela API");
           }
 
       } catch (error) {
           console.error(error);
-          const fallbackUrl = `https://images.unsplash.com/random/${w}x${h}/?${encodeURIComponent(termoContextual)}&sig=${Date.now()}`;
-          if (elementoSelecionado.tagName === 'img' || !isBackground) {
-              atualizarElemento('src', fallbackUrl);
-              atualizarElemento('bgImage', '');
-          } else {
-              atualizarElemento('bgImage', fallbackUrl);
-          }
-          (window as any).showNotification("Foto aplicada via banco alternativo!", "success");
+          (window as any).showNotification("Erro ao buscar imagem. Tente novamente.", "error");
       }
   };
   const carregarMeusSites = async () => {
