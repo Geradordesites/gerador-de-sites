@@ -1484,11 +1484,10 @@ export default function Home() {
           termoContextual = productContent ? productContent.substring(0, 50).trim() : 'professional';
       }
 
-      // Novo: Modificadores focados em luz e acabamento visual (preservam o tema principal)
-      const estiloTraduzido = aiSearchType === 'realista' ? 'sharp focus, professional photography' :
-                              aiSearchType === 'cinematografica' ? 'cinematic lighting, dramatic color grading' :
-                              aiSearchType === 'estudio' ? 'editorial commercial lighting, high-end look' : 
-                              'minimalist clean composition, soft light';
+      // 2. Une com o estilo escolhido no select do painel
+      const estiloTraduzido = aiSearchType === 'realista' ? 'portrait' :
+                              aiSearchType === 'cinematografica' ? 'cinematic' :
+                              aiSearchType === 'estudio' ? 'studio' : 'clean';
                               
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
 
@@ -1845,10 +1844,7 @@ export default function Home() {
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
                                           <div className="flex gap-2">
                                               <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
-                                                  <option value="realista">Fotografia Realista</option>
-                                                  <option value="cinematografica">Cinematográfica (Filme)</option>
-                                                  <option value="estudio">Estúdio / Editorial</option>
-                                                  <option value="minimalista">Minimalista / Clean</option>
+                                                  <option value="realista">Fotografia Realista</option>                                                  
                                               </select>
                                           </div>
                                           <div className="flex gap-2 mt-2">
