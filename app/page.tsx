@@ -1288,8 +1288,10 @@ export default function Home() {
     
     commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé. Coloque parágrafos (<p>) de textos reais dentro de cada sanfona simulando os termos.\n\n";
     
-    commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente no primeiro capítulo/seção da página.\n\n";      
+commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente no primeiro capítulo/seção da página.\n\n";      
     
+    commandText += "🚨 MENU / NAVEGAÇÃO: POR PADRÃO, o site NÃO DEVE ter cabeçalho de navegação (menu/navbar superior). A página deve iniciar diretamente na seção principal (Hero). Você DEVE criar um menu APENAS SE o usuário solicitar explicitamente nas instruções de conteúdo.\n\n";
+
     if (productContent) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${productContent}\n"""\n\n`; }
     
     // Configuração base da IA
