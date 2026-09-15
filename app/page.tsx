@@ -1484,10 +1484,11 @@ export default function Home() {
           termoContextual = productContent ? productContent.substring(0, 50).trim() : 'professional';
       }
 
-      // 2. Une com o estilo escolhido no select do painel
-      const estiloTraduzido = aiSearchType === 'realista' ? 'portrait' :
-                              aiSearchType === 'cinematografica' ? 'cinematic' :
-                              aiSearchType === 'estudio' ? 'studio' : 'clean';
+      // Novo: Modificadores focados em luz e acabamento visual (preservam o tema principal)
+      const estiloTraduzido = aiSearchType === 'realista' ? 'sharp focus, professional photography' :
+                              aiSearchType === 'cinematografica' ? 'cinematic lighting, dramatic color grading' :
+                              aiSearchType === 'estudio' ? 'editorial commercial lighting, high-end look' : 
+                              'minimalist clean composition, soft light';
                               
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
 
