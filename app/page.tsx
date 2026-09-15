@@ -877,7 +877,8 @@ export default function Home() {
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    const { data } = await supabase.from('profiles').select('credits').eq('id', session.user.id).single();
+    // Trocamos .single() por .maybeSingle() aqui embaixo:
+    const { data } = await supabase.from('profiles').select('credits').eq('id', session.user.id).maybeSingle();
     if (data) {
       setUserCredits(data.credits);
     }
@@ -1325,15 +1326,18 @@ export default function Home() {
           });
 
           await Promise.all(promessas); // Espera todas as imagens carregarem
-          
-          let htmlFinal = doc.documentElement.outerHTML;
-          if (!htmlFinal.toLowerCase().startsWith('<!doctype')) { htmlFinal = '<!DOCTYPE html>\n' + htmlFinal; }
-          return htmlFinal;
-      } catch (error) {
-          console.error(error);
-          return htmlBruto; // Se der erro, devolve o HTML original seguro
-      }
-  };
+        
+        let htmlFinal = doc.documentElement.outerHTML;
+        if (!htmlFinal.toLowerCase().startsWith('<!doctype')) { htmlFinal = '<!DOCTYPE html>\n' + htmlFinal; }
+        return htmlFinal;
+    } catch (error) {
+        console.error(error);
+        return htmlBruto; // Se der erro, devolve o HTML original seguro
+    } finally {
+        // ---> COLOQUE ISSO AQUI: É isso que desliga a tela de carregamento! <---
+        setStatusApis({ texto: 'Aguardando Operação', processing: false });
+    }
+};
   const executarGeracaoSiteHibrida = async () => {
     const promptParts = [];
     
