@@ -1282,18 +1282,24 @@ export default function Home() {
 
   const executarGeracaoSiteHibrida = async () => {
     const promptParts = [];
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. Utilize APENAS imagens fotorrealistas de humanos. É expressamente PROIBIDO usar desenhos, animações, vetores ou imagens de tecnologia.\n\n";
     
-    commandText += "🚨 REGRA FATAL PARA FOTO DO AUTOR E DEPOIMENTOS: Você está PROIBIDO de criar caixas (divs) vazias, PROIBIDO de usar ícones SVG e PROIBIDO de escrever textos como 'Espaço para foto da Autora'. Você OBRIGATORIAMENTE deve usar uma tag <img> real com uma URL estática. Cole EXATAMENTE este código HTML onde for a foto do autor ou de um cliente: <img src=\"https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80\" class=\"w-full h-full object-cover\" alt=\"Perfil\" />\n\n";
+    // REGRA GERAL CORRIGIDA: Removido a trava de "apenas humanos"
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. É expressamente PROIBIDO usar desenhos, animações, vetores ou divs vazias.\n\n";
     
+    // NOVA REGRA DE IMAGENS POR NICHO
+    commandText += "🚨 REGRA FATAL PARA TODAS AS IMAGENS DO SITE: Todas as imagens (Hero, Benefícios, Produtos, etc.) DEVEM obrigatoriamente combinar com o tema do site. OBRIGATORIAMENTE use tags <img> com o link exato neste formato: https://images.unsplash.com/random/1200x800/?palavra1,palavra2&sig=numero -- Substitua 'palavra1,palavra2' por termos EM INGLÊS altamente relevantes ao nicho (ex: se o site for confeitaria use ?cake,bakery; se for advogado use ?lawyer,justice). Troque a palavra 'numero' por um número aleatório diferente (ex: sig=284, sig=913) para garantir que cada foto do site seja única!\n\n";
+
+    // NOVA REGRA DE PERFIS DINÂMICOS
+    commandText += "🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: Quando for inserir a foto de uma pessoa, cliente ou especialista, use o formato: https://images.unsplash.com/random/800x800/?portrait,person,face&sig=numero (Sempre troque o 'numero' no final para não repetir o mesmo rosto).\n\n";
+    
+    // MANTÉM SUAS REGRAS ESTRUTURAIS INTACTAS
     commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé. Coloque parágrafos (<p>) de textos reais dentro de cada sanfona simulando os termos.\n\n";
     
-commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente na primeira seção da página.\n\n";
+    commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente na primeira seção da página.\n\n";
     
     commandText += "🚨 MENU / NAVEGAÇÃO: POR PADRÃO, o site NÃO DEVE ter cabeçalho de navegação (menu/navbar superior). A página deve iniciar diretamente na seção principal (Hero). Você DEVE criar um menu APENAS SE o usuário solicitar explicitamente nas instruções de conteúdo.\n\n";
 
-    if (productContent) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${productContent}\n"""\n\n`; }
-    
+    if (productContent) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${productContent}\n"""\n\n`; }  
     // Configuração base da IA
     let basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
 
