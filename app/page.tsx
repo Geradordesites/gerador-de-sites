@@ -1279,22 +1279,73 @@ export default function Home() {
     if (hero === 'split') return "A PRIMEIRA SEÇÃO DO SITE (TOPO): Deve ser dividida ao meio (Texto persuasivo de um lado e Imagem forte do outro).";
     return "";
   };
+// MÁGICA DA HIDRATAÇÃO: Injeta as imagens reais após a IA criar a estrutura
+  const preencherImagensAutomaticamente = async (htmlBruto: string) => {
+      setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
+      try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlBruto, 'text/html');
+          const imagens = Array.from(doc.querySelectorAll('img'));
 
+          // Busca todas as imagens ao mesmo tempo (Paralelo) para ser super rápido
+          const promessas = imagens.map(async (img) => {
+              const tema = img.getAttribute('data-tema');
+              if (!tema) return; // Se a IA esqueceu o tema, pula
+
+              try {
+                  let finalUrl = "";
+                  
+                  // Tenta usar a chave ilimitada do cliente primeiro
+                  if (unsplashKey) {
+                      const pagina = Math.floor(Math.random() * 20) + 1;
+                      const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
+                      const uData = await res.json();
+                      if (uData.results && uData.results.length > 0) {
+                          const randomIndex = Math.floor(Math.random() * uData.results.length);
+                          finalUrl = uData.results[randomIndex].urls.regular;
+                      }
+                  }
+
+                  // Se falhar ou não tiver chave, usa a nossa API Vercel
+                  if (!finalUrl) {
+                      const res = await fetch(`/api/unsplash?q=${encodeURIComponent(tema)}&t=${Date.now()}`);
+                      const data = await res.json();
+                      if (data.url) finalUrl = data.url;
+                  }
+
+                  // Aplica a imagem no site
+                  if (finalUrl) {
+                      if (finalUrl.includes('images.unsplash.com')) {
+                          finalUrl = finalUrl.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=1000&q=80&fit=crop`;
+                      }
+                      img.src = finalUrl;
+                      img.removeAttribute('data-tema'); // Limpa o rastro
+                  }
+              } catch (e) { console.error('Erro na imagem:', e); }
+          });
+
+          await Promise.all(promessas); // Espera todas as imagens carregarem
+          
+          let htmlFinal = doc.documentElement.outerHTML;
+          if (!htmlFinal.toLowerCase().startsWith('<!doctype')) { htmlFinal = '<!DOCTYPE html>\n' + htmlFinal; }
+          return htmlFinal;
+      } catch (error) {
+          console.error(error);
+          return htmlBruto; // Se der erro, devolve o HTML original seguro
+      }
+  };
   const executarGeracaoSiteHibrida = async () => {
     const promptParts = [];
     
     // REGRA GERAL CORRIGIDA: Removido a trava de "apenas humanos"
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6 para garantir o espaço de uma linha). Utilize no MÁXIMO 3 a 4 imagens em todo o site. É expressamente PROIBIDO usar desenhos, animações, vetores ou divs vazias.\n\n";
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6). Utilize no MÁXIMO 3 a 4 imagens em todo o site. É PROIBIDO usar vetores ou divs vazias.\n\n";
     
-    // NOVA REGRA DE IMAGENS POR NICHO
-    commandText += "🚨 REGRA FATAL PARA TODAS AS IMAGENS DO SITE: Todas as imagens (Hero, Benefícios, Produtos, etc.) DEVEM obrigatoriamente combinar com o tema do site. OBRIGATORIAMENTE use tags <img> com o link exato neste formato: https://images.unsplash.com/random/1200x800/?palavra1,palavra2&sig=numero -- Substitua 'palavra1,palavra2' por termos EM INGLÊS altamente relevantes ao nicho (ex: se o site for confeitaria use ?cake,bakery; se for advogado use ?lawyer,justice). Troque a palavra 'numero' por um número aleatório diferente (ex: sig=284, sig=913) para garantir que cada foto do site seja única!\n\n";
-
-    // NOVA REGRA DE PERFIS DINÂMICOS
-    commandText += "🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: Quando for inserir a foto de uma pessoa, cliente ou especialista, use o formato: https://images.unsplash.com/random/800x800/?portrait,person,face&sig=numero (Sempre troque o 'numero' no final para não repetir o mesmo rosto).\n\n";
+    commandText += "🚨 REGRA MÁXIMA PARA IMAGENS (O SEGREDO DO SISTEMA): Você NÃO deve tentar adivinhar URLs de imagens reais. Para TODAS as imagens do site, use OBRIGATORIAMENTE este formato exato: <img src=\"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800\" data-tema=\"palavra1,palavra2\" alt=\"descrição\" class=\"suas classes tailwind\" />\n";
+    commandText += "O segredo está no atributo 'data-tema'. Você DEVE criá-lo e preenchê-lo com 2 ou 3 palavras-chave EM INGLÊS que descrevam a foto perfeita para aquela seção (Ex: se for bolo use data-tema=\"cake,bakery,dessert\"). Nosso sistema vai ler esse 'data-tema' e injetar a foto real em alta resolução depois!\n\n";
     
-    // MANTÉM SUAS REGRAS ESTRUTURAIS INTACTAS
-    commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé. Coloque parágrafos (<p>) de textos reais dentro de cada sanfona simulando os termos.\n\n";
+    commandText += "🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: Aplica-se a mesma regra acima. Use o atributo data-tema=\"portrait,professional,face\" nas imagens de pessoas para garantir que o sistema puxe rostos humanos.\n\n";
     
+    commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé...\n\n";    
     commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente na primeira seção da página.\n\n";
     
     commandText += "🚨 MENU / NAVEGAÇÃO: POR PADRÃO, o site NÃO DEVE ter cabeçalho de navegação (menu/navbar superior). A página deve iniciar diretamente na seção principal (Hero). Você DEVE criar um menu APENAS SE o usuário solicitar explicitamente nas instruções de conteúdo.\n\n";
@@ -1323,6 +1374,10 @@ export default function Home() {
             hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
+        
+        // ---> A MÁGICA ACONTECE AQUI (Sua ideia em ação) <---
+        hHtml = await preencherImagensAutomaticamente(hHtml);
+        
         data.html = hHtml;
         processarRespostaDOM(data);
         recarregarDadosUsuario();
