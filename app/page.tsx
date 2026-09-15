@@ -1403,35 +1403,77 @@ commandText += "Caso haja narrativa biográfica ou história do autor, você dev
 
  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
-      (window as any).showNotification("Buscando nova foto profissional...", "success");
+      (window as any).showNotification("Buscando foto na base ilimitada (via Inteligência)...", "success");
       
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let w = 1280, h = 720;
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
 
-      const fotosUnsplash = [
-          `https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=${w}&h=${h}&q=80`,
-          `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&h=${h}&q=80`,
-          `https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=${w}&h=${h}&q=80`,
-          `https://images.unsplash.com/photo-1534528741775-53994a69daeb?fit=crop&w=${w}&h=${h}&q=80`,
-          `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=${w}&h=${h}&q=80`,
-          `https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?fit=crop&w=${w}&h=${h}&q=80`,
-          `https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=${w}&h=${h}&q=80`
-      ];
+      // 1. LÊ O CONTEXTO DO SITE: Pega o que o usuário escreveu na caixa principal
+      // Pegamos os primeiros 80 caracteres para ser a palavra-chave perfeita
+      const temaDoSite = productContent ? productContent.substring(0, 80).trim() : 'professional';
 
-      const fotoEscolhida = fotosUnsplash[Math.floor(Math.random() * fotosUnsplash.length)];
+      // 2. SOMA COM O ESTILO: Une o tema do site com a escolha do painel (ex: Realista)
+      const estiloTraduzido = aiSearchType === 'realista' ? 'realistic photography' :
+                              aiSearchType === 'cinematografica' ? 'cinematic' :
+                              aiSearchType === 'estudio' ? 'studio portrait' : 'minimalist design';
+                              
+      const termoBusca = `${temaDoSite} ${estiloTraduzido}`;
 
-      setTimeout(() => {
-          // Se for uma tag img ou se não for fundo, atualiza o src e limpa o fundo para evitar sobreposição
+      // 3. BUSCA ILIMITADA: Sorteia uma página de 1 a 50 (Varre milhares de fotos da Unsplash)
+      const paginaAleatoria = Math.floor(Math.random() * 50) + 1;
+
+      try {
+          let fotoEscolhida = "";
+
+          // Se o usuário tem a chave da Unsplash salva, bate DIRETO na fonte sem limites
+          if (unsplashKey) {
+              const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(termoBusca)}&page=${paginaAleatoria}&per_page=15&client_id=${unsplashKey}`);
+              const data = await res.json();
+              
+              if (data.results && data.results.length > 0) {
+                  const randomIndex = Math.floor(Math.random() * data.results.length);
+                  fotoEscolhida = data.results[randomIndex].urls.regular;
+              }
+          } 
+          
+          // Se não encontrou ou não tem chave própria, usa a nossa API Vercel repassando o tema
+          if (!fotoEscolhida) {
+              const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
+              const data = await res.json();
+              if (data.url) fotoEscolhida = data.url;
+          }
+
+          if (fotoEscolhida) {
+              // Força o formato de recorte perfeito
+              if (fotoEscolhida.includes('images.unsplash.com')) {
+                  fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=${w}&h=${h}&fit=crop`;
+              }
+
+              if (elementoSelecionado.tagName === 'img' || !isBackground) {
+                  atualizarElemento('src', fotoEscolhida);
+                  atualizarElemento('bgImage', '');
+              } else {
+                  atualizarElemento('bgImage', fotoEscolhida);
+              }
+              (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
+          } else {
+              throw new Error("Nenhuma imagem encontrada");
+          }
+
+      } catch (error) {
+          console.error(error);
+          // Fallback de Segurança 100% Ilimitado e Aleatório
+          const fallbackUrl = `https://images.unsplash.com/random/${w}x${h}/?${encodeURIComponent(temaDoSite)}&sig=${Date.now()}`;
           if (elementoSelecionado.tagName === 'img' || !isBackground) {
-              atualizarElemento('src', fotoEscolhida);
+              atualizarElemento('src', fallbackUrl);
               atualizarElemento('bgImage', '');
           } else {
-              atualizarElemento('bgImage', fotoEscolhida);
+              atualizarElemento('bgImage', fallbackUrl);
           }
-          (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
-      }, 250);
+          (window as any).showNotification("Banco alternativo acionado. Foto aplicada!", "success");
+      }
   };
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
