@@ -3,20 +3,33 @@ import { createClient } from '@supabase/supabase-js';
 
 // Usamos a Service Role Key para poder injetar os créditos com permissão de Admin
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // A chave Mestra!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 1. A Cakto manda o status da compra. Só queremos liberar se estiver APROVADA.
-    const event = body.event || body.status;
-    if (event !== 'transaction.approved' && event !== 'approved' && event !== 'paid' && event !== 'PAID') {
-      return NextResponse.json({ message: 'Ignorado: Status não é de aprovação.' }, { status: 200 });
+    // 1. Identificar o tipo de evento (Passamos tudo para minúsculo para evitar erros)
+    const event = (body.event || body.status || '').toLowerCase();
+    
+    // Arrays de status que significam APROVAÇÃO (Ligar sistema)
+    const isApproved = ['transaction.approved', 'approved', 'paid'].includes(event);
+    
+    // Arrays de status que significam PERDA DE ACESSO (Desligar sistema)
+    // Inclui reembolsos, chargebacks e assinaturas canceladas, atrasadas ou expiradas pela Cakto
+    const isRevoked = [
+      'transaction.refunded', 'refunded', 
+      'chargeback', 'transaction.chargeback', 
+      'canceled', 'transaction.canceled', 
+      'subscription.canceled', 'subscription.expired', 'late'
+    ].includes(event);
+
+    if (!isApproved && !isRevoked) {
+      return NextResponse.json({ message: `Ignorado: Status (${event}) não requer alteração de acesso.` }, { status: 200 });
     }
 
-    // 2. Pega o E-mail do cliente e o ID/Nome do produto que ele comprou
+    // 2. Pega o E-mail do cliente e o ID/Nome do produto
     const email = body.customer?.email || body.client?.email || body.email;
     const offerName = body.offer?.name || body.product?.name || body.product_name || '';
     
@@ -37,7 +50,22 @@ export async function POST(req: Request) {
     }
 
     // =========================================================================
-    // 4. A MÁGICA ACONTECE AQUI: Lendo o nome da oferta e liberando o acesso!
+    // 4. AÇÃO DE REEMBOLSO / CANCELAMENTO / EXPIRAÇÃO DE ASSINATURA
+    // =========================================================================
+    if (isRevoked) {
+      console.log(`[REVOGADO] Desligando acesso premium de ${email} devido a status: ${event}`);
+      
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ is_premium: false }) // Tira o acesso VIP/Ilimitado
+        .eq('id', userData.id);
+
+      if (updateError) throw updateError;
+      return NextResponse.json({ success: true, message: `Acesso revogado com sucesso para ${email}.` }, { status: 200 });
+    }
+
+    // =========================================================================
+    // 5. AÇÃO DE APROVAÇÃO: Lendo o nome da oferta e liberando o acesso!
     // =========================================================================
     const nomeOferta = offerName.toUpperCase();
     let updates = {};
@@ -66,10 +94,10 @@ export async function POST(req: Request) {
 
     else {
       console.log('Oferta não mapeada:', offerName);
-      return NextResponse.json({ message: 'Oferta não mapeada.' }, { status: 200 });
+      return NextResponse.json({ message: 'Oferta não mapeada. Nenhuma ação tomada.' }, { status: 200 });
     }
 
-    // 5. Atualiza o saldo do cliente no Supabase
+    // 6. Atualiza o saldo/acesso do cliente no Supabase
     const { error: updateError } = await supabase
       .from('users')
       .update(updates)
@@ -77,7 +105,8 @@ export async function POST(req: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ success: true, message: `Créditos/Acesso liberados para ${email}!` }, { status: 200 });
+    console.log(`[APROVADO] Acesso liberado para ${email}. Plano: ${nomeOferta}`);
+    return NextResponse.json({ success: true, message: `Acesso aprovado para ${email}!` }, { status: 200 });
 
   } catch (error: any) {
     console.error('Erro no Webhook da Cakto:', error);
