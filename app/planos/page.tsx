@@ -15,15 +15,16 @@ export default function PlanosPage() {
   const [showModal, setShowModal] = useState(false)
   const [planoSelecionado, setPlanoSelecionado] = useState<'mensal' | 'anual' | 'iniciante' | 'pro' | 'agencia' | null>(null)
 
-  // Links de Checkout da Cakto (Substitua pelos links reais gerados no painel da Cakto)
+  // Links reais de Checkout da Cakto e WhatsApp
   const linksCheckout = {
-    mensal: "https://pay.cakto.com.br/LINK_MENSAL",
-    anual: "https://pay.cakto.com.br/LINK_ANUAL",
-    vitalicio: "https://pay.cakto.com.br/LINK_VITALICIO", 
-    iniciante: "https://pay.cakto.com.br/LINK_INICIANTE",
-    pro: "https://pay.cakto.com.br/LINK_PRO",
-    agencia: "https://pay.cakto.com.br/LINK_AGENCIA",
-    saas_completo: "https://pay.cakto.com.br/LINK_SAAS" 
+    mensal: "https://pay.cakto.com.br/s29kpat",
+    anual: "https://pay.cakto.com.br/eaxg525",
+    vitalicio: "https://pay.cakto.com.br/hmu7wum", 
+    iniciante: "https://pay.cakto.com.br/tzvknr5_1109861",
+    pro: "https://pay.cakto.com.br/6vb94j4",
+    agencia: "https://pay.cakto.com.br/75uh2xc",
+    // Link direto para o seu WhatsApp para fechamento do plano High Ticket
+    saas_completo: "https://wa.me/5561982096982?text=Olá!%20Tenho%20interesse%20na%20instalação%20do%20Sistema%20SaaS%20Completo%20(White%20Label)." 
   }
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export default function PlanosPage() {
           </div>
         )}
 
-        {/* BOTOES DE ALTERNÂNCIA (TOGGLE) - CORES AJUSTADAS */}
+        {/* BOTOES DE ALTERNÂNCIA (TOGGLE) */}
         <div className="flex justify-center mb-16">
           <div className="bg-slate-200 p-1.5 rounded-2xl inline-flex relative shadow-inner flex-col sm:flex-row gap-2 sm:gap-0">
             <button 
