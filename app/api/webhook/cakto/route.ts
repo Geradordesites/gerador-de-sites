@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // 3. Busca o cliente no nosso banco de dados
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id, credits, is_premium')
       .eq('email', email)
       .single();
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       console.log(`[REVOGADO] Desligando acesso premium de ${email} devido a status: ${event}`);
       
       const { error: updateError } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ is_premium: false }) // Tira o acesso VIP/Ilimitado
         .eq('id', userData.id);
 
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
 
     // 6. Atualiza o saldo/acesso do cliente no Supabase
     const { error: updateError } = await supabase
-      .from('users')
+      .from('profiles')
       .update(updates)
       .eq('id', userData.id);
 
