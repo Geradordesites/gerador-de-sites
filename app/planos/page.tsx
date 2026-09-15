@@ -110,19 +110,34 @@ export default function PlanosPage() {
         {/* ========================================================================= */}
         {tipoPlano === 'ilimitado' && (
           <div className="animate-in fade-in zoom-in-95 duration-500">
-            {/* Aviso Explicativo da API */}
-            <div className="max-w-4xl mx-auto mb-8 bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex items-start gap-4">
-              <div className="bg-emerald-100 p-3 rounded-full text-emerald-600 shrink-0">
-                <ImageIcon className="size-6" />
+            
+            {/* Bloco de Avisos Explicativos da API */}
+            <div className="max-w-4xl mx-auto mb-8 bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
+              
+              <div className="flex items-start gap-4">
+                <div className="bg-emerald-100 p-3 rounded-full text-emerald-600 shrink-0">
+                  <ImageIcon className="size-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-900 mb-1">Como funcionam as imagens neste plano?</h4>
+                  <p className="text-sm text-emerald-800 leading-relaxed">
+                    Para garantir que você <strong>não tenha custos extras</strong> usando sua própria chave do Google Gemini, o sistema utilizará uma API gratuita de banco de imagens (Unsplash). Suas páginas serão geradas com fotografias reais e em alta qualidade sem gastar um centavo a mais.
+                  </p>
+                  <p className="text-sm text-emerald-800 font-semibold mt-2">
+                    Lembre-se: Após o site ser gerado pela IA, tudo pode ser editado! Textos (copys), imagens e cores podem ser alterados de forma muito fácil em nosso editor visual.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-emerald-900 mb-1">Como funcionam as imagens neste plano?</h4>
-                <p className="text-sm text-emerald-800 leading-relaxed">
-                  Para garantir que você <strong>não tenha custos extras</strong> usando sua própria chave do Google Gemini, o sistema utilizará uma API gratuita de banco de imagens (Unsplash). Suas páginas serão geradas com fotografias reais e em alta qualidade sem gastar um centavo a mais.
-                </p>
-                <p className="text-sm text-emerald-800 font-semibold mt-2">
-                  Lembre-se: Após o site ser gerado pela IA, tudo pode ser editado! Textos (copys), imagens e cores podem ser alterados de forma muito fácil em nosso editor visual.
-                </p>
+
+              {/* NOVO AVISO SOBRE OS LIMITES DO GOOGLE */}
+              <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                <AlertTriangle className="size-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <h5 className="font-bold text-amber-900 text-sm mb-1">Atenção aos limites do Google (Rate Limits)</h5>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    A geração de sites é ilimitada do nosso lado. Porém, como você utilizará a sua própria chave de API, a quantidade de sites gerados por minuto dependerá exclusivamente dos <strong>limites de uso e cotas estabelecidos pelo próprio Google</strong> para a sua conta.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -138,7 +153,10 @@ export default function PlanosPage() {
                   <p className="text-sm text-slate-500 mt-3">Renovação automática. Cancele quando quiser.</p>
                 </div>
                 <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Geração ilimitada de sites</li>
+                  <li className="flex items-start gap-3 text-slate-700">
+                    <Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> 
+                    <span>Geração ilimitada de sites <span className="text-amber-500 font-bold">*</span></span>
+                  </li>
                   <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Conecte sua chave grátis do Google</li>
                   <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Imagens via API Gratuita (Custo zero)</li>
                   <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Acesso total ao Editor Visual</li>
@@ -161,7 +179,10 @@ export default function PlanosPage() {
                   <p className="text-sm text-slate-400 mt-3">Equivale a apenas R$ 24,75 por mês.</p>
                 </div>
                 <ul className="space-y-4 mb-8 flex-1">
-                  <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0 mt-0.5" /> Tudo do plano Mensal</li>
+                  <li className="flex items-start gap-3 text-slate-300">
+                    <Check className="size-5 text-emerald-400 shrink-0 mt-0.5" /> 
+                    <span>Geração ilimitada de sites <span className="text-amber-500 font-bold">*</span></span>
+                  </li>
                   <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0 mt-0.5" /> Desconto de 47% embutido</li>
                   <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0 mt-0.5" /> Suporte prioritário via WhatsApp</li>
                 </ul>
@@ -183,7 +204,7 @@ export default function PlanosPage() {
                 </div>
                 <ul className="space-y-4 mb-8 flex-1 relative z-10">
                   <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Acesso vitalício e independente</li>
-                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Geração ilimitada de sites</li>
+                  <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Geração ilimitada sem amarras</li>
                   <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Pagamento único no cartão ou PIX</li>
                 </ul>
                 
