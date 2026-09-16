@@ -35,6 +35,26 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         }, 800);
     }
 
+    function clearAllOutlines() {
+        if(elSelecionado) { 
+            elSelecionado.style.outline = ''; 
+            elSelecionado.style.outlineOffset = ''; 
+            elSelecionado = null; 
+        }
+        document.querySelectorAll('[data-old-outline]').forEach(el => {
+            el.style.outline = el.dataset.oldOutline || '';
+            el.style.outlineOffset = '';
+            delete el.dataset.oldOutline;
+        });
+        document.querySelectorAll('*').forEach(el => {
+            if (el.style.cursor === 'crosshair') el.style.cursor = '';
+            if (el.style.outline.includes('solid')) {
+                el.style.outline = '';
+                el.style.outlineOffset = '';
+            }
+        });
+    }
+
     function selectElement(targetEl) {
         if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
 
@@ -105,6 +125,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let textoAtual = elSelecionado.innerHTML || '';
         textoAtual = textoAtual.replace(/<br\\s*\\/?>/gi, '\\n').replace(/(<([^>]+)>)/gi, "");
 
+        let imgW = elSelecionado.dataset.imgWidth || 'auto';
+        let imgH = elSelecionado.dataset.imgHeight || 'auto';
+
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
             id: elSelecionado.id,
@@ -121,6 +144,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             opacity: objOpacity,
             bgImage: bgImg,
             imgFormat: aspect,
+            imgWidth: imgW,
+            imgHeight: imgH,
             bloqueiaTexto: bloqueiaTexto,
             textAlign: tAlign,
             boxAlign: bAlign,
@@ -140,26 +165,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 document.body.classList.add('builder-editing');
             } else {
                 document.body.classList.remove('builder-editing');
-                // Remove completamente todas as marcações visuais
-                if(elSelecionado) { 
-                    elSelecionado.style.outline = ''; 
-                    elSelecionado.style.outlineOffset = ''; 
-                    elSelecionado = null; 
-                }
-                document.querySelectorAll('[data-old-outline]').forEach(el => {
-                    el.style.outline = el.dataset.oldOutline || '';
-                    el.style.outlineOffset = '';
-                    delete el.dataset.oldOutline;
-                });
-                // Remove outlines que podem ter ficado em elementos por outros motivos
-                document.querySelectorAll('*').forEach(el => {
-                    if (el.style.cursor === 'crosshair') el.style.cursor = '';
-                    const outline = el.style.outline;
-                    if (outline === '2px solid rgb(14, 165, 233)' || outline === '3px solid rgb(79, 70, 229)') {
-                        el.style.outline = '';
-                        el.style.outlineOffset = '';
-                    }
-                });
+                clearAllOutlines();
             }
         }
         
@@ -215,16 +221,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
        if (event.data.type === 'REVERSE_FLEX') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                // Procura a caixa estrutural que segura as 2 colunas do layout
                 let target = el.closest('.grid') || el.closest('section > div, header > div') || el.closest('.flex');
-                
                 if(target) {
-                    // O pulo do gato: Troca os blocos fisicamente no HTML! 
-                    // Isso inverte texto/imagem com perfeição em 100% dos layouts.
                     if (target.children.length >= 2) {
                         target.appendChild(target.firstElementChild);
                     } else {
-                        // Fallback de segurança 
                         target.classList.toggle('md:flex-row-reverse');
                     }
                     sendCleanHtml();
@@ -330,12 +331,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     el.innerHTML = novoTexto;
                 }
 
-if(event.data.src !== undefined) {
-    el.src = event.data.src;
-    el.removeAttribute('srcset');
-    el.removeAttribute('sizes');
-    el.style.backgroundImage = 'none';
-}                if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
+                if(event.data.src !== undefined) {
+                    el.src = event.data.src;
+                    el.removeAttribute('srcset');
+                    el.removeAttribute('sizes');
+                    el.style.backgroundImage = 'none';
+                }                
+                
+                if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 
                 if(event.data.fontSize !== undefined) {
                     el.style.fontSize = ''; 
@@ -406,7 +409,7 @@ if(event.data.src !== undefined) {
                         el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
                     }
 
-el.classList.remove('backdrop-blur-md');
+                    el.classList.remove('backdrop-blur-md');
                 } else if (isImg && event.data.bgColor !== undefined) {
                     el.style.backgroundColor = event.data.bgColor;
                 }
@@ -466,6 +469,24 @@ el.classList.remove('backdrop-blur-md');
                     }
                 }
                 
+                if(event.data.imgWidth !== undefined) {
+                    el.dataset.imgWidth = event.data.imgWidth;
+                    el.className = el.className.replace(/\\bw-\\S+\\b/g, '').replace(/\\bmax-w-\\S+\\b/g, '').trim();
+                    if(event.data.imgWidth !== 'auto') {
+                        event.data.imgWidth.split(' ').forEach(cls => el.classList.add(cls));
+                    }
+                }
+                
+                if(event.data.imgHeight !== undefined) {
+                    el.dataset.imgHeight = event.data.imgHeight;
+                    el.className = el.className.replace(/\\bh-\\S+\\b/g, '').replace(/\\bobject-\\S+\\b/g, '').replace(/\\bh-auto\\b/g, '').trim();
+                    if(event.data.imgHeight === 'auto') {
+                        el.classList.add('h-auto');
+                    } else {
+                        event.data.imgHeight.split(' ').forEach(cls => el.classList.add(cls));
+                    }
+                }
+
                 if(event.data.imgRounded !== undefined) {
                     const allClassesToRemove = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500', 'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'];
                     el.classList.remove(...allClassesToRemove);
@@ -514,12 +535,8 @@ el.classList.remove('backdrop-blur-md');
         
         if (modoEdicao) {
             // Se clicar no espaço vazio do site, limpa a seleção e remove a borda
-            if (e.target === document.body || e.target === document.documentElement) {
-                if(elSelecionado) { 
-                    elSelecionado.style.outline = ''; 
-                    elSelecionado.style.outlineOffset = ''; 
-                    elSelecionado = null; 
-                }
+            if (e.target === document.body || e.target === document.documentElement || e.target.tagName === 'MAIN') {
+                clearAllOutlines();
                 window.parent.postMessage({ type: 'ELEMENT_SELECTED', id: null }, '*');
                 return;
             }
@@ -684,17 +701,9 @@ const passosTour = [
         descricao: "Quando estiver satisfeito, clique em 'Baixar Site' para salvar o arquivo HTML em seu computador. Você terá o código completo e limpo.",
         seletor: "#tour-download-btn",
         posicao: "bottom"
-    },
-    {
-        id: 8,
-        titulo: "🌐 Publique seu site na internet",
-        descricao: "Para colocar seu site no ar, clique em 'Como Hospedar' e siga o guia simples para publicar. Seu site estará online em minutos!",
-        seletor: "#tour-hospedar-btn",
-        posicao: "bottom"
     }
 ];
 
-// Componente de Highlight do Tour com seta e posicionamento inteligente
 function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any) {
     const [rect, setRect] = useState<DOMRect | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
@@ -714,7 +723,6 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 const posicoes = ['bottom', 'top', 'left', 'right'];
                 let posicoesParaTentar = [passo.posicao, ...posicoes.filter(p => p !== passo.posicao)];
 
-                // Declarar top e left fora do loop para que estejam disponíveis após o loop
                 let top = 0;
                 let left = 0;
                 let posicaoEncontrada = false;
@@ -758,12 +766,10 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
                 }
 
                 if (!posicaoEncontrada) {
-                    // Fallback: usar a última posição calculada (que pode ser inválida, mas evitamos erro)
                     setTooltipPos({ top, left });
                     setArrowDir(passo.posicao || 'bottom');
                 }
             } else {
-                // Se não encontrou, agenda nova tentativa
                 setTimeout(encontrarElemento, 500);
             }
         };
@@ -772,10 +778,8 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
         window.addEventListener('resize', encontrarElemento);
         window.addEventListener('scroll', encontrarElemento);
 
-        // Fallback: se após 2 segundos o elemento ainda não foi encontrado, pula para o próximo passo
         const timer = setTimeout(() => {
             if (!rect) {
-                // Elemento não encontrado, pula
                 if (onNext) onNext();
             }
         }, 2000);
@@ -875,10 +879,11 @@ export default function Home() {
   const [passoAtualTutorial, setPassoAtualTutorial] = useState(0);
   const totalPassosTutorial = passosTour.length;
 
+  const [modificacaoGlobal, setModificacaoGlobal] = useState(false);
+
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    // Trocamos .single() por .maybeSingle() aqui embaixo:
     const { data } = await supabase.from('profiles').select('credits').eq('id', session.user.id).maybeSingle();
     if (data) {
       setUserCredits(data.credits);
@@ -930,7 +935,6 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   
-  const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
   const [aiSearchType, setAiSearchType] = useState('realista');
   
   const [modoInspetor, setModoInspetor] = useState(false);
@@ -949,19 +953,23 @@ export default function Home() {
   const [heroLayout, setHeroLayout] = useState('auto');
   const [productContent, setProductContent] = useState('');
 
- const purificarHTML = (rawHtml: string) => {
+  const purificarHTML = (rawHtml: string) => {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
       
-      // Faxina agressiva: caça o HEX e o RGB da cor de foco em qualquer ordem que o navegador jogar
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
-                   .replace(/outline:\s*[^;]*(?:rgb\(14,\s*165,\s*233\)|#0ea5e9)[^;]*;?/gi, '')
-                   .replace(/outline:\s*[^;]*(?:rgb\(79,\s*70,\s*229\)|#4f46e5)[^;]*;?/gi, '')
                    .replace(/outline-offset:\s*-[234]px;?/gi, '')
                    .replace(/data-old-outline="[^"]*"/gi, '')
                    .replace(/\s*style="\s*"/gi, ''); 
                    
+      // Limpa qualquer vestígio de outline nas tags HTML (blindagem do fantasma)
+      clean = clean.replace(/style="[^"]*outline:[^"]*"/gi, (match) => {
+           let newStyle = match.replace(/outline:\s*[^;]+;?/gi, '').replace(/outline-offset:\s*[^;]+;?/gi, '');
+           if (newStyle === 'style=""' || newStyle === 'style=" "') return '';
+           return newStyle;
+      });
+
       clean = clean.replace(/ class="\s*"/gi, ''); 
       clean = clean.replace(/\[(http[^\]]+)\]\([^)]+\)/gi, '$1');
       return clean;
@@ -997,7 +1005,15 @@ export default function Home() {
       setModoInspetor(newMode);
       setElementoSelecionado(null);
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if(iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'TOGGLE_EDIT_MODE', value: newMode }, '*');
+      if(iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'TOGGLE_EDIT_MODE', value: newMode }, '*');
+      }
+      if(!newMode) {
+           setTimeout(() => {
+               const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+               if(codEl) { codEl.value = purificarHTML(codEl.value); }
+           }, 500);
+      }
   };
 
   const atualizarElemento = (field: string, value: string | number | boolean, forceTextUpdate = false) => {
@@ -1032,7 +1048,6 @@ export default function Home() {
   const moverElemento = (direcao: 'UP' | 'DOWN') => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      // Agora ele verifica qual botão você apertou antes de mandar a ordem!
       iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*'); 
   };
 
@@ -1132,7 +1147,9 @@ export default function Home() {
     let htmlFinal = codigoExterno;
     htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
-    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Sites externos bloqueiam exibição cruzada.</span></div>');
+    
+    // REGRA DE REMOÇÃO SILENCIOSA DO IFRAME: Simplesmente apaga e não deixa vestígios
+    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
 
     if(!htmlFinal.toLowerCase().includes('<body')) {
         htmlFinal = `<!DOCTYPE html>
@@ -1161,7 +1178,7 @@ export default function Home() {
     if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
     if (prevEl) prevEl.srcdoc = htmlFinal + SCRIPT_PREVIEW; 
     setCodigoExterno(''); setModalImportarCodigo(false);
-    (window as any).showNotification("Código importado e blindado contra bloqueios!", "success");
+    (window as any).showNotification("Código importado e blindado com sucesso!", "success");
     if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
   };
 
@@ -1180,17 +1197,69 @@ export default function Home() {
   const otimizarComIA = async (comandoOverride?: string) => {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLTextAreaElement;
       const comando = comandoOverride || promptInput?.value.trim();
-      if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
-      const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
-      REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
-      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
-      if(resData && resData.html) {
-          const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
-          const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-          iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
-          if(promptInput) promptInput.value = '';
-          recarregarDadosUsuario();
-          (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
+      
+      if(!comando) { 
+          (window as any).showNotification("Informe a instrução de otimização.", "error"); 
+          return; 
+      }
+
+      if (modificacaoGlobal) {
+          setStatusApis({ texto: 'Analisando e modificando estrutura...', processing: true });
+          try {
+              const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+              const htmlCompleto = codEl?.value || '';
+              if (!htmlCompleto) throw new Error("O site está vazio. Gere ou importe um site primeiro.");
+
+              const promptSuperContexto = `Aqui está o código HTML COMPLETO do site atual:
+"""\n${htmlCompleto}\n"""
+
+O cliente solicitou a seguinte modificação: "${comando}"
+
+🚨 REGRAS ESTABELECIDAS (OBEDEÇA RIGOROSAMENTE):
+1. Analise o HTML, encontre a(s) parte(s) que precisam ser alteradas e faça as modificações.
+2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.
+3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.
+4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.
+5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
+6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
+
+              const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false);
+              
+              if(resData && resData.html) {
+                  const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+                  const htmlHidratado = await preencherImagensAutomaticamente(cleanHtml);
+                  processarRespostaDOM({ html: htmlHidratado });
+                  
+                  if(promptInput) promptInput.value = '';
+                  recarregarDadosUsuario();
+                  (window as any).showNotification("Modificação global aplicada com sucesso!", "success");
+              }
+          } catch (error) {
+              console.error(error);
+              (window as any).showNotification("Erro ao aplicar modificação global.", "error");
+          } finally {
+              setStatusApis({ texto: 'Aguardando Operação', processing: false });
+          }
+          
+      } else {
+          if(!elementoSelecionado) {
+              (window as any).showNotification("Nenhum elemento selecionado.", "error"); 
+              return;
+          }
+          
+          const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
+          REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
+          
+          const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
+          
+          if(resData && resData.html) {
+              const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+              iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
+              if(promptInput) promptInput.value = '';
+              recarregarDadosUsuario();
+              (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
+          }
       }
   };
 
@@ -1201,31 +1270,41 @@ export default function Home() {
     const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
     const comando = promptInput?.value.trim();
     if (!comando) { (window as any).showNotification("Descreva o que deseja adicionar ou alterar no site.", "error"); return; }
+    
     setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
+    
     try {
-        const response = await fetch('/api/gerar', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                systemInstruction: "Engenheiro Sênior de Software. Gere conteúdo completo para todas as seções solicitadas.", 
-                promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DO SITE ATUAL ===\n${currentHtml}` }], 
-                isSiteRefinement: true, 
-                clientApiKey: apiKey,
-                clientUnsplashKey: unsplashKey,
-                userId: userId,
-                userEmail: userEmail
-            })
-        });
-        const responseText = await response.text();
-        let data;
-        try { data = JSON.parse(responseText); } catch (e) { throw new Error("Ocorreu um erro no servidor de IA."); }
-        if (!data.success) throw new Error(data.error);
-        if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data); 
+        const promptSuperContexto = `Aqui está o código HTML COMPLETO do site atual:
+"""\n${currentHtml}\n"""
+
+O cliente solicitou a seguinte modificação: "${comando}"
+
+🚨 REGRAS ESTABELECIDAS (OBEDEÇA RIGOROSAMENTE):
+1. Analise o HTML, encontre a(s) parte(s) que precisam ser alteradas e faça as modificações.
+2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.
+3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.
+4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.
+5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
+6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
+
+        const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false);
+        
+        if (resData && resData.html) {
+            const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+            const htmlHidratado = await preencherImagensAutomaticamente(cleanHtml);
+            processarRespostaDOM({ html: htmlHidratado }); 
+            
             recarregarDadosUsuario();
             promptInput.value = ''; 
             (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else { throw new Error("A IA falhou ao processar a modificação global."); }
-    } catch (err: any) { (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); } finally { setStatusApis({ texto: 'Aguardando Operação', processing: false }); }
+        } else { 
+            throw new Error("A IA falhou ao processar a modificação global."); 
+        }
+    } catch (err: any) { 
+        (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); 
+    } finally { 
+        setStatusApis({ texto: 'Aguardando Operação', processing: false }); 
+    }
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
@@ -1281,7 +1360,7 @@ export default function Home() {
     if (hero === 'split') return "A PRIMEIRA SEÇÃO DO SITE (TOPO): Deve ser dividida ao meio (Texto persuasivo de um lado e Imagem forte do outro).";
     return "";
   };
-// MÁGICA DA HIDRATAÇÃO: Injeta as imagens reais após a IA criar a estrutura
+  
   const preencherImagensAutomaticamente = async (htmlBruto: string) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
@@ -1289,15 +1368,13 @@ export default function Home() {
           const doc = parser.parseFromString(htmlBruto, 'text/html');
           const imagens = Array.from(doc.querySelectorAll('img'));
 
-          // Busca todas as imagens ao mesmo tempo (Paralelo) para ser super rápido
           const promessas = imagens.map(async (img) => {
               const tema = img.getAttribute('data-tema');
-              if (!tema) return; // Se a IA esqueceu o tema, pula
+              if (!tema) return; 
 
               try {
                   let finalUrl = "";
                   
-                  // Tenta usar a chave ilimitada do cliente primeiro
                   if (unsplashKey) {
                       const pagina = Math.floor(Math.random() * 20) + 1;
                       const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
@@ -1308,41 +1385,38 @@ export default function Home() {
                       }
                   }
 
-                  // Se falhar ou não tiver chave, usa a nossa API Vercel
                   if (!finalUrl) {
                       const res = await fetch(`/api/unsplash?q=${encodeURIComponent(tema)}&t=${Date.now()}`);
                       const data = await res.json();
                       if (data.url) finalUrl = data.url;
                   }
 
-                  // Aplica a imagem no site
                   if (finalUrl) {
                       if (finalUrl.includes('images.unsplash.com')) {
                           finalUrl = finalUrl.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=1000&q=80&fit=crop`;
                       }
                       img.src = finalUrl;
-                      img.removeAttribute('data-tema'); // Limpa o rastro
+                      img.removeAttribute('data-tema'); 
                   }
               } catch (e) { console.error('Erro na imagem:', e); }
           });
 
-          await Promise.all(promessas); // Espera todas as imagens carregarem
+          await Promise.all(promessas); 
         
         let htmlFinal = doc.documentElement.outerHTML;
         if (!htmlFinal.toLowerCase().startsWith('<!doctype')) { htmlFinal = '<!DOCTYPE html>\n' + htmlFinal; }
         return htmlFinal;
     } catch (error) {
         console.error(error);
-        return htmlBruto; // Se der erro, devolve o HTML original seguro
+        return htmlBruto; 
     } finally {
-        // ---> COLOQUE ISSO AQUI: É isso que desliga a tela de carregamento! <---
         setStatusApis({ texto: 'Aguardando Operação', processing: false });
     }
-};
+  };
+
   const executarGeracaoSiteHibrida = async () => {
     const promptParts = [];
     
-    // REGRA GERAL CORRIGIDA: Removido a trava de "apenas humanos"
     let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6). Utilize no MÁXIMO 3 a 4 imagens em todo o site se for por api paga, se for imagens gratuitas unsplash ou outra gratis pode usar o máximo de imagens, 10, 15 imagens etc. É PROIBIDO usar vetores ou divs vazias.\n\n";
     commandText += "🚨 PROIBIDO CRIAR DEPOIMENTOS: É expressamente proibido gerar seções de depoimentos, avaliações de clientes ou provas sociais na primeira criação do site. O site não deve conter blocos de depoimentos; caso o usuário queira, ele poderá adicionar isso depois manualmente pelo painel de blocos ou na opção de modificar.\n\n";
     commandText += "🚨 REGRA MÁXIMA PARA IMAGENS (O SEGREDO DO SISTEMA): Você NÃO deve tentar adivinhar URLs de imagens reais. Para TODAS as imagens do site, use OBRIGATORIAMENTE este formato exato: <img src=\"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800\" data-tema=\"palavra1,palavra2\" alt=\"descrição\" class=\"suas classes tailwind\" />\n";
@@ -1356,15 +1430,12 @@ export default function Home() {
     commandText += "🚨 MENU / NAVEGAÇÃO: POR PADRÃO, o site NÃO DEVE ter cabeçalho de navegação (menu/navbar superior). A página deve iniciar diretamente na seção principal (Hero). Você DEVE criar um menu APENAS SE o usuário solicitar explicitamente nas instruções de conteúdo.\n\n";
 
     if (productContent) { commandText += `INSTRUÇÕES DE CONTEÚDO / COPY:\n"""\n${productContent}\n"""\n\n`; }  
-    // Configuração base da IA
+    
     let basePrompt = `Como Engenheiro Sênior de Software e Especialista em Interface, você deve criar uma Landing Page espetacular, completa e de página inteira que cubra todo o fluxo de conversão. Não se limite a apenas um topo e um botão; crie seções para Hero, Recursos, Benefícios, Prova Social, Preços, FAQ, e uma Chamada para Ação clara. Use tipografia legível e cores consistentes.`;
 
-    // 🛑 O SEGREDO ESTÁ AQUI: Ativa o MODO CLONE se tiver imagem anexada
     if (uploadedImages.length > 0) {
         commandText += `\n\n🚨 MODO CLONE DE INTERFACE ATIVADO: O usuário anexou imagens de referência de design. Você DEVE atuar como um conversor de 'Design para Código'. Analise visualmente a imagem e RECRIE o layout e a estrutura EXATAMENTE como na arte. Copie fielmente as cores de fundo, cores das fontes, cores dos botões, alinhamentos, disposições de colunas e o estilo geral. Não invente um layout genérico, use a imagem como planta baixa rigorosa do seu HTML!\n\n`;
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
-        
-        // Altera a personalidade da IA para focar estritamente em copiar a imagem
         basePrompt = `Atue como um Desenvolvedor Front-end Sênior especialista em Tailwind CSS. Sua missão principal é converter a imagem de design fornecida em código HTML funcional e responsivo, mantendo a mais alta fidelidade visual possível (Pixel Perfect) com a imagem em anexo.`;
     }
 
@@ -1380,7 +1451,6 @@ export default function Home() {
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         
-        // ---> A MÁGICA ACONTECE AQUI (Sua ideia em ação) <---
         hHtml = await preencherImagensAutomaticamente(hHtml);
         
         data.html = hHtml;
@@ -1410,7 +1480,6 @@ export default function Home() {
       const file = e.target.files?.[0];
       if (!file) return;
 
-      // Detecta se a imagem original é um PNG para manter o fundo transparente
       const isPNG = file.type === 'image/png';
       const mimeType = isPNG ? 'image/png' : 'image/jpeg';
       const fileExt = isPNG ? 'png' : 'jpg';
@@ -1433,7 +1502,6 @@ export default function Home() {
               if (ctx) { 
                   ctx.drawImage(img, 0, 0, w, h); 
                   
-                  // O Segredo está aqui: Se for PNG, salva como PNG. Se não, comprime como JPEG.
                   canvas.toBlob(async (blob) => {
                       if (!blob) return;
                       
@@ -1467,7 +1535,7 @@ export default function Home() {
       e.target.value = ''; 
   };
 
- const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
+  const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("Buscando nova foto na API...", "success");
       
@@ -1476,7 +1544,6 @@ export default function Home() {
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { w = 800; h = 800; }
 
-      // 1. Pega o alt da imagem ou usa o contexto geral do site
       let termoContextual = '';
       if (elementoSelecionado.alt && elementoSelecionado.alt.trim() !== '' && elementoSelecionado.alt !== 'Perfil' && elementoSelecionado.alt !== 'Cliente') {
           termoContextual = elementoSelecionado.alt;
@@ -1484,7 +1551,6 @@ export default function Home() {
           termoContextual = productContent ? productContent.substring(0, 50).trim() : 'professional';
       }
 
-      // 2. Une com o estilo escolhido no select do painel
       const estiloTraduzido = aiSearchType === 'realista' ? 'portrait' :
                               aiSearchType === 'cinematografica' ? 'cinematic' :
                               aiSearchType === 'estudio' ? 'studio' : 'clean';
@@ -1492,14 +1558,12 @@ export default function Home() {
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
 
       try {
-          // 3. Chama diretamente a nossa rota de API do servidor (a mesma que deu certo no site todo)
           const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
           const data = await res.json();
 
           if (data.url) {
               let fotoEscolhida = data.url;
 
-              // Ajusta o recorte proporcional para o formato da foto
               if (fotoEscolhida.includes('images.unsplash.com')) {
                   fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=${w}&h=${h}&fit=crop`;
               }
@@ -1520,6 +1584,7 @@ export default function Home() {
           (window as any).showNotification("Erro ao buscar imagem. Tente novamente.", "error");
       }
   };
+
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
     const { data: { session } } = await supabase.auth.getSession();
@@ -1632,7 +1697,6 @@ export default function Home() {
   const sitesAtuais = listaSites.slice(indexOfFirstSite, indexOfLastSite);
   const totalPaginas = Math.ceil(listaSites.length / SITES_POR_PAGINA);
 
-  // Navegação do tour
   const handleNext = () => {
     if (passoAtualTutorial < totalPassosTutorial - 1) {
       setPassoAtualTutorial(passoAtualTutorial + 1);
@@ -1671,7 +1735,6 @@ export default function Home() {
         details > summary::-webkit-details-marker { display: none; }
       `}} />
 
-     {/* MODAL DE IMPORTAR CÓDIGO COM O BOTÃO DE UPLOAD */}
       {modalImportarCodigo && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
@@ -1783,31 +1846,31 @@ export default function Home() {
                       ) : (
                           <div className="pb-10 bg-white">
                               <div className="panel-section bg-slate-50/50 pb-4">
-    <label className="input-label mb-3 text-[9px] text-slate-500 flex justify-between items-center">
-        Ações do Elemento
-        <span className="text-[9px] font-black uppercase text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded shadow-sm border border-indigo-200" title="Tag HTML do elemento">{elementoSelecionado.tagName}</span>
-    </label>
-    
-    <div className="flex gap-2 w-full">
-        <button onClick={() => {
-            const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-            iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
-        }} className="flex-1 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5" title="Seleciona a caixa maior que segura este item">
-            <i className="fas fa-expand-arrows-alt text-sm"></i>
-            <span>Caixa Inteira</span>
-        </button>
-        
-        <button onClick={duplicarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
-            <i className="fas fa-copy text-sm"></i>
-            <span>Duplicar</span>
-        </button>
-        
-        <button onClick={deletarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
-            <i className="fas fa-trash-alt text-sm"></i>
-            <span>Excluir</span>
-        </button>
-    </div>
-</div>
+                                <label className="input-label mb-3 text-[9px] text-slate-500 flex justify-between items-center">
+                                    Ações do Elemento
+                                    <span className="text-[9px] font-black uppercase text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded shadow-sm border border-indigo-200" title="Tag HTML do elemento">{elementoSelecionado.tagName}</span>
+                                </label>
+                                
+                                <div className="flex gap-2 w-full">
+                                    <button onClick={() => {
+                                        const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                                        iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
+                                    }} className="flex-1 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5" title="Seleciona a caixa maior que segura este item">
+                                        <i className="fas fa-expand-arrows-alt text-sm"></i>
+                                        <span>Caixa Inteira</span>
+                                    </button>
+                                    
+                                    <button onClick={duplicarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
+                                        <i className="fas fa-copy text-sm"></i>
+                                        <span>Duplicar</span>
+                                    </button>
+                                    
+                                    <button onClick={deletarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
+                                        <i className="fas fa-trash-alt text-sm"></i>
+                                        <span>Excluir</span>
+                                    </button>
+                                </div>
+                              </div>
 
                               <div className="panel-section bg-slate-50/50 border-t border-slate-100">
                                   <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo/Dentro)</label>
@@ -1862,17 +1925,46 @@ export default function Home() {
                                           </div>
                                       </div>
 
-                                      <div className="panel-section grid grid-cols-2 gap-4">
+                                      {/* ========================================================= */}
+                                      {/* NOVO CONTROLE: LARGURA E ALTURA INDEPENDENTE PARA IMAGENS */}
+                                      {/* ========================================================= */}
+                                      <div className="panel-section grid grid-cols-2 gap-4 border-t border-slate-100 bg-slate-50/50">
                                           <div>
-                                              <label className="input-label">Proporção (Formato)</label>
+                                              <label className="input-label">Largura (Horizontal)</label>
+                                              <select value={elementoSelecionado.imgWidth || 'auto'} onChange={(e) => atualizarElemento('imgWidth', e.target.value)} className="input-standard border-indigo-200 focus:border-indigo-500 bg-white">
+                                                  <option value="auto">Proporção Original</option>
+                                                  <option value="w-1/4 max-w-full">25% (Pequena)</option>
+                                                  <option value="w-2/4 max-w-full">50% (Média)</option>
+                                                  <option value="w-3/4 max-w-full">75% (Grande)</option>
+                                                  <option value="w-full max-w-full">100% (Largura Total)</option>
+                                                  <option value="w-full max-w-xs">Limitada (Super Fina)</option>
+                                                  <option value="w-full max-w-md">Limitada (Média Padrão)</option>
+                                                  <option value="w-full max-w-2xl">Limitada (Larga)</option>
+                                              </select>
+                                          </div>
+                                          <div>
+                                              <label className="input-label">Altura (Vertical)</label>
+                                              <select value={elementoSelecionado.imgHeight || 'auto'} onChange={(e) => atualizarElemento('imgHeight', e.target.value)} className="input-standard border-indigo-200 focus:border-indigo-500 bg-white">
+                                                  <option value="auto">Automática (Auto)</option>
+                                                  <option value="h-32 object-cover">Pequena Fixa</option>
+                                                  <option value="h-64 object-cover">Média Fixa</option>
+                                                  <option value="h-96 object-cover">Grande Fixa</option>
+                                                  <option value="h-screen object-cover">Tela Inteira (100vh)</option>
+                                              </select>
+                                          </div>
+                                      </div>
+
+                                      <div className="panel-section grid grid-cols-2 gap-4 border-t border-slate-100">
+                                          <div>
+                                              <label className="input-label">Formato de Recorte</label>
                                               <select value={elementoSelecionado.imgFormat || ''} onChange={(e) => {
                                                   const novoFormato = e.target.value;
                                                   atualizarElemento('imgFormat', novoFormato);
                                                   if(novoFormato !== '') {
                                                       gerarNovaImagemIAAutomatica(false, novoFormato);
                                                   }
-                                              }} className="input-standard border-indigo-200 focus:border-indigo-500 bg-indigo-50">
-                                                  <option value="">Tamanho Original</option>
+                                              }} className="input-standard bg-slate-50">
+                                                  <option value="">Livre</option>
                                                   <option value="aspect-video">Paisagem (Deitado)</option>
                                                   <option value="aspect-[3/4]">Retrato (Em pé)</option>
                                                   <option value="aspect-square">Quadrado</option>
@@ -1880,7 +1972,7 @@ export default function Home() {
                                           </div>
                                           <div>
                                               <label className="input-label">Bordas da Foto</label>
-                                              <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
+                                              <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard bg-slate-50">
                                                   <option value="none">Retas (Simples)</option>
                                                   <option value="rounded-md">Suaves</option>
                                                   <option value="rounded-xl">Arredondadas</option>
@@ -1890,9 +1982,9 @@ export default function Home() {
                                       </div>
                                       
                                    <div className="panel-section">
-    <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity ?? 1) * 100)}%</span></label>
-    <input type="range" min="0" max="100" value={(elementoSelecionado.opacity ?? 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
-</div>
+                                        <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity ?? 1) * 100)}%</span></label>
+                                        <input type="range" min="0" max="100" value={(elementoSelecionado.opacity ?? 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
+                                    </div>
                                   </>
                               ) : (
                                   <>
@@ -2034,9 +2126,9 @@ export default function Home() {
                                       </div>
 
                                       <div className="panel-section border-t border-slate-100">
-    <label className="input-label flex justify-between">Opacidade da Cor (Película) <span>{Math.round((elementoSelecionado.opacity ?? 1) * 100)}%</span></label>
-    <input type="range" min="0" max="100" value={(elementoSelecionado.opacity ?? 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
-</div>
+                                        <label className="input-label flex justify-between">Opacidade da Cor (Película) <span>{Math.round((elementoSelecionado.opacity ?? 1) * 100)}%</span></label>
+                                        <input type="range" min="0" max="100" value={(elementoSelecionado.opacity ?? 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
+                                    </div>
 
                                       <div className="panel-section border-t border-slate-100">
                                           <label className="input-label flex items-center gap-1.5"><i className="fas fa-image text-slate-400"></i> Imagem de Fundo (Seção)</label>
@@ -2072,11 +2164,24 @@ export default function Home() {
                                   </>
                               )}
 
-                              {/* PAINEL DO COPYWRITER IA */}
+                              {/* PAINEL DO COPYWRITER IA (HÍBRIDO: LOCAL E GLOBAL) */}
                               <div id="tour-ai-editor" className="m-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-xl text-white">
                                   <label className="text-[11px] font-black uppercase tracking-widest text-indigo-300 mb-4 flex items-center"><i className="fas fa-robot text-xl mr-2 text-white"></i> Otimização com IA</label>
                                   
-                                  {elementoSelecionado.tagName !== 'img' && !elementoSelecionado.bloqueiaTexto && (
+                                  <div className="flex items-center gap-2 mt-2 mb-4 bg-indigo-50/10 p-3 rounded-xl border border-indigo-400/30 shadow-sm cursor-pointer" onClick={() => setModificacaoGlobal(!modificacaoGlobal)}>
+                                      <input 
+                                          type="checkbox" 
+                                          id="modificarGlobal"
+                                          checked={modificacaoGlobal}
+                                          onChange={(e) => setModificacaoGlobal(e.target.checked)}
+                                          className="w-4 h-4 text-indigo-500 rounded border-gray-600 focus:ring-indigo-500 cursor-pointer bg-slate-700 pointer-events-none"
+                                      />
+                                      <label htmlFor="modificarGlobal" className="text-[10px] font-bold text-indigo-200 cursor-pointer select-none leading-tight">
+                                          Modificação Global (Lê e altera o site todo)
+                                      </label>
+                                  </div>
+
+                                  {elementoSelecionado.tagName !== 'img' && !elementoSelecionado.bloqueiaTexto && !modificacaoGlobal && (
                                       <div className="grid grid-cols-2 gap-2.5 mb-4">
                                           <button onClick={() => otimizarComIA("Reescreva com copy persuasiva para prender a atenção e vender mais, deixando o texto profissional e elegante.")} className="bg-slate-700 hover:bg-slate-600 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-slate-600">Mais Persuasivo</button>
                                           <button onClick={() => otimizarComIA("Reescreva gerando forte urgência, escassez e apelo forte para clicar. O usuário deve sentir que precisa agir agora.")} className="bg-orange-600 hover:bg-orange-500 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-orange-500 flex items-center justify-center gap-1.5"><i className="fas fa-fire"></i> Gerar Urgência</button>
@@ -2087,7 +2192,7 @@ export default function Home() {
                                       <textarea 
                                           id="ai_prompt_element" 
                                           rows={4}
-                                          placeholder="Escreva o que a IA deve fazer com este elemento..." 
+                                          placeholder={modificacaoGlobal ? "Ex: Mude o fundo da página para preto e reescreva tudo para nicho de Dentista..." : "Escreva o que a IA deve fazer com este elemento..."}
                                           className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg pl-4 pr-12 py-3 outline-none focus:border-indigo-400 placeholder-slate-400 resize-y custom-scrollbar" 
                                       ></textarea>
                                       <button onClick={() => otimizarComIA()} className="absolute right-2 bottom-2.5 w-9 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-md flex items-center justify-center transition shadow-sm" title="Enviar Comando IA"><i className="fas fa-paper-plane"></i></button>
@@ -2258,13 +2363,13 @@ export default function Home() {
                                   </button>
                               </div>
 
-                              {/* BLOCO DE MODIFICAÇÃO COM IA (NOVO) */}
+                              {/* BLOCO DE MODIFICAÇÃO COM IA (NOVO/GLOBAL) */}
                               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-4">
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3 tracking-wide flex items-center gap-2">
                                       <i className="fas fa-magic text-indigo-500"></i> Modificar Site com IA
                                   </h3>
                                   <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
-                                      Peça para a IA alterar cores, adicionar seções ou mudar textos do site atual sem recriar o site inteiro.
+                                      Peça para a IA alterar cores, adicionar seções ou mudar textos do site todo sem recriar do zero.
                                   </p>
                                   
                                   <div className="relative">
