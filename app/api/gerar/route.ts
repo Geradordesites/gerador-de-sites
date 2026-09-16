@@ -156,7 +156,8 @@ ${regraImagens}`;
 === REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 🚨 ATENÇÃO: GERE UMA LANDING PAGE PROFISSIONAL COM NO MÍNIMO 7 SEÇÕES.
-🚨 ATENÇÃO:A descrição sobre o autor sempre deve ser feita numa seção exclusiva  e mais profinal do site. Nunca coloque o autor embaixo de uma imagem no inicio do site.
+🚨 ATENÇÃO: Usar o tamanho das fontes dos textos ideal para mobile também, use fontes no tamanho que seja legível e não muito pequenas.
+🚨 ATENÇÃO: A descrição sobre o autor sempre deve ser feita numa seção exclusiva  e mais profinal do site. Nunca coloque o autor embaixo de uma imagem no inicio do site.
 🚨 ESPAÇAMENTO OBRIGATÓRIO: Organize o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos.
 🚨 PROIBIÇÃO DE FORMULÁRIOS: É PROIBIDO gerar tags <form>, <input> ou <textarea>. Use APENAS Botões de Ação (CTA).
 ${regraMenu}
