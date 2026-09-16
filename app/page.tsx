@@ -1282,11 +1282,26 @@ O cliente solicitou a seguinte modificação: "${comando}"
 5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
 6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
 
-              // AQUI MUDOU: Passamos "true" no final para avisar o backend que é uma modificação Global
-              const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false, true);
+              // Chamada Global Isolada (Garante que o backend não receba parâmetros extras que o façam crashar)
+              const response = await fetch('/api/gerar', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                      systemInstruction: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", 
+                      promptParts: [{ text: promptSuperContexto }], 
+                      isSiteRefinement: true, 
+                      clientApiKey: apiKey,
+                      clientUnsplashKey: unsplashKey,
+                      userId: userId,
+                      userEmail: userEmail
+                  })
+              });
               
-              if(resData && resData.html) {
-                  const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+              if (!response.ok) throw new Error(`Erro do Servidor (Status ${response.status})`);
+              const data = await response.json();
+              if (!data.success) throw new Error(data.error || "Erro na IA");
+              
+              if(data && data.html) {
+                  const cleanHtml = data.html.replace(/```html/gi, '').replace(/```/g, '').trim();
                   const htmlHidratado = await preencherImagensAutomaticamente(cleanHtml);
                   processarRespostaDOM({ html: htmlHidratado });
                   
@@ -1311,6 +1326,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
           REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".
           🚨 REGRA PARA IMAGENS: Se a modificação exigir trocar ou adicionar uma imagem, NÃO INVENTE LINKS. Você DEVE usar uma tag <img /> com o atributo data-tema="palavra1,palavra2" em inglês. Nosso sistema vai buscar a foto real em alta resolução.`;
           
+          // Chamada Local Normal
           const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
           
           if(resData && resData.html) {
@@ -1351,11 +1367,25 @@ O cliente solicitou a seguinte modificação: "${comando}"
 5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
 6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
 
-        // AQUI MUDOU: Passamos "true" no final para avisar o backend que é uma modificação Global
-        const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false, true);
+        const response = await fetch('/api/gerar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                systemInstruction: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", 
+                promptParts: [{ text: promptSuperContexto }], 
+                isSiteRefinement: true, 
+                clientApiKey: apiKey,
+                clientUnsplashKey: unsplashKey,
+                userId: userId,
+                userEmail: userEmail
+            })
+        });
         
-        if (resData && resData.html) {
-            const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+        if (!response.ok) throw new Error(`Erro do Servidor (Status ${response.status})`);
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || "Erro na IA");
+        
+        if (data && data.html) {
+            const cleanHtml = data.html.replace(/```html/gi, '').replace(/```/g, '').trim();
             const htmlHidratado = await preencherImagensAutomaticamente(cleanHtml);
             processarRespostaDOM({ html: htmlHidratado }); 
             
@@ -1372,9 +1402,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
     }
   };
 
-  // AQUI MUDOU: Adicionamos o parâmetro isSiteRefinement = false na assinatura da função
-  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, isSiteRefinement = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está processando o site...', processing: true });
+  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
       const response = await fetch('/api/gerar', { 
@@ -1386,7 +1415,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
               imageStyle: 'real', 
               dinamica: dinamicaStyle, 
               isElementRefinement,
-              isSiteRefinement, // <--- AQUI ESTÁ A CHAVE QUE FALTAVA PARA O SERVIDOR NÃO CRASHAR
               clientApiKey: apiKey,
               clientUnsplashKey: unsplashKey,
               userId: userId,
@@ -1395,7 +1423,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
       });
       
       if (!response.ok) {
-          throw new Error(`Erro do Servidor: Falha ao comunicar com a IA (Status ${response.status})`);
+          throw new Error(`Falha ao comunicar com a IA (Status ${response.status})`);
       }
       
       const responseText = await response.text();

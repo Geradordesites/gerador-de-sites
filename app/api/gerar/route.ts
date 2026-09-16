@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
+// =========================================================================
+// 🚀 SOLUÇÃO DO ERRO 500: Aumenta o tempo da Vercel para 60 segundos
+// =========================================================================
+export const maxDuration = 60;
+
 // 1. MODELOS DE TEXTO PARA API GRÁTIS OU CHAVE DO CLIENTE (6 Modelos)
 const MODELOS_TEXTO_GRATIS = [
     "gemini-3.8-flash",
@@ -108,8 +113,7 @@ export async function POST(req: Request) {
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `
 === SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 Use APENAS fotografias realistas de humanos. Proibido desenhos ou vetores.
-Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
+🚨 ATENÇÃO: NÃO USE PLACEHOLDERS COMO [UNSPLASH]. Use OBRIGATORIAMENTE a tag <img> com o atributo data-tema="palavra1,palavra2" em inglês. O nosso sistema frontend fará a hidratação das imagens em alta velocidade.
 `;
     } else {
         regraImagens = `
@@ -202,7 +206,9 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                 } else {
                     throw new Error("HTML gerado foi bloqueado, curto ou inválido.");
                 }
-            } catch (error: any) {}
+            } catch (error: any) {
+                console.error(`Falha no modelo ${modelName} (tentativa ${tentativa}):`, error);
+            }
         }
     }
 
@@ -214,9 +220,10 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     }
 
     // =========================================================================
-    // INTEGRAÇÃO SUPABASE STORAGE - Substituição do Base64 por Links Leves
+    // INTEGRAÇÃO SUPABASE STORAGE E LIMPEZA DE TAGS
     // =========================================================================
     if (provedorDeImagens === 'ai_paid') {
+        // Se usar API Paga, a imagem é gerada pela IA e salva no Supabase (Mantido igual)
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
         let iaUrlsToReplace = [];
@@ -242,15 +249,11 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                     if (response.candidates && response.candidates[0]?.content?.parts) {
                         for (const part of response.candidates[0].content.parts) {
                             if (part.inlineData && part.inlineData.data) {
-                                // Pega o Base64 gerado pela IA
                                 const base64Data = part.inlineData.data;
                                 const mimeType = part.inlineData.mimeType || 'image/jpeg';
-                                
-                                // Converte o Base64 para um Buffer legível
                                 const buffer = Buffer.from(base64Data, 'base64');
                                 const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
-                                // Faz o Upload para o Supabase Storage (Bucket "imagens-geradas")
                                 const { data: uploadData, error: uploadErr } = await supabaseAdmin.storage
                                     .from('imagens-geradas') 
                                     .upload(fileName, buffer, {
@@ -259,13 +262,10 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
                                     });
 
                                 if (uploadErr) {
-                                    console.error("Erro no Upload do Supabase:", uploadErr);
                                     throw new Error("Falha ao salvar a imagem na nuvem.");
                                 }
 
-                                // Pega a URL pública leve
                                 const { data: pubData } = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName);
-                                
                                 urlImagemBucket = pubData.publicUrl;
                                 imagemGeradaComSucesso = true;
                                 break;
@@ -276,46 +276,18 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
             }
 
             if (imagemGeradaComSucesso && urlImagemBucket) {
-                // Injeta a URL pública no HTML ao invés do monstro em Base64
                 htmlCode = htmlCode.replace(item.fullMatch, urlImagemBucket);
             } else {
-                throw new Error(`Falha no modo pago: IA não conseguiu processar ou salvar a imagem: "${item.prompt}".`);
+                throw new Error(`Falha no modo pago: IA não conseguiu processar ou salvar a imagem.`);
             }
         }
-    } 
-    // PROCESSAMENTO MODO GRATUITO (UNSPLASH)
-    else {
-        const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
-        let match;
-        let urlsToReplace = [];
-        while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
-
-        const unsplashKeyParaUsar = (clientUnsplashKey && clientUnsplashKey.trim().length > 10) ? clientUnsplashKey : null;
-
-        if (urlsToReplace.length > 0 && unsplashKeyParaUsar) {
-            for (const item of urlsToReplace) {
-                let orient = 'landscape';
-                if (item.dimensao === '800x1200') orient = 'portrait';
-                if (item.dimensao === '800x800') orient = 'squarish';
-                const kwFormatada = encodeURIComponent(item.keywords.trim());
-                let imagemFinal = ''; 
-                try {
-                    const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=15&orientation=${orient}&client_id=${unsplashKeyParaUsar}`);
-                    if (uRes.ok) {
-                        const uData = await uRes.json();
-                        if (uData.results && uData.results.length > 0) {
-                            imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                        }
-                    }
-                } catch (e) {}
-                htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
-            }
-        } else {
-            for (const item of urlsToReplace) htmlCode = htmlCode.replace(item.fullMatch, '');
-        }
+    } else {
+        // Se usar API Grátis (Unsplash), nós não fazemos mais o fetch no Backend!
+        // O Frontend cuida da mágica instantaneamente. Apenas limpamos códigos errados.
+        htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
     }
     
-    htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
+    // Limpeza de segurança
     htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '');
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
