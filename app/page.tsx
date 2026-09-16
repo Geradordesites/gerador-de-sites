@@ -1282,7 +1282,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
 5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
 6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
 
-              const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false);
+              // AQUI MUDOU: Passamos "true" no final para avisar o backend que é uma modificação Global
+              const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false, true);
               
               if(resData && resData.html) {
                   const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
@@ -1350,7 +1351,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
 5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
 6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
 
-        const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false);
+        // AQUI MUDOU: Passamos "true" no final para avisar o backend que é uma modificação Global
+        const resData = await chamarMotorIA("Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", [{text: promptSuperContexto}], false, true);
         
         if (resData && resData.html) {
             const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
@@ -1370,8 +1372,9 @@ O cliente solicitou a seguinte modificação: "${comando}"
     }
   };
 
-  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
+  // AQUI MUDOU: Adicionamos o parâmetro isSiteRefinement = false na assinatura da função
+  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, isSiteRefinement = false) => {
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está processando o site...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
       const response = await fetch('/api/gerar', { 
@@ -1383,15 +1386,21 @@ O cliente solicitou a seguinte modificação: "${comando}"
               imageStyle: 'real', 
               dinamica: dinamicaStyle, 
               isElementRefinement,
+              isSiteRefinement, // <--- AQUI ESTÁ A CHAVE QUE FALTAVA PARA O SERVIDOR NÃO CRASHAR
               clientApiKey: apiKey,
               clientUnsplashKey: unsplashKey,
               userId: userId,
               userEmail: userEmail
           }) 
       });
+      
+      if (!response.ok) {
+          throw new Error(`Erro do Servidor: Falha ao comunicar com a IA (Status ${response.status})`);
+      }
+      
       const responseText = await response.text();
       let data;
-      try { data = JSON.parse(responseText); } catch (err) { throw new Error("Houve um gargalo na comunicação com a Inteligência Artificial."); }
+      try { data = JSON.parse(responseText); } catch (err) { throw new Error("A Inteligência Artificial retornou dados em um formato inválido."); }
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
       return data;
     } catch (err: any) {
