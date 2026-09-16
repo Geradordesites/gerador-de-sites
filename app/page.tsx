@@ -125,8 +125,13 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         let textoAtual = elSelecionado.innerHTML || '';
         textoAtual = textoAtual.replace(/<br\\s*\\/?>/gi, '\\n').replace(/(<([^>]+)>)/gi, "");
 
-        let imgW = elSelecionado.dataset.imgWidth || 'auto';
-        let imgH = elSelecionado.dataset.imgHeight || 'auto';
+        let customWidth = elSelecionado.dataset.customWidth || '100';
+        let customHeight = elSelecionado.dataset.customHeight || 'auto';
+        let customMarginTop = elSelecionado.dataset.customMarginTop || '0';
+        let customMarginBottom = elSelecionado.dataset.customMarginBottom || '0';
+        let objectPos = 'object-center';
+        if(elSelecionado.classList.contains('object-top')) objectPos = 'object-top';
+        if(elSelecionado.classList.contains('object-bottom')) objectPos = 'object-bottom';
 
         window.parent.postMessage({
             type: 'ELEMENT_SELECTED',
@@ -144,8 +149,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             opacity: objOpacity,
             bgImage: bgImg,
             imgFormat: aspect,
-            imgWidth: imgW,
-            imgHeight: imgH,
+            customWidth: customWidth,
+            customHeight: customHeight,
+            customMarginTop: customMarginTop,
+            customMarginBottom: customMarginBottom,
+            objectPos: objectPos,
             bloqueiaTexto: bloqueiaTexto,
             textAlign: tAlign,
             boxAlign: bAlign,
@@ -460,30 +468,54 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
-                if(event.data.imgFormat !== undefined) {
-                    if (event.data.imgFormat === '') {
-                        el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
-                    } else {
-                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
-                        el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
-                    }
+                // ================= NOVOS CONTROLES DE IMAGEM =================
+                if(event.data.customWidth !== undefined) {
+                    el.dataset.customWidth = event.data.customWidth;
+                    el.className = el.className.replace(/\\bw-\\[.*?\\]\\b/g, '').replace(/\\bw-\\S+\\b/g, '').replace(/\\bmax-w-\\S+\\b/g, '').trim();
+                    el.classList.add('w-[' + event.data.customWidth + '%]', 'max-w-none', 'mx-auto', 'block');
                 }
-                
-                if(event.data.imgWidth !== undefined) {
-                    el.dataset.imgWidth = event.data.imgWidth;
-                    el.className = el.className.replace(/\\bw-\\S+\\b/g, '').replace(/\\bmax-w-\\S+\\b/g, '').trim();
-                    if(event.data.imgWidth !== 'auto') {
-                        event.data.imgWidth.split(' ').forEach(cls => el.classList.add(cls));
-                    }
-                }
-                
-                if(event.data.imgHeight !== undefined) {
-                    el.dataset.imgHeight = event.data.imgHeight;
-                    el.className = el.className.replace(/\\bh-\\S+\\b/g, '').replace(/\\bobject-\\S+\\b/g, '').replace(/\\bh-auto\\b/g, '').trim();
-                    if(event.data.imgHeight === 'auto') {
+
+                if(event.data.customHeight !== undefined) {
+                    el.dataset.customHeight = event.data.customHeight;
+                    el.className = el.className.replace(/\\bh-\\[.*?\\]\\b/g, '').replace(/\\bh-\\S+\\b/g, '').replace(/\\bh-auto\\b/g, '').trim();
+                    if(event.data.customHeight === 'auto') {
                         el.classList.add('h-auto');
                     } else {
-                        event.data.imgHeight.split(' ').forEach(cls => el.classList.add(cls));
+                        el.classList.add('h-[' + event.data.customHeight + 'px]');
+                        if(!el.classList.contains('object-contain') && !el.classList.contains('object-fill')) {
+                            el.classList.add('object-cover');
+                        }
+                    }
+                }
+
+                if(event.data.objectPos !== undefined) {
+                    el.className = el.className.replace(/\\bobject-(top|center|bottom|left|right)\\b/g, '').trim();
+                    if(event.data.objectPos) el.classList.add(event.data.objectPos);
+                }
+
+                if(event.data.customMarginTop !== undefined) {
+                    el.dataset.customMarginTop = event.data.customMarginTop;
+                    el.className = el.className.replace(/\\b-?mt-\\[.*?\\]\\b/g, '').replace(/\\b-?mt-\\S+\\b/g, '').trim();
+                    if (event.data.customMarginTop != 0) {
+                        el.classList.add(event.data.customMarginTop < 0 ? '-mt-[' + Math.abs(event.data.customMarginTop) + 'px]' : 'mt-[' + event.data.customMarginTop + 'px]');
+                    }
+                }
+
+                if(event.data.customMarginBottom !== undefined) {
+                    el.dataset.customMarginBottom = event.data.customMarginBottom;
+                    el.className = el.className.replace(/\\b-?mb-\\[.*?\\]\\b/g, '').replace(/\\b-?mb-\\S+\\b/g, '').trim();
+                    if (event.data.customMarginBottom != 0) {
+                        el.classList.add(event.data.customMarginBottom < 0 ? '-mb-[' + Math.abs(event.data.customMarginBottom) + 'px]' : 'mb-[' + event.data.customMarginBottom + 'px]');
+                    }
+                }
+
+                if(event.data.imgFormat !== undefined) {
+                    if (event.data.imgFormat === '') {
+                        el.style.aspectRatio = '';
+                        el.classList.remove('object-cover', 'w-full', 'h-auto');
+                    } else {
+                        el.style.aspectRatio = event.data.imgFormat; 
+                        el.classList.add('object-cover');
                     }
                 }
 
@@ -534,7 +566,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (form && !summary && !btn) { e.preventDefault(); }
         
         if (modoEdicao) {
-            // Se clicar no espaço vazio do site, limpa a seleção e remove a borda
             if (e.target === document.body || e.target === document.documentElement || e.target.tagName === 'MAIN') {
                 clearAllOutlines();
                 window.parent.postMessage({ type: 'ELEMENT_SELECTED', id: null }, '*');
@@ -700,6 +731,13 @@ const passosTour = [
         titulo: "💾 Baixe seu site completo",
         descricao: "Quando estiver satisfeito, clique em 'Baixar Site' para salvar o arquivo HTML em seu computador. Você terá o código completo e limpo.",
         seletor: "#tour-download-btn",
+        posicao: "bottom"
+    },
+    {
+        id: 8,
+        titulo: "🌐 Publique seu site na internet",
+        descricao: "Para colocar seu site no ar, clique em 'Como Hospedar' e siga o guia simples para publicar. Seu site estará online em minutos!",
+        seletor: "#tour-hospedar-btn",
         posicao: "bottom"
     }
 ];
@@ -963,7 +1001,6 @@ export default function Home() {
                    .replace(/data-old-outline="[^"]*"/gi, '')
                    .replace(/\s*style="\s*"/gi, ''); 
                    
-      // Limpa qualquer vestígio de outline nas tags HTML (blindagem do fantasma)
       clean = clean.replace(/style="[^"]*outline:[^"]*"/gi, (match) => {
            let newStyle = match.replace(/outline:\s*[^;]+;?/gi, '').replace(/outline-offset:\s*[^;]+;?/gi, '');
            if (newStyle === 'style=""' || newStyle === 'style=" "') return '';
@@ -1145,21 +1182,16 @@ export default function Home() {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
 
-    // Liga a tela de carregamento para mostrar ao usuário que está trabalhando
     setStatusApis({ texto: 'Processando e blindando código...', processing: true });
 
-    // Um pequeno atraso de 50ms para a tela de carregamento dar tempo de aparecer
     setTimeout(() => {
         try {
-            // 1. O SEGREDO: Usa o DOMParser (Lê o HTML como o Chrome lê, não trava NUNCA)
             const parser = new DOMParser();
             const doc = parser.parseFromString(codigoExterno, 'text/html');
 
-            // 2. Apaga TODOS os scripts, iframes e meta-refresh silenciosamente
             const lixoEletronico = doc.querySelectorAll('script, iframe, meta[http-equiv="refresh"], meta[http-equiv="Refresh"]');
             lixoEletronico.forEach(el => el.remove());
 
-            // 3. Garante Tailwind e FontAwesome no cabeçalho
             if (!doc.head.querySelector('script[src*="tailwindcss"]')) {
                 const twScript = document.createElement('script');
                 twScript.src = "https://cdn.tailwindcss.com";
@@ -1172,16 +1204,13 @@ export default function Home() {
                 doc.head.appendChild(faLink);
             }
 
-            // 4. Prepara o body e as fontes
             doc.body.classList.add('antialiased', 'text-slate-800', 'bg-white');
             if (fontFamily !== 'sans-serif') {
                 doc.body.style.fontFamily = `'${fontFamily}', sans-serif`;
             }
 
-            // 5. Transforma a árvore limpa de volta em texto HTML
             let htmlFinal = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 
-            // 6. Atualiza o painel e o Iframe
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
             
@@ -1204,7 +1233,6 @@ export default function Home() {
             console.error("Erro ao importar código:", error);
             (window as any).showNotification("Erro ao processar este HTML. Tente outro formato.", "error");
         } finally {
-            // Desliga a tela de carregamento
             setStatusApis({ texto: 'Aguardando Operação', processing: false });
         }
     }, 50);
@@ -1217,11 +1245,7 @@ export default function Home() {
       const reader = new FileReader();
       reader.onload = (ev: any) => {
           let rawText = ev.target.result;
-          
-          // Blindagem extra: Limpa scripts gigantes ANTES de jogar na caixa de texto
-          // usando uma fórmula leve que não causa loop infinito.
           rawText = rawText.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
-          
           setCodigoExterno(rawText);
       };
       reader.readAsText(file);
@@ -1283,12 +1307,16 @@ O cliente solicitou a seguinte modificação: "${comando}"
           }
           
           const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
-          REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
+          REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".
+          🚨 REGRA PARA IMAGENS: Se a modificação exigir trocar ou adicionar uma imagem, NÃO INVENTE LINKS. Você DEVE usar uma tag <img /> com o atributo data-tema="palavra1,palavra2" em inglês. Nosso sistema vai buscar a foto real em alta resolução.`;
           
           const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
           
           if(resData && resData.html) {
-              const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+              let cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+              
+              cleanHtml = await preencherImagensAutomaticamente(cleanHtml, true);
+              
               const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
               iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
               if(promptInput) promptInput.value = '';
@@ -1396,7 +1424,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
     return "";
   };
   
-  const preencherImagensAutomaticamente = async (htmlBruto: string) => {
+  const preencherImagensAutomaticamente = async (htmlBruto: string, isFragment = false) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
           const parser = new DOMParser();
@@ -1438,6 +1466,10 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
           await Promise.all(promessas); 
         
+        if (isFragment) {
+            return doc.body.innerHTML; 
+        }
+          
         let htmlFinal = doc.documentElement.outerHTML;
         if (!htmlFinal.toLowerCase().startsWith('<!doctype')) { htmlFinal = '<!DOCTYPE html>\n' + htmlFinal; }
         return htmlFinal;
@@ -1486,7 +1518,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         
-        hHtml = await preencherImagensAutomaticamente(hHtml);
+        hHtml = await preencherImagensAutomaticamente(hHtml, false);
         
         data.html = hHtml;
         processarRespostaDOM(data);
@@ -1961,59 +1993,57 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                       </div>
 
                                       {/* ========================================================= */}
-                                      {/* NOVO CONTROLE: LARGURA E ALTURA INDEPENDENTE PARA IMAGENS */}
+                                      {/* CONTROLES AVANÇADOS DE IMAGEM: LARGURA, ALTURA E POSIÇÃO  */}
                                       {/* ========================================================= */}
-                                      <div className="panel-section grid grid-cols-2 gap-4 border-t border-slate-100 bg-slate-50/50">
-                                          <div>
-                                              <label className="input-label">Largura (Horizontal)</label>
-                                              <select value={elementoSelecionado.imgWidth || 'auto'} onChange={(e) => atualizarElemento('imgWidth', e.target.value)} className="input-standard border-indigo-200 focus:border-indigo-500 bg-white">
-                                                  <option value="auto">Proporção Original</option>
-                                                  <option value="w-1/4 max-w-full">25% (Pequena)</option>
-                                                  <option value="w-2/4 max-w-full">50% (Média)</option>
-                                                  <option value="w-3/4 max-w-full">75% (Grande)</option>
-                                                  <option value="w-full max-w-full">100% (Largura Total)</option>
-                                                  <option value="w-full max-w-xs">Limitada (Super Fina)</option>
-                                                  <option value="w-full max-w-md">Limitada (Média Padrão)</option>
-                                                  <option value="w-full max-w-2xl">Limitada (Larga)</option>
+                                      <div className="panel-section border-t border-slate-100 bg-slate-50/30">
+                                          <label className="input-label mb-3"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Dimensões da Imagem</label>
+                                          
+                                          {/* LARGURA E ALTURA (SLIDERS) */}
+                                          <div className="grid grid-cols-2 gap-4 mb-4">
+                                              <div>
+                                                  <label className="text-[9px] text-slate-500 mb-1 flex justify-between">Largura <span>{elementoSelecionado.customWidth || '100'}%</span></label>
+                                                  <input type="range" min="10" max="150" value={elementoSelecionado.customWidth || '100'} onChange={(e) => atualizarElemento('customWidth', e.target.value)} className="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                  <p className="text-[7px] text-slate-400 mt-1 leading-tight">Passe de 100% para forçar a quebra do limite lateral.</p>
+                                              </div>
+                                              <div>
+                                                  <label className="text-[9px] text-slate-500 mb-1 flex justify-between">Altura <span>{elementoSelecionado.customHeight === 'auto' ? 'Auto' : `${elementoSelecionado.customHeight}px`}</span></label>
+                                                  <input type="range" min="50" max="1000" value={elementoSelecionado.customHeight === 'auto' ? 300 : elementoSelecionado.customHeight} onChange={(e) => atualizarElemento('customHeight', e.target.value)} className="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                  <button onClick={() => atualizarElemento('customHeight', 'auto')} className="text-[8px] mt-1 font-bold text-indigo-600 hover:underline">Restaurar Original</button>
+                                              </div>
+                                          </div>
+
+                                          {/* CORTE (OBJECT-POSITION) */}
+                                          <div className="mb-4">
+                                              <label className="text-[9px] text-slate-500 mb-1 block">Foco da Foto (Corte vertical)</label>
+                                              <select value={elementoSelecionado.objectPos || 'object-center'} onChange={(e) => atualizarElemento('objectPos', e.target.value)} className="input-standard bg-white">
+                                                  <option value="object-center">Meio (Centro da Foto)</option>
+                                                  <option value="object-top">Topo (Foco em Cima)</option>
+                                                  <option value="object-bottom">Base (Foco em Baixo)</option>
                                               </select>
                                           </div>
-                                          <div>
-                                              <label className="input-label">Altura (Vertical)</label>
-                                              <select value={elementoSelecionado.imgHeight || 'auto'} onChange={(e) => atualizarElemento('imgHeight', e.target.value)} className="input-standard border-indigo-200 focus:border-indigo-500 bg-white">
-                                                  <option value="auto">Automática (Auto)</option>
-                                                  <option value="h-32 object-cover">Pequena Fixa</option>
-                                                  <option value="h-64 object-cover">Média Fixa</option>
-                                                  <option value="h-96 object-cover">Grande Fixa</option>
-                                                  <option value="h-screen object-cover">Tela Inteira (100vh)</option>
-                                              </select>
+
+                                          <label className="input-label mb-3 mt-4 border-t border-slate-100 pt-4"><i className="fas fa-arrows-alt-v text-slate-400"></i> Mover e Posicionar (Margens)</label>
+                                          {/* MARGEM TOPO / BASE */}
+                                          <div className="grid grid-cols-2 gap-4">
+                                              <div>
+                                                  <label className="text-[9px] text-slate-500 mb-1 flex justify-between">Espaço Topo <span>{elementoSelecionado.customMarginTop || '0'}px</span></label>
+                                                  <input type="range" min="-150" max="200" value={elementoSelecionado.customMarginTop || '0'} onChange={(e) => atualizarElemento('customMarginTop', e.target.value)} className="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                              </div>
+                                              <div>
+                                                  <label className="text-[9px] text-slate-500 mb-1 flex justify-between">Espaço Base <span>{elementoSelecionado.customMarginBottom || '0'}px</span></label>
+                                                  <input type="range" min="-150" max="200" value={elementoSelecionado.customMarginBottom || '0'} onChange={(e) => atualizarElemento('customMarginBottom', e.target.value)} className="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                              </div>
                                           </div>
                                       </div>
 
-                                      <div className="panel-section grid grid-cols-2 gap-4 border-t border-slate-100">
-                                          <div>
-                                              <label className="input-label">Formato de Recorte</label>
-                                              <select value={elementoSelecionado.imgFormat || ''} onChange={(e) => {
-                                                  const novoFormato = e.target.value;
-                                                  atualizarElemento('imgFormat', novoFormato);
-                                                  if(novoFormato !== '') {
-                                                      gerarNovaImagemIAAutomatica(false, novoFormato);
-                                                  }
-                                              }} className="input-standard bg-slate-50">
-                                                  <option value="">Livre</option>
-                                                  <option value="aspect-video">Paisagem (Deitado)</option>
-                                                  <option value="aspect-[3/4]">Retrato (Em pé)</option>
-                                                  <option value="aspect-square">Quadrado</option>
-                                              </select>
-                                          </div>
-                                          <div>
-                                              <label className="input-label">Bordas da Foto</label>
-                                              <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard bg-slate-50">
-                                                  <option value="none">Retas (Simples)</option>
-                                                  <option value="rounded-md">Suaves</option>
-                                                  <option value="rounded-xl">Arredondadas</option>
-                                                  <option value="rounded-full">Círculo Perfeito</option>
-                                              </select>
-                                          </div>
+                                      <div className="panel-section border-t border-slate-100">
+                                          <label className="input-label">Bordas da Foto</label>
+                                          <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard bg-slate-50">
+                                              <option value="none">Retas (Simples)</option>
+                                              <option value="rounded-md">Suaves</option>
+                                              <option value="rounded-xl">Arredondadas</option>
+                                              <option value="rounded-full">Círculo Perfeito</option>
+                                          </select>
                                       </div>
                                       
                                    <div className="panel-section">
