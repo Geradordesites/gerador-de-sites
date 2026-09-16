@@ -1144,42 +1144,71 @@ export default function Home() {
 
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
-    let htmlFinal = codigoExterno;
-    htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
-    
-    // REGRA DE REMOÇÃO SILENCIOSA DO IFRAME: Simplesmente apaga e não deixa vestígios
-    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
 
-    if(!htmlFinal.toLowerCase().includes('<body')) {
-        htmlFinal = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>${seoData.title}</title>
-</head>
-<body class="antialiased text-slate-800 bg-white" style="font-family: '${fontFamily}', sans-serif;">
-    ${htmlFinal}
-</body>
-</html>`;
-    } else {
-        if(htmlFinal.includes('</head>')) {
-            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
-        } else if(htmlFinal.includes('<body')) {
-            htmlFinal = htmlFinal.replace('<body', '<head><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></head><body');
+    // Aciona a tela de carregamento
+    setStatusApis({ texto: 'Processando e limpando código...', processing: true });
+
+    // Dá um pequeno respiro de 50ms para a tela de carregamento renderizar antes do trabalho pesado
+    setTimeout(() => {
+        try {
+            // 1. Usa o motor nativo e blindado do navegador (Imune a travamentos)
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(codigoExterno, 'text/html');
+
+            // 2. Remove TODOS os scripts, iframes e atualizações automáticas silenciosamente
+            doc.querySelectorAll('script').forEach(el => el.remove());
+            doc.querySelectorAll('iframe').forEach(el => el.remove());
+            doc.querySelectorAll('meta[http-equiv="refresh"], meta[http-equiv="Refresh"]').forEach(el => el.remove());
+
+            // 3. Garante que o Tailwind e FontAwesome estejam no <head>
+            if (!doc.head.querySelector('script[src*="tailwindcss"]')) {
+                const twScript = document.createElement('script');
+                twScript.src = "https://cdn.tailwindcss.com";
+                doc.head.appendChild(twScript);
+            }
+            if (!doc.head.querySelector('link[href*="font-awesome"]')) {
+                const faLink = document.createElement('link');
+                faLink.rel = "stylesheet";
+                faLink.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
+                doc.head.appendChild(faLink);
+            }
+
+            // 4. Prepara o <body> com as classes base para poder ser editado
+            doc.body.classList.add('antialiased', 'text-slate-800', 'bg-white');
+            if (fontFamily !== 'sans-serif') {
+                doc.body.style.fontFamily = `'${fontFamily}', sans-serif`;
+            }
+
+            // 5. Transforma a árvore DOM limpa de volta em texto
+            let htmlFinal = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+
+            // 6. Atualiza a interface
+            const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+            const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+            
+            if (codEl) { 
+                setHistoricoCodigo(prev => [...prev, codEl.value]); 
+                codEl.value = htmlFinal; 
+            }
+            if (prevEl) { 
+                prevEl.srcdoc = htmlFinal + SCRIPT_PREVIEW; 
+            }
+            
+            setCodigoExterno(''); 
+            setModalImportarCodigo(false);
+            (window as any).showNotification("Código importado e blindado com sucesso!", "success");
+            
+            if((window as any).mudarSeparador) {
+                (window as any).mudarSeparador('preview');
+            }
+        } catch (error) {
+            console.error("Erro ao importar código:", error);
+            (window as any).showNotification("Erro ao processar este HTML. Tente outro formato.", "error");
+        } finally {
+            // Desliga a tela de carregamento com segurança
+            setStatusApis({ texto: 'Aguardando Operação', processing: false });
         }
-    }
-
-    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
-    if (prevEl) prevEl.srcdoc = htmlFinal + SCRIPT_PREVIEW; 
-    setCodigoExterno(''); setModalImportarCodigo(false);
-    (window as any).showNotification("Código importado e blindado com sucesso!", "success");
-    if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
+    }, 50);
   };
 
   const handleHtmlFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
