@@ -1145,22 +1145,21 @@ export default function Home() {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
 
-    // Aciona a tela de carregamento
-    setStatusApis({ texto: 'Processando e limpando código...', processing: true });
+    // Liga a tela de carregamento para mostrar ao usuário que está trabalhando
+    setStatusApis({ texto: 'Processando e blindando código...', processing: true });
 
-    // Dá um pequeno respiro de 50ms para a tela de carregamento renderizar antes do trabalho pesado
+    // Um pequeno atraso de 50ms para a tela de carregamento dar tempo de aparecer
     setTimeout(() => {
         try {
-            // 1. Usa o motor nativo e blindado do navegador (Imune a travamentos)
+            // 1. O SEGREDO: Usa o DOMParser (Lê o HTML como o Chrome lê, não trava NUNCA)
             const parser = new DOMParser();
             const doc = parser.parseFromString(codigoExterno, 'text/html');
 
-            // 2. Remove TODOS os scripts, iframes e atualizações automáticas silenciosamente
-            doc.querySelectorAll('script').forEach(el => el.remove());
-            doc.querySelectorAll('iframe').forEach(el => el.remove());
-            doc.querySelectorAll('meta[http-equiv="refresh"], meta[http-equiv="Refresh"]').forEach(el => el.remove());
+            // 2. Apaga TODOS os scripts, iframes e meta-refresh silenciosamente
+            const lixoEletronico = doc.querySelectorAll('script, iframe, meta[http-equiv="refresh"], meta[http-equiv="Refresh"]');
+            lixoEletronico.forEach(el => el.remove());
 
-            // 3. Garante que o Tailwind e FontAwesome estejam no <head>
+            // 3. Garante Tailwind e FontAwesome no cabeçalho
             if (!doc.head.querySelector('script[src*="tailwindcss"]')) {
                 const twScript = document.createElement('script');
                 twScript.src = "https://cdn.tailwindcss.com";
@@ -1173,16 +1172,16 @@ export default function Home() {
                 doc.head.appendChild(faLink);
             }
 
-            // 4. Prepara o <body> com as classes base para poder ser editado
+            // 4. Prepara o body e as fontes
             doc.body.classList.add('antialiased', 'text-slate-800', 'bg-white');
             if (fontFamily !== 'sans-serif') {
                 doc.body.style.fontFamily = `'${fontFamily}', sans-serif`;
             }
 
-            // 5. Transforma a árvore DOM limpa de volta em texto
+            // 5. Transforma a árvore limpa de volta em texto HTML
             let htmlFinal = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 
-            // 6. Atualiza a interface
+            // 6. Atualiza o painel e o Iframe
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
             
@@ -1205,7 +1204,7 @@ export default function Home() {
             console.error("Erro ao importar código:", error);
             (window as any).showNotification("Erro ao processar este HTML. Tente outro formato.", "error");
         } finally {
-            // Desliga a tela de carregamento com segurança
+            // Desliga a tela de carregamento
             setStatusApis({ texto: 'Aguardando Operação', processing: false });
         }
     }, 50);
@@ -1214,9 +1213,16 @@ export default function Home() {
   const handleHtmlFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = (ev: any) => {
-          setCodigoExterno(ev.target.result);
+          let rawText = ev.target.result;
+          
+          // Blindagem extra: Limpa scripts gigantes ANTES de jogar na caixa de texto
+          // usando uma fórmula leve que não causa loop infinito.
+          rawText = rawText.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+          
+          setCodigoExterno(rawText);
       };
       reader.readAsText(file);
       e.target.value = ''; 
