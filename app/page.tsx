@@ -1267,6 +1267,9 @@ export default function Home() {
   // =========================================================================================
   // PREENCHEDOR DE IMAGENS HÍBRIDO E PROTEGIDO CONTRA ERROS DO NAVEGADOR
   // =========================================================================================
+  // =========================================================================================
+  // 🚀 PREENCHEDOR DE IMAGENS HÍBRIDO (UNSPLASH E IA PAGA EM PARALELO)
+  // =========================================================================================
   const preencherImagensAutomaticamente = async (htmlBruto: string, isFragment = false) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
@@ -1279,7 +1282,7 @@ export default function Home() {
               const promptIa = img.getAttribute('data-ia');
 
               try {
-                  // 1. HIDRATAÇÃO IA PAGA (Agora usa data-ia para evitar erro 404 de console)
+                  // 1. HIDRATAÇÃO IA PAGA (Fotos desenhadas do zero)
                   if (promptIa) {
                       const res = await fetch('/api/gerar', {
                           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1300,31 +1303,47 @@ export default function Home() {
                               return; 
                           }
                       }
-                      img.src = `[https://placehold.co/800x600/152246/E0DACB?text=](https://placehold.co/800x600/152246/E0DACB?text=)` + encodeURIComponent("Imagem IA Omitida");
+                      img.src = "https://placehold.co/800x600/152246/E0DACB?text=" + encodeURIComponent("Imagem IA Omitida");
                       img.removeAttribute('data-ia');
                       return;
                   }
 
-                  // 2. HIDRATAÇÃO UNSPLASH (Via Frontend)
+                  // 2. HIDRATAÇÃO UNSPLASH (Via Frontend com Resgate do Servidor)
                   if (tema) {
                       let finalUrl = "";
+                      
+                      // Tentativa A: Usa a chave Unsplash do próprio cliente (Se ele tiver)
                       if (unsplashKey) {
-                          const pagina = Math.floor(Math.random() * 20) + 1;
-                          const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
-                          const uData = await res.json();
-                          if (uData.results && uData.results.length > 0) {
-                              const randomIndex = Math.floor(Math.random() * uData.results.length);
-                              finalUrl = uData.results[randomIndex].urls.regular;
-                          }
+                          try {
+                              const pagina = Math.floor(Math.random() * 20) + 1;
+                              const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
+                              const uData = await res.json();
+                              if (uData.results && uData.results.length > 0) {
+                                  const randomIndex = Math.floor(Math.random() * uData.results.length);
+                                  finalUrl = uData.results[randomIndex].urls.regular;
+                              }
+                          } catch(e) {}
                       }
 
+                      // Tentativa B: O Resgate! Se o cliente não tem chave, usa a sua rota segura do Servidor
                       if (!finalUrl) {
-                          finalUrl = `[https://placehold.co/800x600/e2e8f0/475569?text=](https://placehold.co/800x600/e2e8f0/475569?text=)` + encodeURIComponent(tema);
+                          try {
+                              const res = await fetch(`/api/unsplash?q=${encodeURIComponent(tema)}&t=${Date.now()}`);
+                              if (res.ok) {
+                                  const data = await res.json();
+                                  if (data.url) finalUrl = data.url;
+                              }
+                          } catch(e) {}
+                      }
+
+                      // Tentativa C: Se absolutamente tudo falhar (Google ou Unsplash caírem)
+                      if (!finalUrl) {
+                          finalUrl = "https://placehold.co/800x600/e2e8f0/475569?text=" + encodeURIComponent(tema);
                       }
 
                       if (finalUrl) {
                           if (finalUrl.includes('images.unsplash.com')) {
-                              finalUrl = finalUrl.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=1000&q=80&fit=crop`;
+                              finalUrl = finalUrl.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + "&w=1000&q=80&fit=crop";
                           }
                           img.src = finalUrl;
                           img.removeAttribute('data-tema'); 
@@ -1700,22 +1719,37 @@ O cliente solicitou a seguinte modificação: "${comando}"
       try {
           let fotoEscolhida = '';
 
+          // 1. Tenta a chave do cliente primeiro
           if (unsplashKey) {
-              const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
-              const uData = await res.json();
-              if (uData.results && uData.results.length > 0) {
-                  fotoEscolhida = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-              }
+              try {
+                  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
+                  const uData = await res.json();
+                  if (uData.results && uData.results.length > 0) {
+                      fotoEscolhida = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
+                  }
+              } catch(e) {}
           } 
           
+          // 2. Se o cliente não tem chave, puxa da sua API Unsplash
           if (!fotoEscolhida) {
-              fotoEscolhida = `[https://placehold.co/$](https://placehold.co/$){w}x${h}/e2e8f0/475569?text=` + encodeURIComponent(termoBusca);
-              (window as any).showNotification("Adicione sua chave Unsplash nas configurações para buscar fotos reais.", "warning");
+              try {
+                  const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
+                  if (res.ok) {
+                      const data = await res.json();
+                      if (data.url) fotoEscolhida = data.url;
+                  }
+              } catch(e) {}
+          }
+
+          // 3. Fallback absoluto e seguro (Sem erro de aspas)
+          if (!fotoEscolhida) {
+              fotoEscolhida = "https://placehold.co/" + w + "x" + h + "/e2e8f0/475569?text=" + encodeURIComponent(termoBusca);
+              (window as any).showNotification("Limites do Unsplash atingidos. Usando imagem de rascunho.", "warning");
           }
 
           if (fotoEscolhida) {
               if (fotoEscolhida.includes('images.unsplash.com')) {
-                  fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=${w}&h=${h}&fit=crop`;
+                  fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + "&w=" + w + "&h=" + h + "&fit=crop";
               }
 
               if (elementoSelecionado.tagName === 'img' || !isBackground) {
@@ -1725,8 +1759,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   atualizarElemento('bgImage', fotoEscolhida);
               }
               (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
-          } else {
-              throw new Error("Nenhuma imagem retornada pela API");
           }
 
       } catch (error) {
