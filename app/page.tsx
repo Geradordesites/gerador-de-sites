@@ -917,6 +917,9 @@ export default function Home() {
   const [pexelsKey, setPexelsKey] = useState('');
   const [pixabayKey, setPixabayKey] = useState('');
 
+  // 🚀 Controle da Rotação das Chaves (Salvo no Navegador para não precisar do Banco)
+  const [activeApis, setActiveApis] = useState({ unsplash: true, pexels: true, pixabay: true });
+
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [passoAtualTutorial, setPassoAtualTutorial] = useState(0);
   const totalPassosTutorial = passosTour.length;
@@ -933,6 +936,12 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // Tenta carregar as preferências dos "Botões" salvas
+    const savedToggles = localStorage.getItem('builder_active_apis');
+    if (savedToggles) {
+        try { setActiveApis(JSON.parse(savedToggles)); } catch(e) {}
+    }
+
     const carregarConfiguracoesESessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -977,6 +986,12 @@ export default function Home() {
             console.error("Lembre-se de adicionar as colunas pexels_api_key e pixabay_api_key no Supabase!");
         }
     }
+  };
+
+  const toggleApiState = (api: 'unsplash' | 'pexels' | 'pixabay') => {
+      const novoEstado = { ...activeApis, [api]: !activeApis[api] };
+      setActiveApis(novoEstado);
+      localStorage.setItem('builder_active_apis', JSON.stringify(novoEstado));
   };
 
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -1053,14 +1068,6 @@ export default function Home() {
         }
     };
     window.addEventListener('message', handleMessage);
-
-    // 🚀 BLINDAGEM DOS ÍCONES (Mantida por segurança, mas agora a importação principal está na tag <style> abaixo)
-    if (!document.head.querySelector('link[href*="font-awesome"]')) {
-        const faLink = document.createElement('link');
-        faLink.rel = 'stylesheet';
-        faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-        document.head.appendChild(faLink);
-    }
     
     return () => window.removeEventListener('message', handleMessage);
   }, []);
@@ -1285,11 +1292,14 @@ export default function Home() {
   // =========================================================================================
   const buscarImagemGratuita = async (tema: string, w = 1000, h = 800) => {
       let finalUrl = "";
-      const termo = encodeURIComponent(tema);
-      const pagina = Math.floor(Math.random() * 10) + 1;
+      // 🚨 Limpador Anti-Pixabay: Remove as vírgulas geradas pela IA
+      const termoLimpo = tema.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+      const termo = encodeURIComponent(termoLimpo);
+      
+      const pagina = Math.floor(Math.random() * 5) + 1; // Busca mais concentrada e com menos chance de página vazia
 
-      // 1. TENTA UNSPLASH (Maior qualidade, mas limite menor: 50/hora)
-      if (unsplashKey && !finalUrl) {
+      // 1. TENTA UNSPLASH (Se a chave existir E o botão estiver ligado)
+      if (activeApis.unsplash && unsplashKey && !finalUrl) {
           try {
               const res = await fetch(`https://api.unsplash.com/search/photos?query=${termo}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
               if (res.ok) {
@@ -1302,8 +1312,8 @@ export default function Home() {
           } catch(e) {}
       }
 
-      // 2. TENTA PEXELS (Qualidade top, limite enorme: 20.000/mês)
-      if (pexelsKey && !finalUrl) {
+      // 2. TENTA PEXELS (Se a chave existir E o botão estiver ligado)
+      if (activeApis.pexels && pexelsKey && !finalUrl) {
           try {
               const res = await fetch(`https://api.pexels.com/v1/search?query=${termo}&page=${pagina}&per_page=15`, {
                   headers: { Authorization: pexelsKey }
@@ -1318,8 +1328,8 @@ export default function Home() {
           } catch(e) {}
       }
 
-      // 3. TENTA PIXABAY (Qualidade boa, limite infinito: 5.000/hora)
-      if (pixabayKey && !finalUrl) {
+      // 3. TENTA PIXABAY (Se a chave existir E o botão estiver ligado)
+      if (activeApis.pixabay && pixabayKey && !finalUrl) {
           try {
               const res = await fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${termo}&image_type=photo&orientation=horizontal&per_page=15`);
               if (res.ok) {
@@ -1331,7 +1341,7 @@ export default function Home() {
           } catch(e) {}
       }
 
-      // 4. ROTA DO SERVIDOR (Resgate pela sua API Unsplash)
+      // 4. ROTA DO SERVIDOR (Resgate de emergência sem chave)
       if (!finalUrl) {
           try {
               const res = await fetch(`/api/unsplash?q=${termo}&t=${Date.now()}`);
@@ -1342,7 +1352,7 @@ export default function Home() {
           } catch(e) {}
       }
 
-      // 5. PLACEHOLDER (Garante que nunca fica em branco)
+      // 5. PLACEHOLDER (Garante que o site nunca fique em branco ou cinza)
       if (!finalUrl) {
           finalUrl = `https://placehold.co/${w}x${h}/e2e8f0/475569?text=` + termo;
       }
@@ -1362,7 +1372,6 @@ export default function Home() {
               const promptIa = img.getAttribute('data-ia');
 
               try {
-                  // IA PAGA (Mantida a lógica de custo 0)
                   if (promptIa) {
                       const res = await fetch('/api/gerar', {
                           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1377,11 +1386,13 @@ export default function Home() {
                       continue;
                   }
 
-                  // 🚀 NOVA HIDRATAÇÃO GRATUITA (CASCATA)
                   if (tema) {
                       const finalUrl = await buscarImagemGratuita(tema, 1000, 800);
                       img.src = finalUrl;
                       img.removeAttribute('data-tema'); 
+                      
+                      // 🚨 Trava Anti-Bloqueio: Espera 0.3s antes de baixar a próxima foto para não parecer um ataque hacker pro Pixabay.
+                      await new Promise(resolve => setTimeout(resolve, 300));
                   }
               } catch (e) { console.error('Erro na imagem:', e); }
           }
@@ -1741,7 +1752,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
 
       try {
-          // 🚀 AGORA USA A CASCATA DE RESGATE NO BOTÃO DE TROCAR IMAGEM TAMBÉM!
           const finalUrl = await buscarImagemGratuita(termoBusca, w, h);
 
           if (finalUrl) {
@@ -1893,7 +1903,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
       
-      {/* 🚀 O SEGREDO DOS ÍCONES: A injeção na raiz do componente usando @import para nunca ser ignorada pelo Next.js */}
+      {/* 🚀 BLINDAGEM DOS ÍCONES COM @IMPORT ROOT */}
       <style dangerouslySetInnerHTML={{__html: `
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
         
@@ -2445,7 +2455,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                               <option value="terapia">Acolhedor e Suave (Saúde)</option>
                                           </select>
 
-                                          {/* BLOCO BYOK EXPANDIDO COM CASCATA */}
+                                          {/* BLOCO BYOK EXPANDIDO COM CASCATA DE RESGATE */}
                                           {(byokEnabled || userByok) && (
                                               <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
                                                   <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-robot mr-1.5 text-indigo-500"></i> Sua Chave de Texto (IA)</label>
@@ -2455,43 +2465,75 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                                       onChange={(e) => setApiKey(e.target.value)}
                                                       onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
                                                       placeholder="Chave do Google Gemini..." 
-                                                      className="input-standard font-mono text-xs mb-4" 
+                                                      className="input-standard font-mono text-xs mb-5" 
                                                   />
 
-                                                  <label className="input-label mb-2 flex items-center text-indigo-700">
+                                                  <label className="input-label mb-1 flex items-center text-indigo-700">
                                                       <i className="fas fa-camera mr-1.5 text-indigo-500"></i> Chaves de Imagens (Gratuitas)
                                                   </label>
-                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-                                                      O sistema usará a primeira chave válida, ou buscará nas próximas para fugir de bloqueios (Unsplash &rarr; Pexels &rarr; Pixabay).
+                                                  <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                                                      Ative ou desative as chaves nos botões ao lado. O sistema rotacionará as buscas entre as ativas para evitar bloqueios.
                                                   </p>
                                                   
-                                                  <input 
-                                                      type="password" 
-                                                      value={unsplashKey}
-                                                      onChange={(e) => setUnsplashKey(e.target.value)}
-                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
-                                                      placeholder="Chave do Unsplash..." 
-                                                      className="input-standard font-mono text-xs mb-2" 
-                                                  />
-                                                  <input 
-                                                      type="password" 
-                                                      value={pexelsKey}
-                                                      onChange={(e) => setPexelsKey(e.target.value)}
-                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'pexels')}
-                                                      placeholder="Chave do Pexels..." 
-                                                      className="input-standard font-mono text-xs mb-2" 
-                                                  />
-                                                  <input 
-                                                      type="password" 
-                                                      value={pixabayKey}
-                                                      onChange={(e) => setPixabayKey(e.target.value)}
-                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'pixabay')}
-                                                      placeholder="Chave do Pixabay..." 
-                                                      className="input-standard font-mono text-xs mb-2" 
-                                                  />
+                                                  {/* CONTROLE UNSPLASH */}
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                      <button 
+                                                          onClick={() => toggleApiState('unsplash')} 
+                                                          className={`w-9 h-5 rounded-full flex-shrink-0 flex items-center px-0.5 transition-colors ${activeApis.unsplash ? 'bg-indigo-500' : 'bg-slate-300'}`}
+                                                          title={activeApis.unsplash ? 'Desativar Unsplash' : 'Ativar Unsplash'}
+                                                      >
+                                                          <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${activeApis.unsplash ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                                      </button>
+                                                      <input 
+                                                          type="password" 
+                                                          value={unsplashKey}
+                                                          onChange={(e) => setUnsplashKey(e.target.value)}
+                                                          onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
+                                                          placeholder="Chave do Unsplash..." 
+                                                          className={`input-standard font-mono text-xs flex-1 ${!activeApis.unsplash ? 'opacity-50 bg-slate-100' : ''}`} 
+                                                      />
+                                                  </div>
+
+                                                  {/* CONTROLE PEXELS */}
+                                                  <div className="flex items-center gap-2 mb-2">
+                                                      <button 
+                                                          onClick={() => toggleApiState('pexels')} 
+                                                          className={`w-9 h-5 rounded-full flex-shrink-0 flex items-center px-0.5 transition-colors ${activeApis.pexels ? 'bg-indigo-500' : 'bg-slate-300'}`}
+                                                          title={activeApis.pexels ? 'Desativar Pexels' : 'Ativar Pexels'}
+                                                      >
+                                                          <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${activeApis.pexels ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                                      </button>
+                                                      <input 
+                                                          type="password" 
+                                                          value={pexelsKey}
+                                                          onChange={(e) => setPexelsKey(e.target.value)}
+                                                          onBlur={(e) => salvarChaveCliente(e.target.value, 'pexels')}
+                                                          placeholder="Chave do Pexels..." 
+                                                          className={`input-standard font-mono text-xs flex-1 ${!activeApis.pexels ? 'opacity-50 bg-slate-100' : ''}`} 
+                                                      />
+                                                  </div>
+
+                                                  {/* CONTROLE PIXABAY */}
+                                                  <div className="flex items-center gap-2 mb-3">
+                                                      <button 
+                                                          onClick={() => toggleApiState('pixabay')} 
+                                                          className={`w-9 h-5 rounded-full flex-shrink-0 flex items-center px-0.5 transition-colors ${activeApis.pixabay ? 'bg-indigo-500' : 'bg-slate-300'}`}
+                                                          title={activeApis.pixabay ? 'Desativar Pixabay' : 'Ativar Pixabay'}
+                                                      >
+                                                          <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${activeApis.pixabay ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                                      </button>
+                                                      <input 
+                                                          type="password" 
+                                                          value={pixabayKey}
+                                                          onChange={(e) => setPixabayKey(e.target.value)}
+                                                          onBlur={(e) => salvarChaveCliente(e.target.value, 'pixabay')}
+                                                          placeholder="Chave do Pixabay..." 
+                                                          className={`input-standard font-mono text-xs flex-1 ${!activeApis.pixabay ? 'opacity-50 bg-slate-100' : ''}`} 
+                                                      />
+                                                  </div>
                                                   
                                                   <p className="text-[9px] text-emerald-600 mt-1">
-                                                      <i className="fas fa-check-circle"></i> Salvas automaticamente ao sair do campo.
+                                                      <i className="fas fa-check-circle"></i> Configurações e chaves salvas automaticamente.
                                                   </p>
                                               </div>
                                           )}
