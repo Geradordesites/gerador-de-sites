@@ -18,10 +18,11 @@ const MODELOS_TEXTO_PAGO = [
   "gemini-3.6-flash"  
 ];
 
-// 3. MODELOS DE IMAGEM
+// 3. MODELOS DE IMAGEM (Com o motor oficial de fotos do Google adicionado)
 const MODELOS_IMAGEM_GEMINI = [
-  "gemini-3.1-flash-image",
-  "gemini-3.1-flash-lite-image"
+  "gemini-3.1-flash-image",       // Modelo que você ativou
+  "gemini-3.1-flash-lite-image",  // Modelo que você ativou
+  "imagen-3.0-generate-001"       // Nome oficial do motor de desenho do Google (Fallback infalível)
 ];
 
 const CUSTO_POR_ACAO = 10; 
@@ -42,7 +43,6 @@ export async function POST(req: Request) {
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
 
-    // ---> CORREÇÃO: Evita crash quando o frontend pede apenas a imagem <---
     let temImagem = false;
     let textoDoPrompt = "";
     if (promptParts && Array.isArray(promptParts)) {
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     }
 
     // =========================================================================
-    // ROTA PARALELA: GERAÇÃO DE IMAGEM INDIVIDUAL
+    // ROTA PARALELA: GERAÇÃO DE IMAGEM INDIVIDUAL (Com Alarmes de Erro)
     // =========================================================================
     if (action === 'gerar-imagem') {
         try {
@@ -124,25 +124,37 @@ export async function POST(req: Request) {
                     const imageModel = genAI.getGenerativeModel({ model: imgModelName });
                     const imgResult = await imageModel.generateContent({ contents: [{ role: "user", parts: [{ text: basePrompt }] }] });
                     const response = imgResult.response;
+                    
                     if (response.candidates && response.candidates[0]?.content?.parts) {
                         for (const part of response.candidates[0].content.parts) {
                             if (part.inlineData && part.inlineData.data) {
                                 const buffer = Buffer.from(part.inlineData.data, 'base64');
                                 const mimeType = part.inlineData.mimeType || 'image/jpeg';
                                 const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                                
+                                // TENTA SALVAR NO SUPABASE
                                 const { error } = await supabaseAdmin.storage.from('imagens-geradas').upload(fileName, buffer, { contentType: mimeType, upsert: false });
+                                
                                 if (!error) {
                                     urlImagemBucket = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName).data.publicUrl;
                                     break;
+                                } else {
+                                    console.error("🚨 ERRO SUPABASE (Permissão do Bucket?):", error.message);
                                 }
                             }
                         }
                     }
-                } catch(e) {}
+                } catch(e: any) {
+                    console.error(`🚨 ERRO GOOGLE IA (${imgModelName}):`, e.message);
+                }
                 if (urlImagemBucket) break;
             }
-            if (urlImagemBucket) return NextResponse.json({ success: true, url: urlImagemBucket });
-            else return NextResponse.json({ success: false, error: "Limite da IA atingido." }, { status: 400 });
+            
+            if (urlImagemBucket) {
+                return NextResponse.json({ success: true, url: urlImagemBucket });
+            } else {
+                return NextResponse.json({ success: false, error: "Limite da IA atingido ou falha no Bucket." }, { status: 400 });
+            }
         } catch (error: any) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
