@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Users, Shield, Zap, Key, CheckCircle, XCircle, Loader2, AlertTriangle, Eye, EyeOff, CalendarDays, FlaskConical } from 'lucide-react'
+import { Users, Shield, Zap, Key, CheckCircle, XCircle, Loader2, Eye, EyeOff, Calendar, FlaskConical } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
   const [usuarios, setUsuarios] = useState<any[]>([])
   const [config, setConfig] = useState<any>({ byok_enabled: true, admin_paid_key_enabled: true, global_admin_key_enabled: false })
-  const [apiLogs, setApiLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [salvandoConfig, setSalvandoConfig] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState(false)
@@ -59,14 +58,6 @@ export default function AdminPage() {
     } else {
       await supabase.from('system_settings').upsert({ id: 'global', byok_enabled: true, admin_paid_key_enabled: true, global_admin_key_enabled: false })
     }
-
-    const { data: logs } = await supabase
-      .from('api_logs')
-      .select('*')
-      .order('data_hora', { ascending: false })
-      .limit(20)
-    
-    if (logs) setApiLogs(logs)
 
     setLoading(false)
   }
@@ -237,7 +228,7 @@ export default function AdminPage() {
             <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
-                  <th className="py-4 px-4 font-bold rounded-tl-lg">Cliente / E-mail</th>
+                  <th className="py-4 px-4 font-bold rounded-tl-lg">Cliente / E-mail / Cadastro</th>
                   <th className="py-4 px-4 font-bold">Gerenciar Créditos</th>
                   <th className="py-4 px-4 font-bold">Assinatura Mensal / Validade</th>
                   <th className="py-4 px-4 font-bold">Chave Própria (Gemini)</th>
@@ -255,21 +246,34 @@ export default function AdminPage() {
                     } else if (diffDias <= 5) {
                       badgeVencimento = <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 ml-2 animate-pulse" title="Vence em breve!">⚠️ Vence em {diffDias}d</span>;
                     } else {
-                      badgeVencimento = <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-rose-200 ml-2">Ativo</span>;
+                      badgeVencimento = <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 ml-2">Ativo</span>;
                     }
                   } else {
                     badgeVencimento = <span className="text-[10px] text-slate-400 italic ml-2">Sem plano</span>;
                   }
 
+                  // Formata a data de cadastro (created_at)
+                  let dataCadastroFormatada = 'Data desconhecida';
+                  if (user.created_at) {
+                    dataCadastroFormatada = new Date(user.created_at).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    });
+                  }
+
                   return (
                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                      {/* COLUNA 1: NOME E E-MAIL */}
+                      {/* COLUNA 1: NOME, E-MAIL E DATA DE CADASTRO */}
                       <td className="py-5 px-4 align-top">
                         <div className="font-bold text-slate-900 flex items-center gap-1.5 mb-1">
                           {user.nome || 'Sem Nome'}
                           {user.status === 'ativo' ? <CheckCircle className="size-3 text-emerald-500" /> : <XCircle className="size-3 text-rose-500" />}
                         </div>
                         <div className="text-indigo-600 font-bold text-xs mt-0.5">{user.email || 'E-mail não informado'}</div>
+                        <div className="flex items-center gap-1 text-slate-400 text-[11px] mt-1">
+                          <Calendar className="size-3" /> Cadastrado em: {dataCadastroFormatada}
+                        </div>
                         <div className="text-slate-400 text-[10px] font-mono mt-1 mb-3">{user.id}</div>
                         <button onClick={() => alternarStatus(user.id, user.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase shadow-sm transition-all ${user.status === 'ativo' ? 'bg-white border border-rose-200 text-rose-600 hover:bg-rose-50' : 'bg-emerald-600 text-white border border-transparent hover:bg-emerald-700'}`}>
                           {user.status === 'ativo' ? 'Bloquear Conta' : 'Ativar Conta'}
@@ -372,44 +376,6 @@ export default function AdminPage() {
                 })}
                 {usuarios.length === 0 && (
                   <tr><td colSpan={6} className="py-16 text-center text-slate-500 font-medium">Nenhum usuário cadastrado no momento.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* LOGS DE FALHAS DA API */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
-              <AlertTriangle className="size-5 text-amber-500" /> Relatório de Falhas da IA (Últimos Logs)
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
-                  <th className="py-4 px-4 font-bold rounded-tl-lg">Data / Hora</th>
-                  <th className="py-4 px-4 font-bold">Status Final</th>
-                  <th className="py-4 px-4 font-bold rounded-tr-lg">Tentativas / Motivos de Falha</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {apiLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-4 whitespace-nowrap text-slate-600 font-medium text-xs">{new Date(log.data_hora).toLocaleString('pt-BR')}</td>
-                    <td className="py-4 px-4">
-                      {log.sucesso_final ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">Recuperado</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border bg-rose-50 text-rose-700 border-rose-200">Falha Total</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4"><pre className="bg-white p-3 rounded-lg text-[10px] text-slate-600 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto border border-slate-200 custom-scrollbar">{log.modelos_falhos}</pre></td>
-                  </tr>
-                ))}
-                {apiLogs.length === 0 && (
-                  <tr><td colSpan={3} className="py-16 text-center text-slate-500 font-medium">Nenhum registro de falha recente. A API está rodando 100% lisa.</td></tr>
                 )}
               </tbody>
             </table>

@@ -17,7 +17,7 @@ export default function OfertaAfiliadosPage() {
   const linksCheckout = {
     mensal: "https://pay.cakto.com.br/s29kpat",
     anual: "https://pay.cakto.com.br/eaxg525",
-    vitalicio: "https://pay.cakto.com.br/hmu7wum", // Adicionado o link do Vitalício
+    vitalicio: "https://pay.cakto.com.br/hmu7wum",
   }
 
   useEffect(() => {
@@ -28,13 +28,26 @@ export default function OfertaAfiliadosPage() {
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.user?.email) {
       setUserEmail(session.user.email)
+      
+      // 🚀 Verifica se há um plano pendente salvo após o cadastro e abre o pagamento direto
+      const params = new URLSearchParams(window.location.search)
+      const planoParam = params.get('plano') as 'mensal' | 'anual' | null
+      const planoPendente = planoParam || (localStorage.getItem('plano_pendente') as 'mensal' | 'anual' | null)
+
+      if (planoPendente && (planoPendente === 'mensal' || planoPendente === 'anual')) {
+        localStorage.removeItem('plano_pendente')
+        setPlanoSelecionado(planoPendente)
+        setShowModal(true)
+      }
     }
     setLoading(false)
   }
 
   const handleAction = (plano: 'mensal' | 'anual') => {
     if (!userEmail) {
-      router.push(`/cadastro?plano=${plano}`)
+      // Salva o plano pendente e redireciona para o cadastro passando a rota de retorno
+      localStorage.setItem('plano_pendente', plano)
+      router.push(`/cadastro?plano=${plano}&redirect=/oferta`)
       return
     }
     setPlanoSelecionado(plano)
@@ -78,7 +91,7 @@ export default function OfertaAfiliadosPage() {
           <div className="max-w-2xl mx-auto mb-12 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center shadow-sm">
             <p className="text-amber-800 font-medium">
               <span className="font-bold block mb-1">Atenção:</span>
-              Para os planos Mensal e Anual, você criará sua conta gratuita na próxima tela antes do pagamento para liberação imediata.
+              Para os planos Mensal e Anual, você criará sua conta gratuita na próxima tela e será direcionado automaticamente para o pagamento.
             </p>
           </div>
         )}
@@ -91,7 +104,7 @@ export default function OfertaAfiliadosPage() {
           <div>
             <h4 className="font-bold text-emerald-900 mb-1">Como funcionam as imagens e gerações?</h4>
             <p className="text-sm text-emerald-800 leading-relaxed mb-3">
-              Para garantir que você <strong>não tenha custos extras</strong> usando sua própria chave do Google Gemini, o sistema utilizará uma API gratuita de banco de imagens (Unsplash). Suas páginas serão geradas com fotografias reais e em alta qualidade sem gastar um centavo a mais.
+              Para garantir que você <strong>não tenha custos extras</strong> usando sua própria chave do Google Gemini, o sistema utilizará APIs gratuitas de bancos de imagens. Suas páginas serão geradas com fotografias reais e em alta qualidade sem gastar um centavo a mais.
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
               <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
@@ -120,11 +133,11 @@ export default function OfertaAfiliadosPage() {
                 <span>Geração ilimitada de sites <span className="text-amber-500 font-bold">*</span></span>
               </li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Conecte sua chave grátis do Google</li>
-              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Imagens via API Gratuita (Custo zero)</li>
+              <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Imagens via APIs Gratuitas (Custo zero)</li>
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Acesso total ao Editor Visual</li>
             </ul>
             <button onClick={() => handleAction('mensal')} className="w-full py-4 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex justify-center items-center gap-2">
-              {userEmail ? 'Assinar Mensal' : 'Criar Conta e Assinar'}
+              {userEmail ? 'Assinar Mensal' : 'Criar Conta e Ir para Pagamento'}
             </button>
           </div>
 
@@ -150,11 +163,11 @@ export default function OfertaAfiliadosPage() {
               <li className="flex items-start gap-3 text-slate-300"><Check className="size-5 text-emerald-400 shrink-0 mt-0.5" /> Suporte prioritário via WhatsApp</li>
             </ul>
             <button onClick={() => handleAction('anual')} className="w-full py-4 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-500/30 flex justify-center items-center gap-2">
-              {userEmail ? 'Assinar Anual' : 'Criar Conta e Assinar'} {userEmail && <ArrowRight className="size-5" />}
+              {userEmail ? 'Assinar Anual' : 'Criar Conta e Ir para Pagamento'} {userEmail && <ArrowRight className="size-5" />}
             </button>
           </div>
 
-          {/* Vitalício (Instalação Independente) */}
+          {/* Vitalício */}
           <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow flex flex-col relative overflow-hidden">
             <div className="mb-6 relative z-10">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
@@ -172,7 +185,6 @@ export default function OfertaAfiliadosPage() {
               <li className="flex items-start gap-3 text-slate-700"><Check className="size-5 text-emerald-500 shrink-0 mt-0.5" /> Liberdade total de uso</li>
             </ul>
             
-            {/* Como o Vitalício não exige a criação de conta no seu SaaS principal (é uma instalação separada), o link vai direto para o checkout! */}
             <a 
               href={linksCheckout.vitalicio} 
               target="_blank" 
@@ -187,7 +199,7 @@ export default function OfertaAfiliadosPage() {
 
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE E-MAIL (Apenas para Mensal/Anual) */}
+      {/* MODAL DE CONFIRMAÇÃO DE E-MAIL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
