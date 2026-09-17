@@ -304,7 +304,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     }
     
     // Limpeza de segurança final
-    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '');
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
 
