@@ -2,12 +2,9 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
-// =========================================================================
-// 🚀 SOLUÇÃO DO ERRO 500: Aumenta o tempo da Vercel para 60 segundos
-// =========================================================================
 export const maxDuration = 60;
 
-// 1. MODELOS DE TEXTO PARA API GRÁTIS OU CHAVE DO CLIENTE (6 Modelos)
+// 1. MODELOS DE TEXTO PARA API GRÁTIS
 const MODELOS_TEXTO_GRATIS = [
     "gemini-3.8-flash",
     "gemini-3.7-flash",
@@ -15,13 +12,13 @@ const MODELOS_TEXTO_GRATIS = [
     "gemini-3.5-flash",    
 ];
 
-// 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA (2 Modelos)
+// 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA
 const MODELOS_TEXTO_PAGO = [
-  "gemini-2.5-flash",
-  "gemini-3.5-flash"
+  "gemini-3.5-flash", // O mais rápido, eficiente e barato da geração 3.x
+  "gemini-3.6-flash"  // Fallback de segurança
 ];
 
-// 3. MODELOS DE IMAGEM ECONÔMICOS (Usados apenas na API Paga)
+// 3. MODELOS DE IMAGEM
 const MODELOS_IMAGEM_GEMINI = [
   "gemini-3.1-flash-image",
   "gemini-3.1-flash-lite-image"
@@ -32,7 +29,7 @@ const CUSTO_POR_ACAO = 10;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, clientApiKey, clientUnsplashKey, userId, userEmail } = body;
+    const { action, promptIa, systemInstruction, promptParts, dinamica, isElementRefinement, isSiteRefinement, clientApiKey, clientUnsplashKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
     const MEU_EMAIL_ADMIN = 'josevg10@gmail.com';
@@ -45,14 +42,6 @@ export async function POST(req: Request) {
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
 
-    let temImagem = false;
-    let textoDoPrompt = "";
-    for (const part of promptParts) {
-        if (part.inlineData) temImagem = true;
-        if (part.text) textoDoPrompt += part.text + "\n";
-    }
-
-    // === LÓGICA DE SEPARAÇÃO FINANCEIRA E DE CHAVES ===
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
     
@@ -76,26 +65,18 @@ export async function POST(req: Request) {
     }
 
     const chavePropriaAutorizada = isByokEnabled || userByokAllowed;
-    
     let chaveParaUsar = "";
     let isUsingCredits = false;
     let provedorDeImagens = 'unsplash'; 
     let modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
 
-    // 👉 NOVA LÓGICA DE PRIORIDADE: Se o usuário preencheu a chave no Painel, USA ELA!
     if (clientApiKey && clientApiKey.length > 10) {
-        // Se NÃO for admin, faz a checagem rigorosa de vencimento do plano
         if (!isAdmin && chavePropriaAutorizada) {
-            if (!userPlanExpiration || userPlanExpiration < new Date()) {
-                throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
-            }
+            if (!userPlanExpiration || userPlanExpiration < new Date()) throw new Error("Sua assinatura expirou.");
         } else if (!isAdmin && !chavePropriaAutorizada) {
-            throw new Error("O recurso de chave própria está desativado para sua conta.");
+            throw new Error("Chave própria desativada para sua conta.");
         }
-        
-        chaveParaUsar = clientApiKey; // Prioridade MÁXIMA para a chave do input
-        
-        // Verifica a chave do Unsplash
+        chaveParaUsar = clientApiKey; 
         if (!clientUnsplashKey || clientUnsplashKey.trim().length < 5) {
             provedorDeImagens = 'ai_paid'; 
             modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO;
@@ -103,105 +84,83 @@ export async function POST(req: Request) {
             provedorDeImagens = 'unsplash'; 
             modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
         }
-        
     } else if (isAdmin) {
-        // Se não mandou chave e for admin, usa a global da Vercel
         chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash'; 
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
-        // Usa créditos
-        if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
+        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Sem saldo.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash'; 
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isAdminKeyEnabled) {
-        if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
+        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Sem saldo.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA!;
         provedorDeImagens = 'ai_paid';
         modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
     } else {
-        throw new Error("Geração bloqueada: Adicione sua própria chave do Gemini nas configurações para usar o sistema.");
+        throw new Error("Acesso Bloqueado. Adicione sua chave Gemini.");
     }
 
+    // =========================================================================
+    // ROTA PARALELA: GERAÇÃO DE IMAGEM INDIVIDUAL
+    // =========================================================================
+    if (action === 'gerar-imagem') {
+        try {
+            const basePrompt = "Professional, hyper-realistic, high quality photography of " + promptIa;
+            let urlImagemBucket = '';
+            const genAI = new GoogleGenerativeAI(chaveParaUsar);
+            
+            for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
+                try {
+                    const imageModel = genAI.getGenerativeModel({ model: imgModelName });
+                    const imgResult = await imageModel.generateContent({ contents: [{ role: "user", parts: [{ text: basePrompt }] }] });
+                    const response = imgResult.response;
+                    if (response.candidates && response.candidates[0]?.content?.parts) {
+                        for (const part of response.candidates[0].content.parts) {
+                            if (part.inlineData && part.inlineData.data) {
+                                const buffer = Buffer.from(part.inlineData.data, 'base64');
+                                const mimeType = part.inlineData.mimeType || 'image/jpeg';
+                                const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                                const { error } = await supabaseAdmin.storage.from('imagens-geradas').upload(fileName, buffer, { contentType: mimeType, upsert: false });
+                                if (!error) {
+                                    urlImagemBucket = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName).data.publicUrl;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {}
+                if (urlImagemBucket) break;
+            }
+            if (urlImagemBucket) return NextResponse.json({ success: true, url: urlImagemBucket });
+            else return NextResponse.json({ success: false, error: "Limite da IA atingido." }, { status: 400 });
+        } catch (error: any) {
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+    }
+
+    // =========================================================================
+    // GERAÇÃO DE TEXTO DO SITE
+    // =========================================================================
     let regraImagens = "";
     if (provedorDeImagens === 'unsplash') {
-        regraImagens = `
-=== SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 ATENÇÃO: NÃO USE PLACEHOLDERS COMO [UNSPLASH]. Use OBRIGATORIAMENTE a tag <img> com o atributo data-tema="palavra1,palavra2" em inglês. O nosso sistema frontend fará a hidratação das imagens em alta velocidade.
-`;
+        regraImagens = `=== SISTEMA DE MÍDIA (UNSPLASH) ===\n🚨 Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato: <img data-tema="palavra1,palavra2" alt="desc" class="suas classes" />\nNÃO use o atributo src.`;
     } else {
-        regraImagens = `
-=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA (GEMINI IMAGE ECONÔMICO) ===
-🚨 REGRA ABSOLUTA: Para QUALQUER imagem gerada ou modificada, você DEVE utilizar exclusivamente a tag de IA do Gemini.
-Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
-`;
+        // ---> A MUDANÇA ANTIFALHAS DO 404 <---
+        regraImagens = `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img data-ia="descreva_o_prompt_aqui_em_ingles" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet e PROIBIDO usar o atributo src. Use apenas data-ia="...".`;
     }
 
-    // === SISTEMA INTELIGENTE DE MENUS E ÂNCORAS (ROLAGEM SUAVE) ===
-    const regraMenu = `
-=== REGRAS DE NAVEGAÇÃO E MENUS (OBRIGATÓRIO) ===
-Se o layout exigir um menu de navegação, ele DEVE ser feito com links de âncora internos.
-1. No Botão/Link (Gatilho): Use o atributo href começando com hashtag e o target exato. Ex: <a href="#quem-somos" target="_self">Quem Somos</a>
-2. Na Seção (Alvo): A seção OBRIGATORIAMENTE precisa ter o mesmo ID. Ex: <section id="quem-somos" class="...">
-3. A tag principal do documento DEVE incluir a rolagem suave do Tailwind. Ex: <html lang="pt-BR" class="scroll-smooth">
-NUNCA crie links redirecionando para outras páginas (ex: href="/contato"). Tudo deve ser resolvido na mesma Landing Page.
-    `;
-    
-    let instrucaoDinamica = "";
-    if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES (AOS): Adicione data-aos=\"fade-up\" nas tags estruturais principais.";
-    else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES (AOS): OBRIGATÓRIO data-aos=\"fade-up\". Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e hover:scale-105 nos botões.";
+    const regraMenu = `Se o layout exigir menu, ele DEVE ser feito com links de âncora internos (href="#alvo").\nA tag HTML principal DEVE incluir class="scroll-smooth". NUNCA redirecione para outras páginas.`;
+    let instrucaoDinamica = dinamica === 'impacto' ? "OBRIGATÓRIO data-aos=\"fade-up\". Aplique hover:scale-105 nos botões." : "";
 
-    let regrasObrigatorias = "";
-    if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL (MODIFICAÇÃO CIRÚRGICA) ===
-🚨 ATENÇÃO MÁXIMA: Você receberá o código HTML completo do site atual.
-1. Cumpra a solicitação do usuário realizando as mudanças exatas no HTML.
-2. DEVOLVA TODO O CÓDIGO HTML DE PONTA A PONTA. 
-3. É EXPRESSAMENTE PROIBIDO CORTAR, RESUMIR OU USAR PLACEHOLDERS COMO "<!-- resto do código aqui -->". Se cortar o código, o site será corrompido!
-4. Mantenha todas as seções, classes e IDs como estão, mudando APENAS o pedido.
-5. Retorne EXCLUSIVAMENTE um JSON contendo a chave "codigo_html".
-${regraMenu}
-${regraImagens}`;
-    } else if (isElementRefinement || isBlockRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO DE ELEMENTO ===
-🚨 ATENÇÃO: Você receberá o HTML de APENAS UM elemento.
-1. Aplique a modificação pedida com exatidão.
-2. PRESERVE OBRIGATORIAMENTE o atributo 'id' original do elemento (ex: id="node_xxxxx").
-3. Retorne EXCLUSIVAMENTE a tag HTML final otimizada em um JSON com a chave "codigo_html".
-${regraImagens}`;
-    } else {
-        regrasObrigatorias = `
-=== REGRA DE OURO 1: ARQUITETURA E ESPAÇAMENTO ===
-Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-🚨 ATENÇÃO: GERE UMA LANDING PAGE PROFISSIONAL COM NO MÍNIMO 7 SEÇÕES.
-🚨 ATENÇÃO: Usar o tamanho das fontes dos textos ideal para mobile também, use fontes no tamanho que seja legível e não muito pequenas.
-🚨 ATENÇÃO: A descrição sobre o autor sempre deve ser feita numa seção exclusiva  e mais profinal do site. Nunca coloque o autor embaixo de uma imagem no inicio do site.
-🚨 ESPAÇAMENTO OBRIGATÓRIO: Organize o layout para que os títulos dos tópicos tenham EXATAMENTE O ESPAÇO DE UMA LINHA entre eles e os parágrafos.
-🚨 PROIBIÇÃO DE FORMULÁRIOS: É PROIBIDO gerar tags <form>, <input> ou <textarea>. Use APENAS Botões de Ação (CTA).
-${regraMenu}
-
-=== REGRA DE OURO 2: MOBILE-FIRST E MÍDIA ===
-O site DEVE ser perfeito no celular.
-${regraImagens}
-${instrucaoDinamica}
-
-=== COMPLIANCE: RODAPÉ JURÍDICO E CORES HARMONIOSAS ===
-O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de texto do restante do site.
-<footer class="w-full font-sans py-16 mt-12 border-t">
-    <div class="max-w-5xl mx-auto px-6">
-        <div class="text-center pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4"><p class="font-medium tracking-wide text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p></div>
-    </div>
-</footer>
-`;
-    }
+    let regrasObrigatorias = isSiteRefinement ? 
+        `=== REGRA DE REFATORAÇÃO GLOBAL ===\nDEVOLVA TODO O CÓDIGO HTML DE PONTA A PONTA. Mantenha todas as seções e mude APENAS o que foi pedido. Retorne um JSON com a chave "codigo_html".\n${regraMenu}\n${regraImagens}` 
+        : isElementRefinement ? 
+        `=== MICRO-OTIMIZAÇÃO DE ELEMENTO ===\nAltere o elemento pedido e preserve o id original. Retorne um JSON com a chave "codigo_html".\n${regraImagens}` 
+        : `Retorne EXCLUSIVAMENTE um JSON com a chave "codigo_html".\n🚨 GERE UMA LANDING PAGE PROFISSIONAL COM 7 SEÇÕES.\n🚨 ESPAÇAMENTO OBRIGATÓRIO: Use mb-4 ou mb-6 nos parágrafos.\n${regraMenu}\n${regraImagens}\n${instrucaoDinamica}\nRodapé: <footer class="w-full font-sans py-16 mt-12 border-t"><div class="text-center pt-8 border-t flex flex-col items-center gap-4"><p class="text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p></div></footer>`;
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
     let htmlCode = '';
-    let provedorTextoUsado = '';
     let geracaoSucesso = false;
 
     for (const modelName of modelosDeTextoParaUsar) {
@@ -209,103 +168,19 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
             try {
                 const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
-                const result = await model.generateContent({ 
-                    contents: [{ role: "user", parts: promptParts }], 
-                    generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } 
-                });
-                
+                const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } });
                 htmlCode = extrairHtmlDeJson(result.response.text());
-                
-                if (htmlCode && htmlCode.length >= 50) {
-                    geracaoSucesso = true;
-                    provedorTextoUsado = `Google Gemini (${modelName})`;
-                    break; 
-                } else {
-                    throw new Error("HTML gerado foi bloqueado, curto ou inválido.");
-                }
-            } catch (error: any) {
-                console.error(`Falha no modelo ${modelName} (tentativa ${tentativa}):`, error);
-            }
+                if (htmlCode && htmlCode.length >= 50) { geracaoSucesso = true; break; }
+            } catch (error: any) { console.error(`Falha modelo ${modelName}:`, error); }
         }
     }
 
-    if (!geracaoSucesso) throw new Error("A IA falhou em gerar o conteúdo ou recusou o comando. Verifique o prompt ou a validade da chave.");
-
+    if (!geracaoSucesso) throw new Error("A IA falhou em gerar o conteúdo (Verifique limites da chave).");
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
-        try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } 
-        catch (e) {}
+        try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } catch (e) {}
     }
 
-    // =========================================================================
-    // INTEGRAÇÃO SUPABASE STORAGE E LIMPEZA DE TAGS
-    // =========================================================================
-    if (provedorDeImagens === 'ai_paid') {
-        const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
-        let matchIa;
-        let iaUrlsToReplace = [];
-        
-        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
-            iaUrlsToReplace.push({ fullMatch: matchIa[0], prompt: matchIa[1] }); 
-        }
-
-        for (const item of iaUrlsToReplace) {
-            const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
-            let imagemGeradaComSucesso = false;
-            let urlImagemBucket = '';
-
-            for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
-                if (imagemGeradaComSucesso) break;
-                try {
-                    const imageModel = genAI.getGenerativeModel({ model: imgModelName });
-                    const imgResult = await imageModel.generateContent({
-                        contents: [{ role: "user", parts: [{ text: basePrompt }] }]
-                    });
-
-                    const response = imgResult.response;
-                    if (response.candidates && response.candidates[0]?.content?.parts) {
-                        for (const part of response.candidates[0].content.parts) {
-                            if (part.inlineData && part.inlineData.data) {
-                                const base64Data = part.inlineData.data;
-                                const mimeType = part.inlineData.mimeType || 'image/jpeg';
-                                const buffer = Buffer.from(base64Data, 'base64');
-                                const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-
-                                const { data: uploadData, error: uploadErr } = await supabaseAdmin.storage
-                                    .from('imagens-geradas') 
-                                    .upload(fileName, buffer, {
-                                        contentType: mimeType,
-                                        upsert: false
-                                    });
-
-                                if (uploadErr) {
-                                    throw new Error("Falha ao salvar a imagem na nuvem.");
-                                }
-
-                                const { data: pubData } = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName);
-                                urlImagemBucket = pubData.publicUrl;
-                                imagemGeradaComSucesso = true;
-                                break;
-                            }
-                        }
-                    }
-                } catch (modelErr: any) {}
-            }
-
-            if (imagemGeradaComSucesso && urlImagemBucket) {
-                htmlCode = htmlCode.replace(item.fullMatch, urlImagemBucket);
-            } else {
-                // Se a API do cliente falhar em gerar a imagem, coloca o placeholder e salva o site
-                const placeholderUrl = `https://placehold.co/800x600/152246/E0DACB?text=` + encodeURIComponent("Imagem IA Omitida");
-                htmlCode = htmlCode.replace(item.fullMatch, placeholderUrl);
-            }
-        }
-    } else {
-        htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
-    }
-    
-    // Limpeza de segurança final
-
-    return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });
+    return NextResponse.json({ success: true, html: htmlCode });
 
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -321,13 +196,11 @@ function extrairHtmlDeJson(text: string): string {
           const jsonString = clean.substring(start, end + 1);
           const json = JSON.parse(jsonString);
           let extracted = json.codigo_html || json.html || Object.values(json)[0] || jsonString;
-          if (typeof extracted === 'string') extracted = extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
-          return extracted;
+          if (typeof extracted === 'string') return extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
       }
       return clean;
   } catch (e) {
       let fallback = text.replace(/```(html|json)?/gi, '').replace(/```/g, '').trim();
-      if (fallback.toLowerCase().startsWith('json')) fallback = fallback.substring(4).trim();
       if (fallback.startsWith('{') && fallback.includes('"codigo_html":')) {
           const idx = fallback.indexOf('"codigo_html":');
           if (idx !== -1) {
