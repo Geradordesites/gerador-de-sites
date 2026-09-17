@@ -264,7 +264,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = \`<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
                     newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
                 } else if(event.data.elementType === 'button') {
@@ -318,7 +318,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
             
             if (fontName !== 'sans-serif') {
-                fontLink.href = \`https://fonts.googleapis.com/css2?family=\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
+                fontLink.href = \`[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
                 document.body.style.fontFamily = \`'\${fontName}', sans-serif\`;
             } else {
                 fontLink.href = '';
@@ -613,7 +613,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica gera novas vendas."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -625,7 +625,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Use as palavras exatas que seu cliente enviou no WhatsApp."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -637,7 +637,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui para fortalecer a credibilidade do seu método."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -653,7 +653,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80)" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -669,7 +669,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -1008,7 +1008,6 @@ export default function Home() {
 
       clean = clean.replace(/ class="\s*"/gi, ''); 
       clean = clean.replace(/\[(http[^\]]+)\]\([^)]+\)/gi, '$1');
-      
       clean = clean.replace(/src="\[(https?:\/\/[^\]"]+)\]"/gi, 'src="$1"');
       
       return clean;
@@ -1041,9 +1040,11 @@ export default function Home() {
     if (!document.head.querySelector('link[href*="font-awesome"]')) {
         const faLink = document.createElement('link');
         faLink.rel = 'stylesheet';
-        faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+        faLink.href = '[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)';
         document.head.appendChild(faLink);
     }
+    
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const toggleInspetor = () => {
@@ -1203,13 +1204,13 @@ export default function Home() {
 
             if (!doc.head.querySelector('script[src*="tailwindcss"]')) {
                 const twScript = document.createElement('script');
-                twScript.src = "https://cdn.tailwindcss.com";
+                twScript.src = "[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)";
                 doc.head.appendChild(twScript);
             }
             if (!doc.head.querySelector('link[href*="font-awesome"]')) {
                 const faLink = document.createElement('link');
                 faLink.rel = "stylesheet";
-                faLink.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
+                faLink.href = "[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)";
                 doc.head.appendChild(faLink);
             }
 
@@ -1261,6 +1262,9 @@ export default function Home() {
       e.target.value = ''; 
   };
 
+  // =========================================================================================
+  // 🚨 A CORREÇÃO ANTI-FALHAS: Processa as imagens sequencialmente na tela do cliente 
+  // =========================================================================================
   const preencherImagensAutomaticamente = async (htmlBruto: string, isFragment = false) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
@@ -1268,19 +1272,46 @@ export default function Home() {
           const doc = parser.parseFromString(htmlBruto, 'text/html');
           const imagens = Array.from(doc.querySelectorAll('img'));
 
-          const promessas = imagens.map(async (img) => {
+          // O USO DE 'FOR...OF' em vez de 'PROMISE.ALL' impede que o Google bloqueie por limite de velocidade.
+          for (const img of imagens) {
               const tema = img.getAttribute('data-tema');
+              const promptIa = img.getAttribute('data-ia');
 
               try {
-                  // O BACKEND AGORA CUIDA DAS FOTOS DE IA, O FRONTEND SÓ CUIDA DO UNSPLASH
+                  // 1. HIDRATAÇÃO DA IA PAGA (Agora o custo será de 0 créditos, sem falsos bloqueios)
+                  if (promptIa) {
+                      const res = await fetch('/api/gerar', {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                              action: 'gerar-imagem',
+                              promptIa: promptIa,
+                              clientApiKey: apiKey,
+                              userId: userId,
+                              userEmail: userEmail
+                          })
+                      });
+                      
+                      if (res.ok) {
+                          const data = await res.json();
+                          if (data.url) {
+                              img.src = data.url;
+                              img.removeAttribute('data-ia');
+                              continue; 
+                          }
+                      }
+                      img.src = "[https://placehold.co/800x600/152246/E0DACB?text=](https://placehold.co/800x600/152246/E0DACB?text=)" + encodeURIComponent("Imagem IA Omitida");
+                      img.removeAttribute('data-ia');
+                      continue;
+                  }
+
+                  // 2. HIDRATAÇÃO UNSPLASH (Via Frontend)
                   if (tema) {
                       let finalUrl = "";
                       
-                      // Tentativa A: Usa a chave Unsplash do próprio cliente (Se ele tiver)
                       if (unsplashKey) {
                           try {
                               const pagina = Math.floor(Math.random() * 20) + 1;
-                              const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
+                              const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
                               const uData = await res.json();
                               if (uData.results && uData.results.length > 0) {
                                   const randomIndex = Math.floor(Math.random() * uData.results.length);
@@ -1289,7 +1320,6 @@ export default function Home() {
                           } catch(e) {}
                       }
 
-                      // Tentativa B: O Resgate! Se o cliente não tem chave, usa a sua rota segura do Servidor
                       if (!finalUrl) {
                           try {
                               const res = await fetch(`/api/unsplash?q=${encodeURIComponent(tema)}&t=${Date.now()}`);
@@ -1300,9 +1330,8 @@ export default function Home() {
                           } catch(e) {}
                       }
 
-                      // Tentativa C: Fallback absoluto
                       if (!finalUrl) {
-                          finalUrl = "https://placehold.co/800x600/e2e8f0/475569?text=" + encodeURIComponent(tema);
+                          finalUrl = "[https://placehold.co/800x600/e2e8f0/475569?text=](https://placehold.co/800x600/e2e8f0/475569?text=)" + encodeURIComponent(tema);
                       }
 
                       if (finalUrl) {
@@ -1314,9 +1343,7 @@ export default function Home() {
                       }
                   }
               } catch (e) { console.error('Erro na imagem:', e); }
-          });
-
-          await Promise.all(promessas); 
+          }
         
         if (isFragment) { return doc.body.innerHTML; }
           
@@ -1564,7 +1591,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
     if (data && data.html) {
         let hHtml = data.html;
         if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
+            hHtml = hHtml.replace('</head>', `<link href="[https://fonts.googleapis.com/css2?family=$](https://fonts.googleapis.com/css2?family=$){fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         
@@ -1678,7 +1705,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
           // 1. Tenta a chave do cliente primeiro
           if (unsplashKey) {
               try {
-                  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
+                  const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
                   const uData = await res.json();
                   if (uData.results && uData.results.length > 0) {
                       fotoEscolhida = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
@@ -1699,7 +1726,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
           // 3. Fallback absoluto e seguro (Sem erro de aspas)
           if (!fotoEscolhida) {
-              fotoEscolhida = "https://placehold.co/" + w + "x" + h + "/e2e8f0/475569?text=" + encodeURIComponent(termoBusca);
+              fotoEscolhida = "[https://placehold.co/](https://placehold.co/)" + w + "x" + h + "/e2e8f0/475569?text=" + encodeURIComponent(termoBusca);
               (window as any).showNotification("Limites do Unsplash atingidos. Usando imagem de rascunho.", "warning");
           }
 
@@ -1855,7 +1882,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
