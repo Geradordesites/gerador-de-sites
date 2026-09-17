@@ -1934,7 +1934,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   <p className="text-slate-400 mb-8 leading-relaxed">
                       Sua assinatura expirou, você não tem créditos suficientes ou sua conta foi desativada. Para utilizar o BuilderPro, você precisa de um plano ativo.
                   </p>
-                  <a href="/planos" className="block w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-1 mb-4">
+                  <a href="/oferta" className="block w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-1 mb-4">
                       <i className="fas fa-star mr-2"></i> Ver Planos
                   </a>
                   <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }} className="block w-full py-3 bg-transparent text-slate-400 hover:text-white font-bold transition-colors">
@@ -2732,7 +2732,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                       </div>
 
                       {!userByok && (
-                          <a href="/planos" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5 whitespace-nowrap" title="Comprar pacote de créditos">
+                          <a href="/oferta" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5 whitespace-nowrap" title="Comprar pacote de créditos">
                               <i className="fas fa-plus"></i> Comprar Mais Saldo
                           </a>
                       )}
