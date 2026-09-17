@@ -264,7 +264,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
                     newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
                 } else if(event.data.elementType === 'button') {
@@ -318,7 +318,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
             
             if (fontName !== 'sans-serif') {
-                fontLink.href = \`[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
+                fontLink.href = \`https://fonts.googleapis.com/css2?family=\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
                 document.body.style.fontFamily = \`'\${fontName}', sans-serif\`;
             } else {
                 fontLink.href = '';
@@ -613,7 +613,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica gera novas vendas."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -625,7 +625,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Use as palavras exatas que seu cliente enviou no WhatsApp."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -637,7 +637,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui para fortalecer a credibilidade do seu método."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="[https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -653,7 +653,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80)" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -669,7 +669,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -911,7 +911,12 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState('');
   const [userCredits, setUserCredits] = useState<number | null>(null);
   const [userExpiration, setUserExpiration] = useState<string | null>(null);
+  
+  // As 3 chaves de imagem gratuitas
   const [unsplashKey, setUnsplashKey] = useState('');
+  const [pexelsKey, setPexelsKey] = useState('');
+  const [pixabayKey, setPixabayKey] = useState('');
+
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [passoAtualTutorial, setPassoAtualTutorial] = useState(0);
   const totalPassosTutorial = passosTour.length;
@@ -933,10 +938,12 @@ export default function Home() {
       if (session) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
-        const { data: profile } = await supabase.from('profiles').select('user_api_key, unsplash_api_key, allow_byok, credits, plan_expiration').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('user_api_key, unsplash_api_key, pexels_api_key, pixabay_api_key, allow_byok, credits, plan_expiration').eq('id', session.user.id).single();
         if (profile) {
             if (profile.user_api_key) setApiKey(profile.user_api_key);
             if (profile.unsplash_api_key) setUnsplashKey(profile.unsplash_api_key);
+            if (profile.pexels_api_key) setPexelsKey(profile.pexels_api_key);
+            if (profile.pixabay_api_key) setPixabayKey(profile.pixabay_api_key);
             if (profile.allow_byok) setUserByok(profile.allow_byok);
             setUserCredits(profile.credits ?? 0);
             setUserExpiration(profile.plan_expiration);
@@ -949,15 +956,26 @@ export default function Home() {
     carregarConfiguracoesESessao();
   }, []);
 
-  const salvarChaveCliente = async (chave: string, tipo: 'gemini' | 'unsplash' = 'gemini') => {
+  const salvarChaveCliente = async (chave: string, tipo: 'gemini' | 'unsplash' | 'pexels' | 'pixabay') => {
     if (tipo === 'gemini') setApiKey(chave);
     if (tipo === 'unsplash') setUnsplashKey(chave);
+    if (tipo === 'pexels') setPexelsKey(chave);
+    if (tipo === 'pixabay') setPixabayKey(chave);
     
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-        const updateData = tipo === 'gemini' ? { user_api_key: chave } : { unsplash_api_key: chave };
-        await supabase.from('profiles').update(updateData).eq('id', session.user.id);
-        (window as any).showNotification("Chave vinculada à sua conta com sucesso!", "success");
+        const updateData: any = {};
+        if (tipo === 'gemini') updateData.user_api_key = chave;
+        if (tipo === 'unsplash') updateData.unsplash_api_key = chave;
+        if (tipo === 'pexels') updateData.pexels_api_key = chave;
+        if (tipo === 'pixabay') updateData.pixabay_api_key = chave;
+
+        try {
+            await supabase.from('profiles').update(updateData).eq('id', session.user.id);
+            (window as any).showNotification("Chave salva com sucesso!", "success");
+        } catch (err) {
+            console.error("Lembre-se de adicionar as colunas pexels_api_key e pixabay_api_key no Supabase!");
+        }
     }
   };
 
@@ -1036,11 +1054,11 @@ export default function Home() {
     };
     window.addEventListener('message', handleMessage);
 
-    // 🚀 BLINDAGEM DOS ÍCONES: Força o navegador a desenhar o Font Awesome
+    // 🚀 BLINDAGEM DOS ÍCONES (Mantida por segurança, mas agora a importação principal está na tag <style> abaixo)
     if (!document.head.querySelector('link[href*="font-awesome"]')) {
         const faLink = document.createElement('link');
         faLink.rel = 'stylesheet';
-        faLink.href = '[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)';
+        faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
         document.head.appendChild(faLink);
     }
     
@@ -1204,13 +1222,13 @@ export default function Home() {
 
             if (!doc.head.querySelector('script[src*="tailwindcss"]')) {
                 const twScript = document.createElement('script');
-                twScript.src = "[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)";
+                twScript.src = "https://cdn.tailwindcss.com";
                 doc.head.appendChild(twScript);
             }
             if (!doc.head.querySelector('link[href*="font-awesome"]')) {
                 const faLink = document.createElement('link');
                 faLink.rel = "stylesheet";
-                faLink.href = "[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)";
+                faLink.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
                 doc.head.appendChild(faLink);
             }
 
@@ -1263,8 +1281,75 @@ export default function Home() {
   };
 
   // =========================================================================================
-  // 🚨 A CORREÇÃO ANTI-FALHAS: Processa as imagens sequencialmente na tela do cliente 
+  // 🚀 O MOTOR "CASCATA DE RESGATE" PARA IMAGENS GRATUITAS (Unsplash -> Pexels -> Pixabay)
   // =========================================================================================
+  const buscarImagemGratuita = async (tema: string, w = 1000, h = 800) => {
+      let finalUrl = "";
+      const termo = encodeURIComponent(tema);
+      const pagina = Math.floor(Math.random() * 10) + 1;
+
+      // 1. TENTA UNSPLASH (Maior qualidade, mas limite menor: 50/hora)
+      if (unsplashKey && !finalUrl) {
+          try {
+              const res = await fetch(`https://api.unsplash.com/search/photos?query=${termo}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
+              if (res.ok) {
+                  const uData = await res.json();
+                  if (uData.results?.length > 0) {
+                      const img = uData.results[Math.floor(Math.random() * uData.results.length)];
+                      finalUrl = img.urls.regular.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=${w}&h=${h}&fit=crop`;
+                  }
+              }
+          } catch(e) {}
+      }
+
+      // 2. TENTA PEXELS (Qualidade top, limite enorme: 20.000/mês)
+      if (pexelsKey && !finalUrl) {
+          try {
+              const res = await fetch(`https://api.pexels.com/v1/search?query=${termo}&page=${pagina}&per_page=15`, {
+                  headers: { Authorization: pexelsKey }
+              });
+              if (res.ok) {
+                  const pData = await res.json();
+                  if (pData.photos?.length > 0) {
+                      const img = pData.photos[Math.floor(Math.random() * pData.photos.length)];
+                      finalUrl = img.src.original + `?auto=compress&cs=tinysrgb&w=${w}&h=${h}&fit=crop`;
+                  }
+              }
+          } catch(e) {}
+      }
+
+      // 3. TENTA PIXABAY (Qualidade boa, limite infinito: 5.000/hora)
+      if (pixabayKey && !finalUrl) {
+          try {
+              const res = await fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${termo}&image_type=photo&orientation=horizontal&per_page=15`);
+              if (res.ok) {
+                  const pxData = await res.json();
+                  if (pxData.hits?.length > 0) {
+                      finalUrl = pxData.hits[Math.floor(Math.random() * pxData.hits.length)].largeImageURL;
+                  }
+              }
+          } catch(e) {}
+      }
+
+      // 4. ROTA DO SERVIDOR (Resgate pela sua API Unsplash)
+      if (!finalUrl) {
+          try {
+              const res = await fetch(`/api/unsplash?q=${termo}&t=${Date.now()}`);
+              if (res.ok) {
+                  const data = await res.json();
+                  if (data.url) finalUrl = data.url;
+              }
+          } catch(e) {}
+      }
+
+      // 5. PLACEHOLDER (Garante que nunca fica em branco)
+      if (!finalUrl) {
+          finalUrl = `https://placehold.co/${w}x${h}/e2e8f0/475569?text=` + termo;
+      }
+
+      return finalUrl;
+  };
+
   const preencherImagensAutomaticamente = async (htmlBruto: string, isFragment = false) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
@@ -1272,75 +1357,31 @@ export default function Home() {
           const doc = parser.parseFromString(htmlBruto, 'text/html');
           const imagens = Array.from(doc.querySelectorAll('img'));
 
-          // O USO DE 'FOR...OF' em vez de 'PROMISE.ALL' impede que o Google bloqueie por limite de velocidade.
           for (const img of imagens) {
               const tema = img.getAttribute('data-tema');
               const promptIa = img.getAttribute('data-ia');
 
               try {
-                  // 1. HIDRATAÇÃO DA IA PAGA (Agora o custo será de 0 créditos, sem falsos bloqueios)
+                  // IA PAGA (Mantida a lógica de custo 0)
                   if (promptIa) {
                       const res = await fetch('/api/gerar', {
                           method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                              action: 'gerar-imagem',
-                              promptIa: promptIa,
-                              clientApiKey: apiKey,
-                              userId: userId,
-                              userEmail: userEmail
-                          })
+                          body: JSON.stringify({ action: 'gerar-imagem', promptIa: promptIa, clientApiKey: apiKey, userId: userId, userEmail: userEmail })
                       });
-                      
                       if (res.ok) {
                           const data = await res.json();
-                          if (data.url) {
-                              img.src = data.url;
-                              img.removeAttribute('data-ia');
-                              continue; 
-                          }
+                          if (data.url) { img.src = data.url; img.removeAttribute('data-ia'); continue; }
                       }
-                      img.src = "[https://placehold.co/800x600/152246/E0DACB?text=](https://placehold.co/800x600/152246/E0DACB?text=)" + encodeURIComponent("Imagem IA Omitida");
+                      img.src = "https://placehold.co/800x600/152246/E0DACB?text=" + encodeURIComponent("Imagem IA Omitida");
                       img.removeAttribute('data-ia');
                       continue;
                   }
 
-                  // 2. HIDRATAÇÃO UNSPLASH (Via Frontend)
+                  // 🚀 NOVA HIDRATAÇÃO GRATUITA (CASCATA)
                   if (tema) {
-                      let finalUrl = "";
-                      
-                      if (unsplashKey) {
-                          try {
-                              const pagina = Math.floor(Math.random() * 20) + 1;
-                              const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
-                              const uData = await res.json();
-                              if (uData.results && uData.results.length > 0) {
-                                  const randomIndex = Math.floor(Math.random() * uData.results.length);
-                                  finalUrl = uData.results[randomIndex].urls.regular;
-                              }
-                          } catch(e) {}
-                      }
-
-                      if (!finalUrl) {
-                          try {
-                              const res = await fetch(`/api/unsplash?q=${encodeURIComponent(tema)}&t=${Date.now()}`);
-                              if (res.ok) {
-                                  const data = await res.json();
-                                  if (data.url) finalUrl = data.url;
-                              }
-                          } catch(e) {}
-                      }
-
-                      if (!finalUrl) {
-                          finalUrl = "[https://placehold.co/800x600/e2e8f0/475569?text=](https://placehold.co/800x600/e2e8f0/475569?text=)" + encodeURIComponent(tema);
-                      }
-
-                      if (finalUrl) {
-                          if (finalUrl.includes('images.unsplash.com')) {
-                              finalUrl = finalUrl.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + "&w=1000&q=80&fit=crop";
-                          }
-                          img.src = finalUrl;
-                          img.removeAttribute('data-tema'); 
-                      }
+                      const finalUrl = await buscarImagemGratuita(tema, 1000, 800);
+                      img.src = finalUrl;
+                      img.removeAttribute('data-tema'); 
                   }
               } catch (e) { console.error('Erro na imagem:', e); }
           }
@@ -1591,7 +1632,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
     if (data && data.html) {
         let hHtml = data.html;
         if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="[https://fonts.googleapis.com/css2?family=$](https://fonts.googleapis.com/css2?family=$){fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
+            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         
@@ -1700,46 +1741,15 @@ O cliente solicitou a seguinte modificação: "${comando}"
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
 
       try {
-          let fotoEscolhida = '';
+          // 🚀 AGORA USA A CASCATA DE RESGATE NO BOTÃO DE TROCAR IMAGEM TAMBÉM!
+          const finalUrl = await buscarImagemGratuita(termoBusca, w, h);
 
-          // 1. Tenta a chave do cliente primeiro
-          if (unsplashKey) {
-              try {
-                  const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
-                  const uData = await res.json();
-                  if (uData.results && uData.results.length > 0) {
-                      fotoEscolhida = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
-                  }
-              } catch(e) {}
-          } 
-          
-          // 2. Se o cliente não tem chave, puxa da sua API Unsplash
-          if (!fotoEscolhida) {
-              try {
-                  const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
-                  if (res.ok) {
-                      const data = await res.json();
-                      if (data.url) fotoEscolhida = data.url;
-                  }
-              } catch(e) {}
-          }
-
-          // 3. Fallback absoluto e seguro (Sem erro de aspas)
-          if (!fotoEscolhida) {
-              fotoEscolhida = "[https://placehold.co/](https://placehold.co/)" + w + "x" + h + "/e2e8f0/475569?text=" + encodeURIComponent(termoBusca);
-              (window as any).showNotification("Limites do Unsplash atingidos. Usando imagem de rascunho.", "warning");
-          }
-
-          if (fotoEscolhida) {
-              if (fotoEscolhida.includes('images.unsplash.com')) {
-                  fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + "&w=" + w + "&h=" + h + "&fit=crop";
-              }
-
+          if (finalUrl) {
               if (elementoSelecionado.tagName === 'img' || !isBackground) {
-                  atualizarElemento('src', fotoEscolhida);
+                  atualizarElemento('src', finalUrl);
                   atualizarElemento('bgImage', '');
               } else {
-                  atualizarElemento('bgImage', fotoEscolhida);
+                  atualizarElemento('bgImage', finalUrl);
               }
               (window as any).showNotification("Nova foto aplicada com sucesso!", "success");
           }
@@ -1813,8 +1823,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
     (window as any).mudarSeparador = (aba: string) => {
       document.getElementById('previewFrame')!.classList.toggle('active', aba === 'preview');
       document.getElementById('codigoContainer')!.classList.toggle('active', aba === 'code');
-      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
-      document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
+      document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition whitespace-nowrap" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition whitespace-nowrap";
+      document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition whitespace-nowrap" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition whitespace-nowrap";
     };
 
     (window as any).showNotification = (msg: string, type: string) => {
@@ -1882,8 +1892,11 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
+      
+      {/* 🚀 O SEGREDO DOS ÍCONES: A injeção na raiz do componente usando @import para nunca ser ignorada pelo Next.js */}
       <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+        
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
         .input-label { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; display: block; }
@@ -1919,15 +1932,15 @@ O cliente solicitou a seguinte modificação: "${comando}"
                       ></textarea>
                       <div className="flex items-center gap-3 mt-3">
                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">OU</span>
-                          <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2">
+                          <label className="flex-1 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 text-sm font-bold py-3 rounded-lg text-center cursor-pointer transition flex justify-center items-center gap-2 whitespace-nowrap">
                               <i className="fas fa-file-code"></i> Fazer Upload de Arquivo .HTML
                               <input type="file" accept=".html,.htm" className="hidden" onChange={handleHtmlFileUpload} />
                           </label>
                       </div>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
-                      <button onClick={() => setModalImportarCodigo(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition">Cancelar</button>
-                      <button onClick={injetarCodigoExterno} disabled={!codigoExterno.trim()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition shadow-md flex items-center gap-2 disabled:opacity-50"><i className="fas fa-magic"></i> Processar e Editar</button>
+                      <button onClick={() => setModalImportarCodigo(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition whitespace-nowrap">Cancelar</button>
+                      <button onClick={injetarCodigoExterno} disabled={!codigoExterno.trim()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition shadow-md flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"><i className="fas fa-magic"></i> Processar e Editar</button>
                   </div>
               </div>
           </div>
@@ -1963,7 +1976,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                       </div>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
-                      <button onClick={salvarConfiguracoesSEO} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg transition-all hover:-translate-y-0.5"><i className="fas fa-save mr-2"></i> Salvar e Aplicar</button>
+                      <button onClick={salvarConfiguracoesSEO} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-lg transition-all hover:-translate-y-0.5 whitespace-nowrap"><i className="fas fa-save mr-2"></i> Salvar e Aplicar</button>
                   </div>
               </div>
           </div>
@@ -1981,12 +1994,12 @@ O cliente solicitou a seguinte modificação: "${comando}"
       <div className="w-[360px] bg-white border-r border-slate-200 flex flex-col h-full z-10 flex-shrink-0 shadow-sm">
           
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h1 className="text-xl font-black tracking-tight text-slate-800 flex items-center">
+              <h1 className="text-xl font-black tracking-tight text-slate-800 flex items-center whitespace-nowrap">
                   <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center mr-2.5 text-white shadow-md shadow-indigo-200"><i className="fas fa-layer-group text-xs"></i></div>
                   Builder<span className="text-indigo-600">Pro</span>
               </h1>
               
-              <button id="tour-toggle-edit" onClick={toggleInspetor} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
+              <button id="tour-toggle-edit" onClick={toggleInspetor} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
                   <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse text-yellow-300' : ''}`}></i> {modoInspetor ? 'Editando...' : 'Editar Site'}
               </button>
           </div>
@@ -2020,17 +2033,17 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                     <button onClick={() => {
                                         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
                                         iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
-                                    }} className="flex-1 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5" title="Seleciona a caixa maior que segura este item">
+                                    }} className="flex-1 bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5 whitespace-nowrap" title="Seleciona a caixa maior que segura este item">
                                         <i className="fas fa-expand-arrows-alt text-sm"></i>
                                         <span>Caixa Inteira</span>
                                     </button>
                                     
-                                    <button onClick={duplicarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
+                                    <button onClick={duplicarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5 whitespace-nowrap">
                                         <i className="fas fa-copy text-sm"></i>
                                         <span>Duplicar</span>
                                     </button>
                                     
-                                    <button onClick={deletarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5">
+                                    <button onClick={deletarElementoSelecionado} className="flex-1 bg-white border border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold py-2.5 rounded-lg transition shadow-sm flex flex-col items-center justify-center gap-1.5 whitespace-nowrap">
                                         <i className="fas fa-trash-alt text-sm"></i>
                                         <span>Excluir</span>
                                     </button>
@@ -2040,15 +2053,15 @@ O cliente solicitou a seguinte modificação: "${comando}"
                               <div className="panel-section bg-slate-50/50 border-t border-slate-100">
                                   <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo/Dentro)</label>
                                   <div className="flex gap-2 mb-3">
-                                      <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
-                                      <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
-                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
+                                      <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm whitespace-nowrap"><i className="fas fa-font mr-1"></i> Texto</button>
+                                      <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm whitespace-nowrap"><i className="fas fa-image mr-1"></i> Imagem</button>
+                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm whitespace-nowrap"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                                   
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
-                                      <button onClick={() => moverSecaoInteira('UP')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover Seção para Cima"><i className="fas fa-level-up-alt"></i> Subir Seção</button>
-                                      <button onClick={() => moverSecaoInteira('DOWN')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover Seção para Baixo"><i className="fas fa-level-down-alt"></i> Descer Seção</button>
-                                      <button onClick={inverterLayoutBox} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Inverter Imagem/Texto de Lado"><i className="fas fa-exchange-alt"></i> Inverter</button>
+                                      <button onClick={() => moverSecaoInteira('UP')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm whitespace-nowrap" title="Mover Seção para Cima"><i className="fas fa-level-up-alt"></i> Subir Seção</button>
+                                      <button onClick={() => moverSecaoInteira('DOWN')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm whitespace-nowrap" title="Mover Seção para Baixo"><i className="fas fa-level-down-alt"></i> Descer Seção</button>
+                                      <button onClick={inverterLayoutBox} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm whitespace-nowrap" title="Inverter Imagem/Texto de Lado"><i className="fas fa-exchange-alt"></i> Inverter</button>
                                   </div>
                               </div>
 
@@ -2058,10 +2071,10 @@ O cliente solicitou a seguinte modificação: "${comando}"
                               </div>
 
                               <div className="panel-section border-t border-slate-100 flex justify-between items-center mt-2">
-                                  <label className="input-label mb-0 text-[10px]">Reordenar (Apenas Elemento)</label>
+                                  <label className="input-label mb-0 text-[10px] whitespace-nowrap">Reordenar Elemento</label>
                                   <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                      <button onClick={() => moverElemento('UP')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-up mr-1"></i> Subir</button>
-                                      <button onClick={() => moverElemento('DOWN')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-down mr-1"></i> Descer</button>
+                                      <button onClick={() => moverElemento('UP')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold whitespace-nowrap"><i className="fas fa-arrow-up mr-1"></i> Subir</button>
+                                      <button onClick={() => moverElemento('DOWN')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold whitespace-nowrap"><i className="fas fa-arrow-down mr-1"></i> Descer</button>
                                   </div>
                               </div>
 
@@ -2076,8 +2089,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                               </select>
                                           </div>
                                           <div className="flex gap-2 mt-2">
-                                              <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 rounded-lg transition border border-indigo-100"><i className="fas fa-robot mr-1.5"></i> Usar Inteligência</button>
-                                              <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition"><i className="fas fa-upload mr-1.5"></i> Do Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 rounded-lg transition border border-indigo-100 whitespace-nowrap"><i className="fas fa-robot mr-1.5"></i> Busca Automática</button>
+                                              <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition whitespace-nowrap"><i className="fas fa-upload mr-1.5"></i> Do Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
                                           </div>
                                       </div>
                                       
@@ -2307,8 +2320,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                               </select>
                                           </div>
                                           <div className="flex gap-2 mt-2">
-                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-robot mr-1"></i> Inteligência Artificial</button>
-                                              <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-desktop mr-1"></i> Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
+                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded transition whitespace-nowrap"><i className="fas fa-robot mr-1"></i> Busca Automática</button>
+                                              <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition whitespace-nowrap"><i className="fas fa-desktop mr-1"></i> Computador<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
                                           </div>
                                       </div>
 
@@ -2346,8 +2359,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
                                   {elementoSelecionado.tagName !== 'img' && !elementoSelecionado.bloqueiaTexto && !modificacaoGlobal && (
                                       <div className="grid grid-cols-2 gap-2.5 mb-4">
-                                          <button onClick={() => otimizarComIA("Reescreva com copy persuasiva para prender a atenção e vender mais, deixando o texto profissional e elegante.")} className="bg-slate-700 hover:bg-slate-600 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-slate-600">Mais Persuasivo</button>
-                                          <button onClick={() => otimizarComIA("Reescreva gerando forte urgência, escassez e apelo forte para clicar. O usuário deve sentir que precisa agir agora.")} className="bg-orange-600 hover:bg-orange-500 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-orange-500 flex items-center justify-center gap-1.5"><i className="fas fa-fire"></i> Gerar Urgência</button>
+                                          <button onClick={() => otimizarComIA("Reescreva com copy persuasiva para prender a atenção e vender mais, deixando o texto profissional e elegante.")} className="bg-slate-700 hover:bg-slate-600 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-slate-600 whitespace-nowrap">Mais Persuasivo</button>
+                                          <button onClick={() => otimizarComIA("Reescreva gerando forte urgência, escassez e apelo forte para clicar. O usuário deve sentir que precisa agir agora.")} className="bg-orange-600 hover:bg-orange-500 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-orange-500 flex items-center justify-center gap-1.5 whitespace-nowrap"><i className="fas fa-fire"></i> Gerar Urgência</button>
                                       </div>
                                   )}
                                   
@@ -2355,10 +2368,16 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                       <textarea 
                                           id="ai_prompt_element" 
                                           rows={4}
-                                          placeholder={modificacaoGlobal ? "Ex: Mude o fundo da página para preto e reescreva tudo para nicho de Dentista..." : "Escreva o que a IA deve fazer com este elemento..."}
+                                          placeholder={modificacaoGlobal ? "Ex: Mude a cor de fundo da página para preto e reescreva tudo para nicho de Dentista..." : "Escreva o que a IA deve fazer com este elemento..."}
                                           className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg pl-4 pr-12 py-3 outline-none focus:border-indigo-400 placeholder-slate-400 resize-y custom-scrollbar" 
                                       ></textarea>
-                                      <button onClick={() => otimizarComIA()} className="absolute right-2 bottom-2.5 w-9 h-8 bg-indigo-600 hover:bg-indigo-500 rounded-md flex items-center justify-center transition shadow-sm" title="Enviar Comando IA"><i className="fas fa-paper-plane"></i></button>
+                                      <button 
+                                          onClick={executarRefinamentoGlobal} 
+                                          className="absolute right-2 bottom-2.5 w-9 h-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center transition shadow-sm hover:scale-105" 
+                                          title="Aplicar Alteração no Site"
+                                      >
+                                          <i className="fas fa-paper-plane"></i>
+                                      </button>
                                   </div>
                               </div>
                           </div>
@@ -2426,39 +2445,53 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                               <option value="terapia">Acolhedor e Suave (Saúde)</option>
                                           </select>
 
-                                          {/* BLOCO BYOK COM GEMINI E UNSPLASH */}
+                                          {/* BLOCO BYOK EXPANDIDO COM CASCATA */}
                                           {(byokEnabled || userByok) && (
                                               <div className="pt-4 border-t border-slate-100 animate-[fadeIn_0.3s_ease]">
-                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-key mr-1.5 text-indigo-500"></i> Sua Chave de Inteligência Artificial</label>
-                                                  <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Insira sua própria chave de IA para utilizar o sistema de assinatura mensal ilimitada.</p>
+                                                  <label className="input-label mb-2 flex items-center text-indigo-700"><i className="fas fa-robot mr-1.5 text-indigo-500"></i> Sua Chave de Texto (IA)</label>
                                                   <input 
                                                       type="password" 
                                                       value={apiKey}
                                                       onChange={(e) => setApiKey(e.target.value)}
                                                       onBlur={(e) => salvarChaveCliente(e.target.value, 'gemini')}
-                                                      placeholder="AIzaSy..." 
-                                                      className="input-standard font-mono text-xs" 
+                                                      placeholder="Chave do Google Gemini..." 
+                                                      className="input-standard font-mono text-xs mb-4" 
                                                   />
-                                                  <p className="text-[9px] text-emerald-600 mt-1 mb-4">
-                                                      <i className="fas fa-check-circle"></i> Fica salva na sua conta ao tirar o clique.
-                                                  </p>
 
                                                   <label className="input-label mb-2 flex items-center text-indigo-700">
-                                                      <i className="fas fa-image mr-1.5 text-indigo-500"></i> Sua Chave Unsplash (Opcional)
+                                                      <i className="fas fa-camera mr-1.5 text-indigo-500"></i> Chaves de Imagens (Gratuitas)
                                                   </label>
                                                   <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-                                                      Client ID do Unsplash para gerar imagens grátis sem os limites globais do sistema.
+                                                      O sistema usará a primeira chave válida, ou buscará nas próximas para fugir de bloqueios (Unsplash &rarr; Pexels &rarr; Pixabay).
                                                   </p>
+                                                  
                                                   <input 
                                                       type="password" 
                                                       value={unsplashKey}
                                                       onChange={(e) => setUnsplashKey(e.target.value)}
                                                       onBlur={(e) => salvarChaveCliente(e.target.value, 'unsplash')}
-                                                      placeholder="Cole seu Client ID..." 
-                                                      className="input-standard font-mono text-xs" 
+                                                      placeholder="Chave do Unsplash..." 
+                                                      className="input-standard font-mono text-xs mb-2" 
                                                   />
+                                                  <input 
+                                                      type="password" 
+                                                      value={pexelsKey}
+                                                      onChange={(e) => setPexelsKey(e.target.value)}
+                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'pexels')}
+                                                      placeholder="Chave do Pexels..." 
+                                                      className="input-standard font-mono text-xs mb-2" 
+                                                  />
+                                                  <input 
+                                                      type="password" 
+                                                      value={pixabayKey}
+                                                      onChange={(e) => setPixabayKey(e.target.value)}
+                                                      onBlur={(e) => salvarChaveCliente(e.target.value, 'pixabay')}
+                                                      placeholder="Chave do Pixabay..." 
+                                                      className="input-standard font-mono text-xs mb-2" 
+                                                  />
+                                                  
                                                   <p className="text-[9px] text-emerald-600 mt-1">
-                                                      <i className="fas fa-check-circle"></i> Fica salva automaticamente.
+                                                      <i className="fas fa-check-circle"></i> Salvas automaticamente ao sair do campo.
                                                   </p>
                                               </div>
                                           )}
@@ -2517,11 +2550,11 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                       )}
                                   </div>
 
-                                  <button id="tour-generate-btn" onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                  <button id="tour-generate-btn" onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2 whitespace-nowrap">
                                       <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Meu Site Agora
                                   </button>
                                   
-                                  <button onClick={resetarSite} className="w-full mt-3 bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-200 transition-all text-xs flex items-center justify-center gap-2 shadow-sm">
+                                  <button onClick={resetarSite} className="w-full mt-3 bg-white hover:bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-200 transition-all text-xs flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
                                       <i className="fas fa-trash-alt"></i> Começar Novo Site do Zero
                                   </button>
                               </div>
@@ -2561,50 +2594,50 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
       <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
           
-          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
-              <div className="flex items-center gap-3 md:gap-5">
+          <div className="bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 h-[60px] shadow-sm z-10 overflow-x-auto custom-scrollbar gap-8">
+              <div className="flex items-center gap-3 md:gap-5 flex-shrink-0">
                   <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-xs bg-white text-indigo-700 shadow-sm transition">Ver o Site</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-xs bg-white text-indigo-700 shadow-sm transition whitespace-nowrap">Ver o Site</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition whitespace-nowrap">Código Fonte</button>
                   </div>
                   
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button onClick={() => setDeviceView('desktop')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Computador"><i className="fas fa-desktop text-xs"></i></button>
-                      <button onClick={() => setDeviceView('tablet')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
-                      <button onClick={() => setDeviceView('mobile')} className={`w-8 h-7 flex items-center justify-center rounded transition ${deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Celular"><i className="fas fa-mobile-alt text-xs"></i></button>
+                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200 flex-shrink-0">
+                      <button onClick={() => setDeviceView('desktop')} className={`w-8 h-7 flex-shrink-0 flex items-center justify-center rounded transition ${deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Computador"><i className="fas fa-desktop text-xs"></i></button>
+                      <button onClick={() => setDeviceView('tablet')} className={`w-8 h-7 flex-shrink-0 flex items-center justify-center rounded transition ${deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
+                      <button onClick={() => setDeviceView('mobile')} className={`w-8 h-7 flex-shrink-0 flex items-center justify-center rounded transition ${deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`} title="Visão Celular"><i className="fas fa-mobile-alt text-xs"></i></button>
                   </div>
 
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                  <button onClick={() => setModalImportarCodigo(true)} className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm whitespace-nowrap">
                       <i className="fas fa-file-import"></i> <span className="hidden sm:inline">Importar HTML</span>
                   </button>
                   
-                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm whitespace-nowrap">
                       <i className="fas fa-search-dollar"></i> SEO & Scripts
                   </button>
-                  <button id="tour-hospedar-btn" onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                  <button id="tour-hospedar-btn" onClick={() => window.open('/hospedagem', '_blank')} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm whitespace-nowrap">
                       <i className="fas fa-globe"></i> Como Hospedar e APIS
                   </button>
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
+                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100 whitespace-nowrap"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
               
-              <div className="flex items-center gap-3 md:gap-4">
+              <div className="flex items-center gap-3 md:gap-4 flex-shrink-0 pr-2">
                   
                   <div className="flex items-center mr-2 md:mr-4 pl-4 border-l border-slate-200 gap-3">
                       <div className="flex flex-col text-right">
                           {userByok ? (
                               <>
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Assinatura BYOK</span>
-                                  <span className="text-xs font-bold text-indigo-600 flex items-center justify-end gap-1.5">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 whitespace-nowrap">Assinatura BYOK</span>
+                                  <span className="text-xs font-bold text-indigo-600 flex items-center justify-end gap-1.5 whitespace-nowrap">
                                       <i className="fas fa-calendar-check"></i> {userExpiration ? new Date(userExpiration).toLocaleDateString('pt-BR') : 'Ativo'}
                                   </span>
                               </>
                           ) : (
                               <>
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Seus Créditos</span>
-                                  <span className={`text-xs font-bold flex items-center justify-end gap-1.5 ${(userCredits || 0) < 15 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 whitespace-nowrap">Seus Créditos</span>
+                                  <span className={`text-xs font-bold flex items-center justify-end gap-1.5 whitespace-nowrap ${(userCredits || 0) < 15 ? 'text-rose-500 animate-pulse' : 'text-amber-500'}`}>
                                       <i className="fas fa-bolt"></i> {userCredits !== null ? userCredits : '0'} Saldo
                                   </span>
                               </>
@@ -2612,7 +2645,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                       </div>
 
                       {!userByok && (
-                          <a href="/planos" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5" title="Comprar pacote de créditos">
+                          <a href="/planos" className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-orange-500/20 hover:-translate-y-0.5 whitespace-nowrap" title="Comprar pacote de créditos">
                               <i className="fas fa-plus"></i> Comprar Mais Saldo
                           </a>
                       )}
@@ -2620,18 +2653,18 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
                   {userEmail === 'josevg10@gmail.com' && (
                       <div className="flex items-center gap-3">
-                          <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition flex items-center">
+                          <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition flex items-center whitespace-nowrap">
                               <i className="fas fa-th-large mr-1.5"></i> Meus Projetos
                           </button>
                           <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                           
                           {siteEditando ? (
                               <div className="flex gap-2">
-                                  <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
-                                  <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
+                                  <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200 whitespace-nowrap">Cancelar</button>
+                                  <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center whitespace-nowrap"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
                               </div>
                           ) : (
-                              <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-globe mr-1.5"></i> Publicar Online</button>
+                              <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center whitespace-nowrap"><i className="fas fa-globe mr-1.5"></i> Publicar Online</button>
                           )}
                           <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                       </div>
@@ -2640,13 +2673,13 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   <div className="flex items-center gap-2">
                       <button id="tour-download-btn" 
                           onClick={() => (window as any).baixarHtmlGerado()} 
-                          className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm" 
+                          className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm whitespace-nowrap" 
                           title="Baixar o arquivo do site para o seu computador">
                           <i className="fas fa-download text-indigo-600"></i> Baixar Site
                       </button>
                       <button 
                           onClick={() => (window as any).copiarCodigo()} 
-                          className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm" 
+                          className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm whitespace-nowrap" 
                           title="Copiar todo o código HTML do site">
                           <i className="fas fa-copy text-indigo-600"></i> Copiar Código
                       </button>
