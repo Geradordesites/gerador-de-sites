@@ -90,9 +90,20 @@ export async function POST(req: Request) {
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
+        
         chaveParaUsar = clientApiKey;
-        provedorDeImagens = 'unsplash'; 
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
+        
+        // ---> MODIFICAÇÃO CIRÚRGICA: Regra do Unsplash do Cliente <---
+        if (!clientUnsplashKey || clientUnsplashKey.trim().length < 5) {
+            // Se ele não cadastrou chave do Unsplash, usa a API Paga DELE para gerar imagens!
+            provedorDeImagens = 'ai_paid'; 
+            modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO;
+        } else {
+            // Se ele cadastrou, usa a dele do Unsplash para economizar os créditos dele
+            provedorDeImagens = 'unsplash'; 
+            modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
+        }
+        
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
@@ -223,7 +234,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
     // INTEGRAÇÃO SUPABASE STORAGE E LIMPEZA DE TAGS
     // =========================================================================
     if (provedorDeImagens === 'ai_paid') {
-        // Se usar API Paga, a imagem é gerada pela IA e salva no Supabase (Mantido igual)
         const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
         let matchIa;
         let iaUrlsToReplace = [];
@@ -282,8 +292,6 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
             }
         }
     } else {
-        // Se usar API Grátis (Unsplash), nós não fazemos mais o fetch no Backend!
-        // O Frontend cuida da mágica instantaneamente. Apenas limpamos códigos errados.
         htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
     }
     
