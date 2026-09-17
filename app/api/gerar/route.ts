@@ -18,11 +18,11 @@ const MODELOS_TEXTO_PAGO = [
   "gemini-3.6-flash"  
 ];
 
-// 3. MODELOS DE IMAGEM (Com o motor oficial de fotos do Google adicionado)
+// 3. MODELOS DE IMAGEM
 const MODELOS_IMAGEM_GEMINI = [
-  "gemini-3.1-flash-image",       // Modelo que você ativou
-  "gemini-3.1-flash-lite-image",  // Modelo que você ativou
-  "imagen-3.0-generate-001"       // Nome oficial do motor de desenho do Google (Fallback infalível)
+  "gemini-3.1-flash-image",
+  "gemini-3.1-flash-lite-image",
+  "imagen-3.0-generate-001"
 ];
 
 const CUSTO_POR_ACAO = 10; 
@@ -30,7 +30,7 @@ const CUSTO_POR_ACAO = 10;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, promptIa, systemInstruction, promptParts, dinamica, isElementRefinement, isSiteRefinement, clientApiKey, clientUnsplashKey, userId, userEmail } = body;
+    const { systemInstruction, promptParts, dinamica, isElementRefinement, isSiteRefinement, clientApiKey, clientUnsplashKey, userId, userEmail } = body;
 
     const anoAtual = new Date().getFullYear();
     const MEU_EMAIL_ADMIN = 'josevg10@gmail.com';
@@ -42,15 +42,6 @@ export async function POST(req: Request) {
       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
-
-    let temImagem = false;
-    let textoDoPrompt = "";
-    if (promptParts && Array.isArray(promptParts)) {
-        for (const part of promptParts) {
-            if (part.inlineData) temImagem = true;
-            if (part.text) textoDoPrompt += part.text + "\n";
-        }
-    }
 
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
@@ -97,11 +88,11 @@ export async function POST(req: Request) {
     } else if (isAdmin) {
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
-        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Sem saldo.`);
+        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Sem saldo para a operação.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
     } else if (isAdminKeyEnabled) {
-        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Sem saldo.`);
+        if (userCredits < CUSTO_POR_ACAO) throw new Error(`Sem saldo para a operação.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.API_KEY_PAGA!;
         provedorDeImagens = 'ai_paid';
@@ -111,63 +102,14 @@ export async function POST(req: Request) {
     }
 
     // =========================================================================
-    // ROTA PARALELA: GERAÇÃO DE IMAGEM INDIVIDUAL (Com Alarmes de Erro)
-    // =========================================================================
-    if (action === 'gerar-imagem') {
-        try {
-            const basePrompt = "Professional, hyper-realistic, high quality photography of " + promptIa;
-            let urlImagemBucket = '';
-            const genAI = new GoogleGenerativeAI(chaveParaUsar);
-            
-            for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
-                try {
-                    const imageModel = genAI.getGenerativeModel({ model: imgModelName });
-                    const imgResult = await imageModel.generateContent({ contents: [{ role: "user", parts: [{ text: basePrompt }] }] });
-                    const response = imgResult.response;
-                    
-                    if (response.candidates && response.candidates[0]?.content?.parts) {
-                        for (const part of response.candidates[0].content.parts) {
-                            if (part.inlineData && part.inlineData.data) {
-                                const buffer = Buffer.from(part.inlineData.data, 'base64');
-                                const mimeType = part.inlineData.mimeType || 'image/jpeg';
-                                const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-                                
-                                // TENTA SALVAR NO SUPABASE
-                                const { error } = await supabaseAdmin.storage.from('imagens-geradas').upload(fileName, buffer, { contentType: mimeType, upsert: false });
-                                
-                                if (!error) {
-                                    urlImagemBucket = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName).data.publicUrl;
-                                    break;
-                                } else {
-                                    console.error("🚨 ERRO SUPABASE (Permissão do Bucket?):", error.message);
-                                }
-                            }
-                        }
-                    }
-                } catch(e: any) {
-                    console.error(`🚨 ERRO GOOGLE IA (${imgModelName}):`, e.message);
-                }
-                if (urlImagemBucket) break;
-            }
-            
-            if (urlImagemBucket) {
-                return NextResponse.json({ success: true, url: urlImagemBucket });
-            } else {
-                return NextResponse.json({ success: false, error: "Limite da IA atingido ou falha no Bucket." }, { status: 400 });
-            }
-        } catch (error: any) {
-            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-        }
-    }
-
-    // =========================================================================
     // GERAÇÃO DE TEXTO DO SITE
     // =========================================================================
     let regraImagens = "";
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `=== SISTEMA DE MÍDIA (UNSPLASH) ===\n🚨 Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato: <img data-tema="palavra1,palavra2" alt="desc" class="suas classes" />\nNÃO use o atributo src.`;
     } else {
-        regraImagens = `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img data-ia="descreva_o_prompt_aqui_em_ingles" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet e PROIBIDO usar o atributo src. Use apenas data-ia="...".`;
+        // Volta para a sintaxe original que funcionava perfeitamente
+        regraImagens = `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img src="[IMAGEM_IA: descreva_o_prompt_aqui_em_ingles]" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet. Use apenas a tag [IMAGEM_IA: ...] no atributo src.`;
     }
 
     const regraMenu = `Se o layout exigir menu, ele DEVE ser feito com links de âncora internos (href="#alvo").\nA tag HTML principal DEVE incluir class="scroll-smooth". NUNCA redirecione para outras páginas.`;
@@ -197,9 +139,77 @@ export async function POST(req: Request) {
     }
 
     if (!geracaoSucesso) throw new Error("A IA falhou em gerar o conteúdo (Verifique limites da chave).");
+    
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } catch (e) {}
     }
+
+    // =========================================================================
+    // GERAÇÃO DE IMAGENS PARALELA (RÁPIDA DENTRO DO BACKEND)
+    // =========================================================================
+    if (provedorDeImagens === 'ai_paid') {
+        const regexIa = /\[IMAGEM_IA:\s*([^\]]+)\]/g;
+        let matchIa;
+        let iaUrlsToReplace = [];
+        
+        while ((matchIa = regexIa.exec(htmlCode)) !== null) { 
+            iaUrlsToReplace.push({ fullMatch: matchIa[0], prompt: matchIa[1] }); 
+        }
+
+        // Executa todas as gerações de imagem AO MESMO TEMPO para fugir do timeout da Vercel
+        const promessasDeImagem = iaUrlsToReplace.map(async (item) => {
+            const basePrompt = "Professional, hyper-realistic, high quality photography of " + item.prompt;
+            let urlImagemBucket = '';
+
+            for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
+                try {
+                    const imageModel = genAI.getGenerativeModel({ model: imgModelName });
+                    const imgResult = await imageModel.generateContent({
+                        contents: [{ role: "user", parts: [{ text: basePrompt }] }]
+                    });
+
+                    const response = imgResult.response;
+                    if (response.candidates && response.candidates[0]?.content?.parts) {
+                        for (const part of response.candidates[0].content.parts) {
+                            if (part.inlineData && part.inlineData.data) {
+                                const base64Data = part.inlineData.data;
+                                const mimeType = part.inlineData.mimeType || 'image/jpeg';
+                                const buffer = Buffer.from(base64Data, 'base64');
+                                const fileName = `ai_img_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+
+                                const { error: uploadErr } = await supabaseAdmin.storage
+                                    .from('imagens-geradas')
+                                    .upload(fileName, buffer, { contentType: mimeType, upsert: false });
+
+                                if (!uploadErr) {
+                                    const { data: pubData } = supabaseAdmin.storage.from('imagens-geradas').getPublicUrl(fileName);
+                                    urlImagemBucket = pubData.publicUrl;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch (modelErr: any) {}
+                if (urlImagemBucket) break;
+            }
+
+            return {
+                original: item.fullMatch,
+                novo: urlImagemBucket || `https://placehold.co/800x600/152246/E0DACB?text=` + encodeURIComponent("Imagem IA Omitida")
+            };
+        });
+
+        // Aguarda todas ficarem prontas e insere no HTML
+        const resultados = await Promise.all(promessasDeImagem);
+        for (const res of resultados) {
+            htmlCode = htmlCode.replace(res.original, res.novo);
+        }
+    } else {
+        htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
+    }
+
+    // Limpeza final
+    htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '');
 
     return NextResponse.json({ success: true, html: htmlCode });
 
