@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Globe, Sparkles, Rocket, ExternalLink, ArrowLeft, ShieldCheck, Key, Camera, Cpu } from 'lucide-react';
+import { Globe, Sparkles, Rocket, ExternalLink, ArrowLeft, ShieldCheck, Key, Camera, Cpu, Image as ImageIcon, Film } from 'lucide-react';
 
 export default function HospedagemTutorialPage() {
   const router = useRouter();
@@ -27,14 +27,14 @@ export default function HospedagemTutorialPage() {
             Tutoriais e Publicação
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-            Aprenda a colocar seu site no ar gratuitamente e a configurar suas chaves de inteligência artificial (APIs) para automatizar a criação de textos e imagens.
+            Aprenda a colocar seu site no ar gratuitamente e a configurar suas chaves de inteligência artificial e bancos de imagens (APIs) para automatizar o seu construtor.
           </p>
         </div>
 
         <div className="space-y-12">
           
           {/* ==========================================
-              SEÇÃO 1: HOSPEDAGEM (EXISTENTE)
+              SEÇÃO 1: HOSPEDAGEM
           ========================================== */}
           <div>
             <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
@@ -129,63 +129,28 @@ export default function HospedagemTutorialPage() {
             </h3>
             
             <div className="bg-white rounded-3xl border-2 border-sky-400 shadow-xl p-6 md:p-8 relative overflow-hidden">
-              <div className="flex items-start gap-4 mb-8">
+              <div className="flex items-start gap-4 mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500 shrink-0 shadow-sm">
                   <Key className="size-6" />
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Chave de API do Unsplash</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Siga o passo a passo abaixo para liberar buscas ilimitadas de fotos em alta resolução para o seu construtor.</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Garante buscas de fotografias em alta resolução para o seu construtor.</p>
                 </div>
               </div>
 
-              <div className="space-y-8 mb-8">
-                {/* Passo 1 */}
-                <div className="flex items-start gap-4">
-                  <span className="w-8 h-8 rounded-full bg-sky-500 text-white text-sm font-bold flex items-center justify-center shrink-0 mt-1">1</span>
-                  <div className="w-full">
-                    <p className="text-sm text-slate-700 leading-relaxed mb-3">
-                      Acesse o portal de desenvolvedores da Unsplash clicando no botão abaixo e faça login (ou crie uma conta gratuita). Em seguida, clique em <strong>"New Application"</strong>.
-                    </p>
-                    <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener noreferrer" className="inline-flex px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs uppercase tracking-wider rounded-lg mb-4 transition-all">
-                      Acessar Portal Unsplash <ExternalLink className="size-3.5 ml-2" />
-                    </a>
-                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlgnygu8X_y_bba9n0K6hdW5PgtJu6Upd5pmVaymGcsHgK3gn8xhyphenhyphensAnPeEp5Z623YL7nkJpvTR5NMi1AwKRYpg1P98to9N9GakBffe3zDeEnTKuhLOk4xDTsovhc_G7iPiMQSIbw47O7Vnwt9MWm4pCplUS-EIUzKvOvjH7PvkfEDjbwcaV__nB7Xags/s1600/u1.png" alt="Passo 1 Unsplash" className="w-full max-w-2xl rounded-xl border border-slate-200 shadow-sm" />
-                  </div>
-                </div>
+              <p className="text-xs md:text-sm text-slate-600 leading-relaxed mb-6">
+                Acesse o portal de desenvolvedores da Unsplash, crie uma aplicação gratuita e copie o seu código de acesso (<strong>Access Key</strong>) para colar no campo correspondente no painel do construtor.
+              </p>
 
-                {/* Passo 2 */}
-                <div className="flex items-start gap-4">
-                  <span className="w-8 h-8 rounded-full bg-sky-500 text-white text-sm font-bold flex items-center justify-center shrink-0 mt-1">2</span>
-                  <div className="w-full">
-                    <p className="text-sm text-slate-700 leading-relaxed mb-3">
-                      Leia as diretrizes de uso, marque todas as caixas de seleção confirmando que você concorda com os termos e clique no botão <strong>"Accept terms"</strong>.
-                    </p>
-                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizEg9lt25qwZXPA3oe9GhSQXonsCeLHNuiUxin9uLHceTQBjavHQMb7aIEgiZwSn3K1II40IDIVO_mwR0dYrBqzDGIwoZziG8whwodMtrPPF3yOyu1dxiTscYNZb3txHMsRjr5ckpmUR1YXKK0ua_8mV2HoVOU8EUYDEGkGjW03dFx0c_JM7BSA7bc6G8/s1600/u2.png" alt="Passo 2 Unsplash" className="w-full max-w-2xl rounded-xl border border-slate-200 shadow-sm" />
-                  </div>
-                </div>
-
-                {/* Passo 3 */}
-                <div className="flex items-start gap-4">
-                  <span className="w-8 h-8 rounded-full bg-sky-500 text-white text-sm font-bold flex items-center justify-center shrink-0 mt-1">3</span>
-                  <div className="w-full">
-                    <p className="text-sm text-slate-700 leading-relaxed mb-3">
-                      Preencha o nome do seu aplicativo (ex: <em>"Meu Construtor de Sites"</em>) e uma breve descrição. Depois, clique em <strong>"Create application"</strong>.
-                    </p>
-                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhVuBBzhYv9tJe43YHodBN2B_ONH8mzOb4qnslS-IsAjdjK0Z44-udA8-847GOJy9Bl-8DlL8NZSVxkx_wK4W1EydOQ6ZAjmz_14-CTu4ecd3Hwter7SA31Q23efErOys8R8I1kvAp6XIIBdlySw9fkU_bMJRfhuZm4yVqjwafIiKAZaFoNBbZMWOrbxqU/s1600/u3.png" alt="Passo 3 Unsplash" className="w-full max-w-2xl rounded-xl border border-slate-200 shadow-sm" />
-                  </div>
-                </div>
-
-                {/* Passo 4 */}
-                <div className="flex items-start gap-4">
-                  <span className="w-8 h-8 rounded-full bg-sky-500 text-white text-sm font-bold flex items-center justify-center shrink-0 mt-1">4</span>
-                  <div className="w-full">
-                    <p className="text-sm text-slate-700 leading-relaxed mb-3">
-                      Role a página recém-criada para baixo até encontrar a seção "Keys". Copie o código longo que aparece em <strong>Access Key</strong> e cole no painel de configurações do seu editor!
-                    </p>
-                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYaks0PkeMMsb_GDHwQbQoifdnQNomL7JtIx1AIvMAgAp3emlbxosTmrO5gniALq6vfeR3gA14Cl10RLy06KKMx9Jg6jNyx9M5qSAEc4dvOhqoZD8lwxyePYyHJMldc4dV1LDe2_iB2vb5B7S96Y1NYs8l5gHGgiUPmHcq1USJElvUfhFsWdCfJIv9TgM/s1600/u4.png" alt="Passo 4 Unsplash" className="w-full max-w-2xl rounded-xl border border-slate-200 shadow-sm" />
-                  </div>
-                </div>
+              <div className="flex justify-end pt-4 border-t border-slate-100">
+                <a 
+                  href="https://unsplash.com/oauth/applications" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-sky-200 transition-all flex items-center gap-2">
+                  Pegar Chave Unsplash <ExternalLink className="size-4" />
+                </a>
               </div>
             </div>
           </div>
@@ -193,11 +158,89 @@ export default function HospedagemTutorialPage() {
           <hr className="border-slate-200" />
 
           {/* ==========================================
-              SEÇÃO 3: API GOOGLE GEMINI (INTELIGÊNCIA)
+              SEÇÃO 3: API PEXELS (IMAGENS)
           ========================================== */}
           <div>
             <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
-              <Cpu className="size-5 text-purple-600" /> 3. Configurar Inteligência Artificial (Google)
+              <ImageIcon className="size-5 text-emerald-600" /> 3. Configurar Banco de Imagens Pexels (Rotação 2)
+            </h3>
+            
+            <div className="bg-white rounded-3xl border-2 border-emerald-500 shadow-xl p-6 md:p-8 relative overflow-hidden">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-sm">
+                  <Key className="size-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">Chave de API do Pexels</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Permite até 20.000 requisições mensais gratuitas de imagens impressionantes.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-6 text-xs md:text-sm text-slate-600 leading-relaxed">
+                <p>1. Acesse o site oficial do Pexels dedicado a desenvolvedores através do botão abaixo.</p>
+                <p>2. Faça o seu cadastro gratuito ou login na plataforma.</p>
+                <p>3. Preencha o formulário simples informando o uso (ex: ferramenta de design) e copie a sua <strong>API Key</strong> gerada na tela.</p>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-100">
+                <a 
+                  href="https://www.pexels.com/api/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-200 transition-all flex items-center gap-2">
+                  Pegar Chave Pexels <ExternalLink className="size-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-slate-200" />
+
+          {/* ==========================================
+              SEÇÃO 4: API PIXABAY (IMAGENS)
+          ========================================== */}
+          <div>
+            <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
+              <Film className="size-5 text-amber-500" /> 4. Configurar Banco de Imagens Pixabay (Rotação 3)
+            </h3>
+            
+            <div className="bg-white rounded-3xl border-2 border-amber-500 shadow-xl p-6 md:p-8 relative overflow-hidden">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 shadow-sm">
+                  <Key className="size-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">Chave de API do Pixabay</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Oferece limite robusto de 5.000 requisições por hora para o seu sistema.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-6 text-xs md:text-sm text-slate-600 leading-relaxed">
+                <p>1. Entre na sua conta do Pixabay utilizando o link direto abaixo.</p>
+                <p>2. Role a documentação da API para baixo até localizar a seção <strong>Parameters</strong>.</p>
+                <p>3. Na linha escrita <strong>key</strong>, copie a sequência numérica e alfanumérica destacada em verde na tela para colá-la no construtor.</p>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-100">
+                <a 
+                  href="https://pixabay.com/api/docs/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-200 transition-all flex items-center gap-2">
+                  Pegar Chave Pixabay <ExternalLink className="size-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-slate-200" />
+
+          {/* ==========================================
+              SEÇÃO 5: API GOOGLE GEMINI (INTELIGÊNCIA)
+          ========================================== */}
+          <div>
+            <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
+              <Cpu className="size-5 text-purple-600" /> 5. Configurar Inteligência Artificial (Google Gemini)
             </h3>
             
             <div className="bg-white rounded-3xl border-2 border-purple-500 shadow-xl p-6 md:p-8 relative overflow-hidden">
@@ -207,29 +250,14 @@ export default function HospedagemTutorialPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Chave de API do Google Gemini</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Esta é a chave que dá "cérebro" ao seu sistema para gerar os textos e o layout dos sites.</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Dá o "cérebro" ao seu sistema para estruturar textos e layouts automáticos.</p>
                 </div>
               </div>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                  <p className="text-xs md:text-sm text-slate-700 leading-relaxed">
-                    Acesse a plataforma <strong>Google AI Studio</strong> clicando no botão abaixo e faça login com a sua conta Google normal (a mesma do Gmail).
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                  <p className="text-xs md:text-sm text-slate-700 leading-relaxed">
-                    No menu lateral esquerdo ou no centro da tela, procure e clique no botão azul <strong>"Get API Key"</strong> ou <strong>"Create API Key"</strong>.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                  <p className="text-xs md:text-sm text-slate-700 leading-relaxed">
-                    Clique no botão de criar chave em um novo projeto. O Google irá gerar um código alfanumérico longo. <strong>Copie essa chave</strong> e cole no painel de configurações do seu editor!
-                  </p>
-                </div>
+              <div className="space-y-4 mb-8 text-xs md:text-sm text-slate-600 leading-relaxed">
+                <p>1. Acesse o <strong>Google AI Studio</strong> com sua conta Google padrão.</p>
+                <p>2. Clique no botão de criar chave de API.</p>
+                <p>3. Copie o código gerado e insira no painel principal do construtor.</p>
               </div>
 
               <div className="flex justify-end pt-4 border-t border-slate-100">
