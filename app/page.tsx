@@ -904,6 +904,10 @@ function TourHighlight({ passo, onNext, onPrev, onFinish, isFirst, isLast }: any
 }
 
 export default function Home() {
+  // 🚨 ESTADOS DE VERIFICAÇÃO E BLOQUEIO DE ACESSO
+  const [verificandoAcesso, setVerificandoAcesso] = useState(true);
+  const [acessoBloqueado, setAcessoBloqueado] = useState(false);
+
   const [byokEnabled, setByokEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [userByok, setUserByok] = useState(false);
@@ -947,7 +951,7 @@ export default function Home() {
       if (session) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
-        const { data: profile } = await supabase.from('profiles').select('user_api_key, unsplash_api_key, pexels_api_key, pixabay_api_key, allow_byok, credits, plan_expiration').eq('id', session.user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         if (profile) {
             if (profile.user_api_key) setApiKey(profile.user_api_key);
             if (profile.unsplash_api_key) setUnsplashKey(profile.unsplash_api_key);
@@ -956,11 +960,24 @@ export default function Home() {
             if (profile.allow_byok) setUserByok(profile.allow_byok);
             setUserCredits(profile.credits ?? 0);
             setUserExpiration(profile.plan_expiration);
+
+            // 🚨 TRAVA DE SEGURANÇA MÁXIMA
+            const isAdmin = session.user.email === 'josevg10@gmail.com';
+            const expiracao = profile.plan_expiration ? new Date(profile.plan_expiration) : null;
+            const isExpirado = !expiracao || expiracao < new Date();
+            const semCreditos = (profile.credits || 0) < 10; 
+            const contaSuspensa = profile.status === 'inativo' || profile.status === 'bloqueado' || profile.is_active === false;
+
+            if (!isAdmin && (contaSuspensa || (isExpirado && semCreditos))) {
+                setAcessoBloqueado(true);
+            }
         }
       }
       
       const { data } = await supabase.from('system_settings').select('byok_enabled').eq('id', 'global').single();
       if (data) setByokEnabled(data.byok_enabled);
+
+      setVerificandoAcesso(false);
     };
     carregarConfiguracoesESessao();
   }, []);
@@ -1900,6 +1917,34 @@ O cliente solicitou a seguinte modificação: "${comando}"
     (window as any).showNotification("🎉 Tour concluído! Agora você já sabe como criar e publicar seu site.", "success");
   };
 
+  // 🚨 TELA DE VERIFICAÇÃO DE ACESSO (CARREGANDO)
+  if (verificandoAcesso) {
+      return <div className="h-screen w-screen flex items-center justify-center bg-slate-900"><div className="animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full"></div></div>;
+  }
+
+  // 🚨 TELA DE BLOQUEIO DE ACESSO
+  if (acessoBloqueado) {
+      return (
+          <div className="h-screen w-screen bg-slate-900 flex flex-col items-center justify-center text-center p-6">
+              <div className="bg-slate-800 p-10 rounded-3xl border border-slate-700 max-w-md shadow-2xl w-full">
+                  <div className="w-20 h-20 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                      <i className="fas fa-lock"></i>
+                  </div>
+                  <h1 className="text-2xl font-black text-white mb-4">Acesso Bloqueado</h1>
+                  <p className="text-slate-400 mb-8 leading-relaxed">
+                      Sua assinatura expirou, você não tem créditos suficientes ou sua conta foi desativada. Para utilizar o BuilderPro, você precisa de um plano ativo.
+                  </p>
+                  <a href="/planos" className="block w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:-translate-y-1 mb-4">
+                      <i className="fas fa-star mr-2"></i> Ver Planos
+                  </a>
+                  <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }} className="block w-full py-3 bg-transparent text-slate-400 hover:text-white font-bold transition-colors">
+                      <i className="fas fa-sign-out-alt mr-1.5"></i> Sair da Conta
+                  </button>
+              </div>
+          </div>
+      );
+  }
+
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
       
@@ -2724,6 +2769,12 @@ O cliente solicitou a seguinte modificação: "${comando}"
                           className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition shadow-sm whitespace-nowrap" 
                           title="Copiar todo o código HTML do site">
                           <i className="fas fa-copy text-indigo-600"></i> Copiar Código
+                      </button>
+                      <button 
+                          onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }} 
+                          className="flex items-center gap-2 px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-xl border border-red-200 transition shadow-sm whitespace-nowrap" 
+                          title="Sair da Conta">
+                          <i className="fas fa-sign-out-alt"></i> Sair
                       </button>
                   </div>
               </div>
