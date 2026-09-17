@@ -82,23 +82,35 @@ export async function POST(req: Request) {
     let provedorDeImagens = 'unsplash'; 
     let modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
 
-    if (isAdmin) {
-        chaveParaUsar = process.env.GEMINI_API_KEY!;
-        provedorDeImagens = 'unsplash'; 
-        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
-    } else if (chavePropriaAutorizada && clientApiKey && clientApiKey.length > 10) {
-        if (!userPlanExpiration || userPlanExpiration < new Date()) {
-            throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
+    // 👉 NOVA LÓGICA DE PRIORIDADE: Se o usuário preencheu a chave no Painel, USA ELA!
+    if (clientApiKey && clientApiKey.length > 10) {
+        // Se NÃO for admin, faz a checagem rigorosa de vencimento do plano
+        if (!isAdmin && chavePropriaAutorizada) {
+            if (!userPlanExpiration || userPlanExpiration < new Date()) {
+                throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
+            }
+        } else if (!isAdmin && !chavePropriaAutorizada) {
+            throw new Error("O recurso de chave própria está desativado para sua conta.");
         }
-        chaveParaUsar = clientApiKey;
+        
+        chaveParaUsar = clientApiKey; // Prioridade MÁXIMA para a chave do input
+        
+        // Verifica a chave do Unsplash
         if (!clientUnsplashKey || clientUnsplashKey.trim().length < 5) {
-            provedorDeImagens = 'ai_paid';
-            modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
+            provedorDeImagens = 'ai_paid'; 
+            modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO;
         } else {
             provedorDeImagens = 'unsplash'; 
             modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
         }
+        
+    } else if (isAdmin) {
+        // Se não mandou chave e for admin, usa a global da Vercel
+        chaveParaUsar = process.env.GEMINI_API_KEY!;
+        provedorDeImagens = 'unsplash'; 
+        modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
+        // Usa créditos
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
         chaveParaUsar = process.env.GEMINI_API_KEY!;
@@ -111,17 +123,14 @@ export async function POST(req: Request) {
         provedorDeImagens = 'ai_paid';
         modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
     } else {
-        throw new Error("Geração bloqueada: O Administrador desativou o acesso geral.");
+        throw new Error("Geração bloqueada: Adicione sua própria chave do Gemini nas configurações para usar o sistema.");
     }
 
     let regraImagens = "";
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `
 === SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 REGRA MÁXIMA PARA IMAGENS: Você NÃO deve tentar adivinhar URLs reais. Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato:
-<img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800" data-tema="palavra1,palavra2" alt="descrição" class="suas classes tailwind" />
-O segredo está no atributo 'data-tema'. Preencha com 2 ou 3 palavras-chave EM INGLÊS. Nosso frontend injetará a foto real depois.
-🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: Use data-tema="portrait,professional,face" nas imagens de pessoas.
+🚨 ATENÇÃO: NÃO USE PLACEHOLDERS COMO [UNSPLASH]. Use OBRIGATORIAMENTE a tag <img> com o atributo data-tema="palavra1,palavra2" em inglês. O nosso sistema frontend fará a hidratação das imagens em alta velocidade.
 `;
     } else {
         regraImagens = `
@@ -131,6 +140,7 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 `;
     }
 
+    // === SISTEMA INTELIGENTE DE MENUS E ÂNCORAS (ROLAGEM SUAVE) ===
     const regraMenu = `
 === REGRAS DE NAVEGAÇÃO E MENUS (OBRIGATÓRIO) ===
 Se o layout exigir um menu de navegação, ele DEVE ser feito com links de âncora internos.
@@ -219,7 +229,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
         }
     }
 
-    if (!geracaoSucesso) throw new Error("Nossos motores de IA retornaram erro. Nenhum crédito foi descontado. Tente novamente.");
+    if (!geracaoSucesso) throw new Error("A IA falhou em gerar o conteúdo ou recusou o comando. Verifique o prompt ou a validade da chave.");
 
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId) {
         try { await supabaseAdmin.from('profiles').update({ credits: userCredits - CUSTO_POR_ACAO }).eq('id', userId); } 
@@ -284,7 +294,7 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
             if (imagemGeradaComSucesso && urlImagemBucket) {
                 htmlCode = htmlCode.replace(item.fullMatch, urlImagemBucket);
             } else {
-                // BLINDAGEM DO ERRO 500: Se a imagem falhar por limite de API, injeta um placeholder ao invés de derrubar o site!
+                // Se a API do cliente falhar em gerar a imagem, coloca o placeholder e salva o site
                 const placeholderUrl = `https://placehold.co/800x600/152246/E0DACB?text=` + encodeURIComponent("Imagem IA Omitida");
                 htmlCode = htmlCode.replace(item.fullMatch, placeholderUrl);
             }

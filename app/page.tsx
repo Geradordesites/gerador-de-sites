@@ -264,7 +264,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = \`<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
                 } else if(event.data.elementType === 'text') {
                     newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável. O espaço de uma linha entre o título do tópico e este parágrafo está mantido e otimizado para facilitar a leitura.</p>\`;
                 } else if(event.data.elementType === 'button') {
@@ -318,7 +318,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
             
             if (fontName !== 'sans-serif') {
-                fontLink.href = \`https://fonts.googleapis.com/css2?family=\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
+                fontLink.href = \`[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
                 document.body.style.fontFamily = \`'\${fontName}', sans-serif\`;
             } else {
                 fontLink.href = '';
@@ -613,7 +613,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Substitua este texto pelo relato real e verdadeiro de um cliente seu. Prova social autêntica gera novas vendas."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -625,7 +625,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Insira aqui mais um depoimento real. Use as palavras exatas que seu cliente enviou no WhatsApp."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -637,7 +637,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 leading-relaxed italic">"Coloque o terceiro depoimento real aqui para fortalecer a credibilidade do seu método."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80](https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=200&q=80)" alt="Cliente" class="w-12 h-12 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-sm mb-1">Nome do seu Cliente</p>
                             <p class="text-slate-400 text-xs">Profissão ou Resultado</p>
@@ -653,7 +653,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80)" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -669,7 +669,7 @@ const UI_BLOCKS = {
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
+                <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Foto do Autor" class="w-full max-w-md mx-auto rounded-2xl shadow-xl object-cover aspect-[3/4] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-center md:text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2">Sua Autoridade</p>
@@ -918,11 +918,10 @@ export default function Home() {
 
   const [modificacaoGlobal, setModificacaoGlobal] = useState(false);
 
-  // === NOVA TRAVA GERAL DE BYOK (IMPEDE USO DA SUA CHAVE) ===
   const validarChavesDoCliente = () => {
       const isAdmin = userEmail === 'josevg10@gmail.com';
       if (!isAdmin && (!apiKey || apiKey.trim().length < 10)) {
-          (window as any).showNotification("Acesso Negado: Insira sua Chave de API da IA nas configurações. O sistema não utiliza chaves compartilhadas.", "error");
+          (window as any).showNotification("Acesso Negado: Insira sua Chave de API da IA nas configurações para criar ou editar sites.", "error");
           return false;
       }
       return true;
@@ -1203,13 +1202,13 @@ export default function Home() {
 
             if (!doc.head.querySelector('script[src*="tailwindcss"]')) {
                 const twScript = document.createElement('script');
-                twScript.src = "https://cdn.tailwindcss.com";
+                twScript.src = "[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)";
                 doc.head.appendChild(twScript);
             }
             if (!doc.head.querySelector('link[href*="font-awesome"]')) {
                 const faLink = document.createElement('link');
                 faLink.rel = "stylesheet";
-                faLink.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
+                faLink.href = "[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)";
                 doc.head.appendChild(faLink);
             }
 
@@ -1318,9 +1317,9 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   recarregarDadosUsuario();
                   (window as any).showNotification("Modificação global aplicada com sucesso!", "success");
               }
-          } catch (error) {
+          } catch (error: any) {
               console.error(error);
-              (window as any).showNotification("Erro ao aplicar modificação global.", "error");
+              (window as any).showNotification(error.message || "Erro ao aplicar modificação global.", "error");
           } finally {
               setStatusApis({ texto: 'Aguardando Operação', processing: false });
           }
@@ -1472,7 +1471,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
     return "";
   };
   
-  // === FIM DO VAZAMENTO UNSPLASH: REMOÇÃO DA ROTA /api/unsplash ===
   const preencherImagensAutomaticamente = async (htmlBruto: string, isFragment = false) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
@@ -1489,7 +1487,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   
                   if (unsplashKey) {
                       const pagina = Math.floor(Math.random() * 20) + 1;
-                      const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
+                      const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(tema)}&page=${pagina}&per_page=15&client_id=${unsplashKey}`);
                       const uData = await res.json();
                       if (uData.results && uData.results.length > 0) {
                           const randomIndex = Math.floor(Math.random() * uData.results.length);
@@ -1498,7 +1496,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   }
 
                   if (!finalUrl) {
-                      finalUrl = `https://placehold.co/800x600/e2e8f0/475569?text=` + encodeURIComponent(tema);
+                      finalUrl = `[https://placehold.co/800x600/e2e8f0/475569?text=](https://placehold.co/800x600/e2e8f0/475569?text=)` + encodeURIComponent(tema);
                   }
 
                   if (finalUrl) {
@@ -1533,8 +1531,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
     const promptParts = [];
     
-    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6). Utilize no MÁXIMO 3 a 4 imagens em todo o site se for por api paga, se for imagens gratuitas unsplash ou outra gratis pode usar o máximo de imagens, 10, 15 imagens etc. É PROIBIDO usar vetores ou divs vazias.\n\n";
-    commandText += "🚨 PROIBIDO CRIAR DEPOIMENTOS: É expressamente proibido gerar seções de depoimentos, avaliações de clientes ou provas sociais na primeira criação do site. O site não deve conter blocos de depoimentos; caso o usuário queira, ele poderá adicionar isso depois manualmente pelo painel de blocos ou na opção de modificar.\n\n";
+    let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6). É PROIBIDO usar vetores ou divs vazias.\n\n";
+    commandText += "🚨 PROIBIDO CRIAR DEPOIMENTOS: É expressamente proibido gerar seções de depoimentos, avaliações de clientes ou provas sociais na primeira criação do site.\n\n";
     
     commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé...\n\n";    
     commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente na primeira seção da página.\n\n";
@@ -1559,7 +1557,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
     if (data && data.html) {
         let hHtml = data.html;
         if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
+            hHtml = hHtml.replace('</head>', `<link href="[https://fonts.googleapis.com/css2?family=$](https://fonts.googleapis.com/css2?family=$){fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         
@@ -1568,8 +1566,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
         data.html = hHtml;
         processarRespostaDOM(data);
         recarregarDadosUsuario();
-    } else {
-        (window as any).showNotification("Falha ao gerar o site. Tente novamente.", "error");
     }
   };
 
@@ -1647,7 +1643,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
       e.target.value = ''; 
   };
 
-  // === FIM DO VAZAMENTO UNSPLASH ROTA INDIVIDUAL ===
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("Buscando nova foto na API...", "success");
@@ -1674,7 +1669,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
           let fotoEscolhida = '';
 
           if (unsplashKey) {
-              const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
+              const res = await fetch(`[https://api.unsplash.com/search/photos?query=$](https://api.unsplash.com/search/photos?query=$){encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
               const uData = await res.json();
               if (uData.results && uData.results.length > 0) {
                   fotoEscolhida = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
@@ -1682,7 +1677,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
           } 
           
           if (!fotoEscolhida) {
-              fotoEscolhida = `https://placehold.co/${w}x${h}/e2e8f0/475569?text=` + encodeURIComponent(termoBusca);
+              fotoEscolhida = `[https://placehold.co/$](https://placehold.co/$){w}x${h}/e2e8f0/475569?text=` + encodeURIComponent(termoBusca);
               (window as any).showNotification("Adicione sua chave Unsplash nas configurações para buscar fotos reais.", "warning");
           }
 
@@ -1840,7 +1835,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
