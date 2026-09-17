@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
-export const maxDuration = 60;
+export const maxDuration = 60; // Dá 60 segundos para a IA responder
+export const dynamic = 'force-dynamic'; // Evita que a Vercel congele a rota
 
 // 1. MODELOS DE TEXTO PARA API GRÁTIS
 const MODELOS_TEXTO_GRATIS = [
@@ -160,7 +161,7 @@ export async function POST(req: Request) {
         `=== MICRO-OTIMIZAÇÃO DE ELEMENTO ===\nAltere o elemento pedido e preserve o id original. Retorne um JSON com a chave "codigo_html".\n${regraImagens}` 
         : `Retorne EXCLUSIVAMENTE um JSON com a chave "codigo_html".\n🚨 GERE UMA LANDING PAGE PROFISSIONAL COM 7 SEÇÕES.\n🚨 ESPAÇAMENTO: Use mb-4 ou mb-6 nos parágrafos.\n🚨 TIPOGRAFIA E LEITURA (MOBILE-FIRST): É ESTRITAMENTE PROIBIDO criar textos minúsculos. NUNCA use as classes "text-xs" ou "text-sm" para descrições, parágrafos ou botões. Use OBRIGATORIAMENTE as classes "text-base md:text-lg" para parágrafos normais e "text-lg md:text-xl" para destaques, garantindo leitura perfeita e confortável nas telas de celulares.\n🚨 PROIBIÇÃO DE FORMULÁRIOS: É ESTRITAMENTE PROIBIDO gerar tags <form>, <input>, <select> ou <textarea>. A página DEVE usar APENAS Botões de Ação (CTAs) normais e Links. NÃO CRIE NENHUM TIPO DE FORMULÁRIO DE CONTATO OU CADASTRO.\n${regraMenu}\n${regraImagens}\n${instrucaoDinamica}\nRodapé: <footer class="w-full font-sans py-16 mt-12 border-t"><div class="text-center pt-8 border-t flex flex-col items-center gap-4"><p class="text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p></div></footer>`;    
         
-        const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
+    const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
     let htmlCode = '';
     let geracaoSucesso = false;
@@ -187,7 +188,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, html: htmlCode });
 
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("Erro completo da API:", error);
+    
+    // 🚨 Tratamento para Erro de Tempo (Timeout Vercel - Erro 504)
+    if (error.message && (error.message.includes('504') || error.message.includes('timeout'))) {
+        return NextResponse.json({ 
+            success: false, 
+            error: "O servidor cortou a conexão por limite de tempo. A modificação global é muito pesada. Tente modificar blocos individualmente." 
+        }, { status: 504 });
+    }
+
+    return NextResponse.json({ 
+        success: false, 
+        error: error.message || 'Erro inesperado na geração do conteúdo' 
+    }, { status: 500 });
   }
 }
 

@@ -349,9 +349,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
                 
                 if(event.data.fontSize !== undefined) {
-                    el.style.fontSize = ''; 
+                    // Remove classes padrão do Tailwind que impedem a letra de crescer
+                    el.className = el.className.replace(/\\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)\\b/g, '').trim();
                     el.className = el.className.replace(new RegExp('\\\\b' + escP + 'text-\\\\[\\\\d+px\\\\]\\\\b', 'g'), '').trim();
-                    if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
+                    // Força a injeção do tamanho exato direto no estilo do elemento (À prova de falhas)
+                    el.style.fontSize = event.data.fontSize + 'px';
                 }
                 
                 if (event.data.href !== undefined) {
@@ -2427,9 +2429,13 @@ O cliente solicitou a seguinte modificação: "${comando}"
                                           className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg pl-4 pr-12 py-3 outline-none focus:border-indigo-400 placeholder-slate-400 resize-y custom-scrollbar" 
                                       ></textarea>
                                       <button 
-                                          onClick={executarRefinamentoGlobal} 
+                                          onClick={() => {
+                                              // Captura o texto exato no momento do clique para não falhar
+                                              const txtComando = (document.getElementById('ai_prompt_element') as HTMLTextAreaElement)?.value;
+                                              otimizarComIA(txtComando);
+                                          }} 
                                           className="absolute right-2 bottom-2.5 w-9 h-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center transition shadow-sm hover:scale-105" 
-                                          title="Aplicar Alteração no Site"
+                                          title="Enviar Comando IA"
                                       >
                                           <i className="fas fa-paper-plane"></i>
                                       </button>
