@@ -90,20 +90,14 @@ export async function POST(req: Request) {
         if (!userPlanExpiration || userPlanExpiration < new Date()) {
             throw new Error("Sua assinatura mensal expirou. Renove para continuar utilizando sua chave própria.");
         }
-        
         chaveParaUsar = clientApiKey;
-        
-        // ---> MODIFICAÇÃO CIRÚRGICA: Regra do Unsplash do Cliente <---
         if (!clientUnsplashKey || clientUnsplashKey.trim().length < 5) {
-            // Se ele não cadastrou chave do Unsplash, usa a API Paga DELE para gerar imagens!
-            provedorDeImagens = 'ai_paid'; 
-            modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO;
+            provedorDeImagens = 'ai_paid';
+            modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
         } else {
-            // Se ele cadastrou, usa a dele do Unsplash para economizar os créditos dele
             provedorDeImagens = 'unsplash'; 
             modelosDeTextoParaUsar = MODELOS_TEXTO_GRATIS; 
         }
-        
     } else if (isGlobalAdminKeyEnabled || allowAdminTestKey) {
         if (userCredits < CUSTO_POR_ACAO) throw new Error(`INSUFFICIENT_CREDITS: Esta operação consome ${CUSTO_POR_ACAO} créditos.`);
         isUsingCredits = true;
@@ -124,7 +118,10 @@ export async function POST(req: Request) {
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `
 === SISTEMA DE MÍDIA GRATUITA (UNSPLASH) ===
-🚨 ATENÇÃO: NÃO USE PLACEHOLDERS COMO [UNSPLASH]. Use OBRIGATORIAMENTE a tag <img> com o atributo data-tema="palavra1,palavra2" em inglês. O nosso sistema frontend fará a hidratação das imagens em alta velocidade.
+🚨 REGRA MÁXIMA PARA IMAGENS: Você NÃO deve tentar adivinhar URLs reais. Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato:
+<img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800" data-tema="palavra1,palavra2" alt="descrição" class="suas classes tailwind" />
+O segredo está no atributo 'data-tema'. Preencha com 2 ou 3 palavras-chave EM INGLÊS. Nosso frontend injetará a foto real depois.
+🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: Use data-tema="portrait,professional,face" nas imagens de pessoas.
 `;
     } else {
         regraImagens = `
@@ -134,7 +131,6 @@ Sintaxe exata: src="[IMAGEM_IA: prompt_detalhado_em_ingles]"
 `;
     }
 
-    // === SISTEMA INTELIGENTE DE MENUS E ÂNCORAS (ROLAGEM SUAVE) ===
     const regraMenu = `
 === REGRAS DE NAVEGAÇÃO E MENUS (OBRIGATÓRIO) ===
 Se o layout exigir um menu de navegação, ele DEVE ser feito com links de âncora internos.
@@ -288,14 +284,16 @@ O rodapé DEVE OBRIGATORIAMENTE utilizar as exatas MESMAS CORES de fundo e de te
             if (imagemGeradaComSucesso && urlImagemBucket) {
                 htmlCode = htmlCode.replace(item.fullMatch, urlImagemBucket);
             } else {
-                throw new Error(`Falha no modo pago: IA não conseguiu processar ou salvar a imagem.`);
+                // BLINDAGEM DO ERRO 500: Se a imagem falhar por limite de API, injeta um placeholder ao invés de derrubar o site!
+                const placeholderUrl = `https://placehold.co/800x600/152246/E0DACB?text=` + encodeURIComponent("Imagem IA Omitida");
+                htmlCode = htmlCode.replace(item.fullMatch, placeholderUrl);
             }
         }
     } else {
         htmlCode = htmlCode.replace(/\[UNSPLASH:[^\]]+\]/g, '');
     }
     
-    // Limpeza de segurança
+    // Limpeza de segurança final
     htmlCode = htmlCode.replace(/\[IMAGEM_IA:[^\]]+\]/g, '');
 
     return NextResponse.json({ success: true, html: htmlCode, provedorTexto: provedorTextoUsado });

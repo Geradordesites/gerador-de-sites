@@ -468,7 +468,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
-                // ================= NOVOS CONTROLES DE IMAGEM =================
                 if(event.data.customWidth !== undefined) {
                     el.dataset.customWidth = event.data.customWidth;
                     el.className = el.className.replace(/\\bw-\\[.*?\\]\\b/g, '').replace(/\\bw-\\S+\\b/g, '').replace(/\\bmax-w-\\S+\\b/g, '').trim();
@@ -919,6 +918,16 @@ export default function Home() {
 
   const [modificacaoGlobal, setModificacaoGlobal] = useState(false);
 
+  // === NOVA TRAVA GERAL DE BYOK (IMPEDE USO DA SUA CHAVE) ===
+  const validarChavesDoCliente = () => {
+      const isAdmin = userEmail === 'josevg10@gmail.com';
+      if (!isAdmin && (!apiKey || apiKey.trim().length < 10)) {
+          (window as any).showNotification("Acesso Negado: Insira sua Chave de API da IA nas configurações. O sistema não utiliza chaves compartilhadas.", "error");
+          return false;
+      }
+      return true;
+  };
+
   const recarregarDadosUsuario = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -1254,6 +1263,8 @@ export default function Home() {
 
 
   const otimizarComIA = async (comandoOverride?: string) => {
+      if (!validarChavesDoCliente()) return;
+
       const promptInput = document.getElementById('ai_prompt_element') as HTMLTextAreaElement;
       const comando = comandoOverride || promptInput?.value.trim();
       
@@ -1279,10 +1290,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
 2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.
 3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.
 4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.
-5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
-6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
+5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.`;
 
-              // Chamada Global Isolada (Garante que o backend não receba parâmetros extras que o façam crashar)
               const response = await fetch('/api/gerar', {
                   method: 'POST', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
@@ -1323,10 +1332,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
           }
           
           const systemInstruction = `Atue como Especialista de Interface e Copywriter Sênior. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "${comando}". 
-          REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".
-          🚨 REGRA PARA IMAGENS: Se a modificação exigir trocar ou adicionar uma imagem, NÃO INVENTE LINKS. Você DEVE usar uma tag <img /> com o atributo data-tema="palavra1,palavra2" em inglês. Nosso sistema vai buscar a foto real em alta resolução.`;
+          REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Não explique nada. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
           
-          // Chamada Local Normal
           const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
           
           if(resData && resData.html) {
@@ -1344,6 +1351,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
   };
 
   const executarRefinamentoGlobal = async () => {
+    if (!validarChavesDoCliente()) return;
+
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
     if (!currentHtml || currentHtml.length < 100) { (window as any).showNotification("Você precisa ter um site gerado para poder modificá-lo estruturalmente.", "error"); return; }
@@ -1364,8 +1373,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
 2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.
 3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.
 4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.
-5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.
-6. IMAGENS: Se precisar criar uma nova seção com imagens, use a regra <img data-tema="palavras,chave" /> para o sistema hidratar depois.`;
+5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.`;
 
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1403,7 +1411,9 @@ O cliente solicitou a seguinte modificação: "${comando}"
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o site...', processing: true });
+    if (!validarChavesDoCliente()) return null;
+
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está processando o site...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
       const response = await fetch('/api/gerar', { 
@@ -1415,6 +1425,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
               imageStyle: 'real', 
               dinamica: dinamicaStyle, 
               isElementRefinement,
+              isSiteRefinement: false,
               clientApiKey: apiKey,
               clientUnsplashKey: unsplashKey,
               userId: userId,
@@ -1461,6 +1472,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
     return "";
   };
   
+  // === FIM DO VAZAMENTO UNSPLASH: REMOÇÃO DA ROTA /api/unsplash ===
   const preencherImagensAutomaticamente = async (htmlBruto: string, isFragment = false) => {
       setStatusApis({ texto: 'Aplicando imagens em alta resolução...', processing: true });
       try {
@@ -1486,9 +1498,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
                   }
 
                   if (!finalUrl) {
-                      const res = await fetch(`/api/unsplash?q=${encodeURIComponent(tema)}&t=${Date.now()}`);
-                      const data = await res.json();
-                      if (data.url) finalUrl = data.url;
+                      finalUrl = `https://placehold.co/800x600/e2e8f0/475569?text=` + encodeURIComponent(tema);
                   }
 
                   if (finalUrl) {
@@ -1519,14 +1529,12 @@ O cliente solicitou a seguinte modificação: "${comando}"
   };
 
   const executarGeracaoSiteHibrida = async () => {
+    if (!validarChavesDoCliente()) return;
+
     const promptParts = [];
     
     let commandText = "Gere a Landing Page completa cobrindo todo o fluxo de conversão detalhado. O espaçamento de linha entre os títulos dos tópicos e os parágrafos deve ser rigorosamente exato (utilize mb-4 ou mb-6). Utilize no MÁXIMO 3 a 4 imagens em todo o site se for por api paga, se for imagens gratuitas unsplash ou outra gratis pode usar o máximo de imagens, 10, 15 imagens etc. É PROIBIDO usar vetores ou divs vazias.\n\n";
     commandText += "🚨 PROIBIDO CRIAR DEPOIMENTOS: É expressamente proibido gerar seções de depoimentos, avaliações de clientes ou provas sociais na primeira criação do site. O site não deve conter blocos de depoimentos; caso o usuário queira, ele poderá adicionar isso depois manualmente pelo painel de blocos ou na opção de modificar.\n\n";
-    commandText += "🚨 REGRA MÁXIMA PARA IMAGENS (O SEGREDO DO SISTEMA): Você NÃO deve tentar adivinhar URLs de imagens reais. Para TODAS as imagens do site, use OBRIGATORIAMENTE este formato exato: <img src=\"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800\" data-tema=\"palavra1,palavra2\" alt=\"descrição\" class=\"suas classes tailwind\" />\n";
-    commandText += "O segredo está no atributo 'data-tema'. Você DEVE criá-lo e preenchê-lo com 2 ou 3 palavras-chave EM INGLÊS que descrevam a foto perfeita para aquela seção (Ex: se for bolo use data-tema=\"cake,bakery,dessert\"). Nosso sistema vai ler esse 'data-tema' e injetar a foto real em alta resolução depois!\n\n";
-    
-    commandText += "🚨 REGRA PARA FOTO DO AUTOR E DEPOIMENTOS: Aplica-se a mesma regra acima. Use o atributo data-tema=\"portrait,professional,face\" nas imagens de pessoas para garantir que o sistema puxe rostos humanos.\n\n";
     
     commandText += "🚨 POLÍTICAS NO RODAPÉ (SANFONA): É PROIBIDO criar links normais (<a>) para Termos ou Políticas. Você DEVE construir uma sanfona usando <details> e <summary> no rodapé...\n\n";    
     commandText += "Caso haja narrativa biográfica ou história do autor, você deve consolidar todos esses elementos biográficos estritamente na primeira seção da página.\n\n";
@@ -1639,6 +1647,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
       e.target.value = ''; 
   };
 
+  // === FIM DO VAZAMENTO UNSPLASH ROTA INDIVIDUAL ===
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("Buscando nova foto na API...", "success");
@@ -1662,12 +1671,22 @@ O cliente solicitou a seguinte modificação: "${comando}"
       const termoBusca = `${termoContextual} ${estiloTraduzido}`;
 
       try {
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(termoBusca)}&t=${Date.now()}`);
-          const data = await res.json();
+          let fotoEscolhida = '';
 
-          if (data.url) {
-              let fotoEscolhida = data.url;
+          if (unsplashKey) {
+              const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(termoBusca)}&per_page=15&orientation=landscape&client_id=${unsplashKey}`);
+              const uData = await res.json();
+              if (uData.results && uData.results.length > 0) {
+                  fotoEscolhida = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
+              }
+          } 
+          
+          if (!fotoEscolhida) {
+              fotoEscolhida = `https://placehold.co/${w}x${h}/e2e8f0/475569?text=` + encodeURIComponent(termoBusca);
+              (window as any).showNotification("Adicione sua chave Unsplash nas configurações para buscar fotos reais.", "warning");
+          }
 
+          if (fotoEscolhida) {
               if (fotoEscolhida.includes('images.unsplash.com')) {
                   fotoEscolhida = fotoEscolhida.replace(/&w=\d+/, '').replace(/&h=\d+/, '') + `&w=${w}&h=${h}&fit=crop`;
               }
