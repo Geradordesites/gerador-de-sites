@@ -14,8 +14,8 @@ const MODELOS_TEXTO_GRATIS = [
 
 // 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA
 const MODELOS_TEXTO_PAGO = [
-  "gemini-3.5-flash", // O mais rápido, eficiente e barato da geração 3.x
-  "gemini-3.6-flash"  // Fallback de segurança
+  "gemini-3.5-flash", 
+  "gemini-3.6-flash"  
 ];
 
 // 3. MODELOS DE IMAGEM
@@ -41,6 +41,16 @@ export async function POST(req: Request) {
       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
+
+    // ---> CORREÇÃO: Evita crash quando o frontend pede apenas a imagem <---
+    let temImagem = false;
+    let textoDoPrompt = "";
+    if (promptParts && Array.isArray(promptParts)) {
+        for (const part of promptParts) {
+            if (part.inlineData) temImagem = true;
+            if (part.text) textoDoPrompt += part.text + "\n";
+        }
+    }
 
     const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { data: settings } = await supabaseAdmin.from('system_settings').select('*').eq('id', 'global').single();
@@ -145,7 +155,6 @@ export async function POST(req: Request) {
     if (provedorDeImagens === 'unsplash') {
         regraImagens = `=== SISTEMA DE MÍDIA (UNSPLASH) ===\n🚨 Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato: <img data-tema="palavra1,palavra2" alt="desc" class="suas classes" />\nNÃO use o atributo src.`;
     } else {
-        // ---> A MUDANÇA ANTIFALHAS DO 404 <---
         regraImagens = `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img data-ia="descreva_o_prompt_aqui_em_ingles" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet e PROIBIDO usar o atributo src. Use apenas data-ia="...".`;
     }
 
