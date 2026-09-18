@@ -1582,8 +1582,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
     setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
     
     try {
-        const promptSuperContexto = `Aqui está o código HTML COMPLETO do site atual:\n"""\n${currentHtml}\n"""\n\nO cliente solicitou a seguinte modificação: "${comando}"\n\n🚨 REGRAS ESTABELECIDAS (OBEDEÇA RIGOROSAMENTE):\n1. Analise o HTML, encontre a(s) parte(s) que precisam ser alteradas e faça as modificações.\n2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.\n3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.\n4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.\n5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.`;
-
+        
+    const promptSuperContexto = `Aqui está o código HTML COMPLETO do site atual:\n"""\n${currentHtml}\n"""\n\nO cliente solicitou a seguinte modificação: "${comando}"\n\n🚨 REGRAS ESTABELECIDAS (OBEDEÇA RIGOROSAMENTE):\n1. ALTERAÇÃO CIRÚRGICA: Você deve localizar a área solicitada e alterar APENAS o que foi expressamente pedido (ex: cor de fundo, um texto específico, adicionar um rodapé).\n2. PRESERVAÇÃO ABSOLUTA: Todo o resto do código DEVE permanecer 100% INTACTO. É terminantemente PROIBIDO alterar textos, classes, IDs ou estruturas que não foram mencionadas no pedido.\n3. CONGELAMENTO DE IMAGENS: Sob nenhuma circunstância você deve alterar as tags <img>, os atributos 'src' ou os atributos 'style' que contenham 'background-image' do site atual, a menos que o cliente tenha pedido explicitamente para "mudar as imagens".\n4. RETORNO OBRIGATÓRIO: A sua resposta deve ser o documento HTML COMPLETO, do <!DOCTYPE html> ao </html>, com a pequena alteração cirúrgica aplicada.\n5. PROIBIDO MARKDOWN: Não utilize marcações como \`\`\`html.`;
         let htmlFinalLimpo = "";
 
         // 🚀 ROTA EXPRESSA LOCAL (BYOK) - FIM DO TIMEOUT
@@ -2105,7 +2105,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
       
       {/* 🚀 BLINDAGEM DOS ÍCONES COM @IMPORT ROOT */}
       <style dangerouslySetInnerHTML={{__html: `
-        @import url('[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)');
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
         
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
