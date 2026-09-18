@@ -115,10 +115,7 @@ export async function POST(req: Request) {
             
             for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
                 try {
-                    // Tradutor de Alias para Imagem
-                    let imgModeloRealAPI = imgModelName.includes('3.') ? 'gemini-1.5-flash' : imgModelName;
-
-                    const imageModel = genAI.getGenerativeModel({ model: imgModeloRealAPI });
+                    const imageModel = genAI.getGenerativeModel({ model: imgModelName });
                     const imgResult = await imageModel.generateContent({ contents: [{ role: "user", parts: [{ text: basePrompt }] }] });
                     const response = imgResult.response;
                     if (response.candidates && response.candidates[0]?.content?.parts) {
@@ -172,17 +169,11 @@ export async function POST(req: Request) {
 
     for (const modelName of modelosDeTextoParaUsar) {
         if (geracaoSucesso) break; 
-        
-        // 🚀 O TRADUTOR DE ALIAS (O SEGREDO PARA NÃO DAR ERRO 500)
-        // Mantém a sua lista intacta, mas previne que a biblioteca SDK rejeite o nome comercial
-        let modeloRealParaAPI = modelName;
-        if (modelName.includes('3.8') || modelName.includes('3.7') || modelName.includes('3.6') || modelName.includes('3.5')) {
-            modeloRealParaAPI = "gemini-1.5-flash"; 
-        }
 
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
             try {
-                const model = genAI.getGenerativeModel({ model: modeloRealParaAPI, systemInstruction: systemInstructionFinal, safetySettings });
+                // Utiliza diretamente o nome do modelo tal como o configurou
+                const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
                 const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } });
                 htmlCode = extrairHtmlDeJson(result.response.text());
                 if (htmlCode && htmlCode.length >= 50) { 
