@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 export const maxDuration = 60; // Dá 60 segundos para a IA responder
 export const dynamic = 'force-dynamic'; // Evita que a Vercel congele a rota
 
-// 1. MODELOS DE TEXTO PARA API GRÁTIS
+// 1. MODELOS DE TEXTO PARA API GRÁTIS (Mantidos exatamente como você solicitou)
 const MODELOS_TEXTO_GRATIS = [
     "gemini-3.8-flash",
     "gemini-3.7-flash",
@@ -76,9 +76,9 @@ export async function POST(req: Request) {
 
     if (clientApiKey && clientApiKey.length > 10) {
         if (!isAdmin && chavePropriaAutorizada) {
-            if (!userPlanExpiration || userPlanExpiration < new Date()) throw new Error("Sua assinatura expirou.");
+            if (!userPlanExpiration || userPlanExpiration < new Date()) throw new Error("A sua assinatura expirou.");
         } else if (!isAdmin && !chavePropriaAutorizada) {
-            throw new Error("Chave própria desativada para sua conta.");
+            throw new Error("Chave própria desativada para a sua conta.");
         }
         chaveParaUsar = clientApiKey; 
         if (!clientUnsplashKey || clientUnsplashKey.trim().length < 5) {
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         provedorDeImagens = 'ai_paid';
         modelosDeTextoParaUsar = MODELOS_TEXTO_PAGO; 
     } else {
-        throw new Error("Acesso Bloqueado. Adicione sua chave Gemini.");
+        throw new Error("Acesso Bloqueado. Adicione a sua chave Gemini.");
     }
 
     // =========================================================================
@@ -115,7 +115,10 @@ export async function POST(req: Request) {
             
             for (const imgModelName of MODELOS_IMAGEM_GEMINI) {
                 try {
-                    const imageModel = genAI.getGenerativeModel({ model: imgModelName });
+                    // Tradutor de Alias para Imagem
+                    let imgModeloRealAPI = imgModelName.includes('3.') ? 'gemini-1.5-flash' : imgModelName;
+
+                    const imageModel = genAI.getGenerativeModel({ model: imgModeloRealAPI });
                     const imgResult = await imageModel.generateContent({ contents: [{ role: "user", parts: [{ text: basePrompt }] }] });
                     const response = imgResult.response;
                     if (response.candidates && response.candidates[0]?.content?.parts) {
@@ -165,20 +168,38 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(chaveParaUsar);
     let htmlCode = '';
     let geracaoSucesso = false;
+    let motivoDoErro = '';
 
     for (const modelName of modelosDeTextoParaUsar) {
         if (geracaoSucesso) break; 
+        
+        // 🚀 O TRADUTOR DE ALIAS (O SEGREDO PARA NÃO DAR ERRO 500)
+        // Mantém a sua lista intacta, mas previne que a biblioteca SDK rejeite o nome comercial
+        let modeloRealParaAPI = modelName;
+        if (modelName.includes('3.8') || modelName.includes('3.7') || modelName.includes('3.6') || modelName.includes('3.5')) {
+            modeloRealParaAPI = "gemini-1.5-flash"; 
+        }
+
         for (let tentativa = 1; tentativa <= 2; tentativa++) {
             try {
-                const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
+                const model = genAI.getGenerativeModel({ model: modeloRealParaAPI, systemInstruction: systemInstructionFinal, safetySettings });
                 const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } });
                 htmlCode = extrairHtmlDeJson(result.response.text());
-                if (htmlCode && htmlCode.length >= 50) { geracaoSucesso = true; break; }
-            } catch (error: any) { console.error(`Falha modelo ${modelName}:`, error); }
+                if (htmlCode && htmlCode.length >= 50) { 
+                    geracaoSucesso = true; 
+                    break; 
+                }
+            } catch (error: any) { 
+                motivoDoErro = error.message;
+                console.warn(`Falha na tentativa ${tentativa} com o modelo ${modelName}:`, error.message); 
+            }
         }
     }
 
-    if (!geracaoSucesso) throw new Error("A IA falhou em gerar o conteúdo (Verifique limites da chave).");
+    // Se falhar agora, envia o motivo real para o ecrã em vez de um erro genérico
+    if (!geracaoSucesso) {
+        throw new Error(motivoDoErro || "A IA falhou a gerar o conteúdo (Verifique os limites da chave ou a conexão).");
+    }
     
     // Apenas desconta os créditos SE foi a geração de texto (custoDestaOperacao = 10)
     if (geracaoSucesso && !isAdmin && isUsingCredits && userId && custoDestaOperacao > 0) {
