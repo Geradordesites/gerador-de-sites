@@ -1065,35 +1065,6 @@ export default function Home() {
       return clean;
   };
 
-  // 🚀 BLOCO 1: EXTRATOR LOCAL DE JSON (Via Expressa BYOK)
-  const extrairHtmlDeJsonLocal = (text: string) => {
-      try {
-          let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
-          const start = clean.indexOf('{');
-          const end = clean.lastIndexOf('}');
-          if (start !== -1 && end !== -1) {
-              const jsonString = clean.substring(start, end + 1);
-              const json = JSON.parse(jsonString);
-              let extracted = json.codigo_html || json.html || Object.values(json)[0] || jsonString;
-              if (typeof extracted === 'string') return extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
-          }
-          return clean;
-      } catch (e) {
-          let fallback = text.replace(/```(html|json)?/gi, '').replace(/```/g, '').trim();
-          if (fallback.startsWith('{') && fallback.includes('"codigo_html":')) {
-              const idx = fallback.indexOf('"codigo_html":');
-              if (idx !== -1) {
-                  let rawHtml = fallback.substring(idx + 14).trim();
-                  if (rawHtml.startsWith('"')) rawHtml = rawHtml.substring(1);
-                  if (rawHtml.endsWith('}')) rawHtml = rawHtml.slice(0, -1).trim();
-                  if (rawHtml.endsWith('"')) rawHtml = rawHtml.slice(0, -1);
-                  return rawHtml.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-              }
-          }
-          return fallback;
-      }
-  };
-
   useEffect(() => {
     const verificarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1544,7 +1515,6 @@ O cliente solicitou a seguinte modificação: "${comando}"
       }
   };
 
-  // 🚀 BLOCO 3: REFINAMENTO GLOBAL COM VIA EXPRESSA LOCAL (BYOK)
   const executarRefinamentoGlobal = async () => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
@@ -1556,89 +1526,46 @@ O cliente solicitou a seguinte modificação: "${comando}"
     setStatusApis({ texto: 'Modificando estrutura do Site...', processing: true });
     
     try {
-        const promptSuperContexto = `Aqui está o código HTML COMPLETO do site atual:\n"""\n${currentHtml}\n"""\n\nO cliente solicitou a seguinte modificação: "${comando}"\n\n🚨 REGRAS ESTABELECIDAS (OBEDEÇA RIGOROSAMENTE):\n1. Analise o HTML, encontre a(s) parte(s) que precisam ser alteradas e faça as modificações.\n2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.\n3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.\n4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.\n5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.`;
+        const promptSuperContexto = `Aqui está o código HTML COMPLETO do site atual:
+"""\n${currentHtml}\n"""
 
-        let htmlFinalLimpo = "";
+O cliente solicitou a seguinte modificação: "${comando}"
 
-        // 🚀 ROTA EXPRESSA LOCAL (BYOK) - FIM DO TIMEOUT
-        if (apiKey && apiKey.length > 10) {
-            let regraImagens = (!unsplashKey || unsplashKey.trim().length < 5) ? `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img data-ia="descreva_o_prompt_aqui_em_ingles" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet e PROIBIDO usar o atributo src. Use apenas data-ia="...".` : `=== SISTEMA DE MÍDIA (UNSPLASH) ===\n🚨 Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato: <img data-tema="palavra1,palavra2" alt="desc" class="suas classes" />\nNÃO use o atributo src.`;
-            const regraMenu = `Se o layout exigir menu, ele DEVE ser feito com links de âncora internos (href="#alvo").\nA tag HTML principal DEVE incluir class="scroll-smooth". NUNCA redirecione para outras páginas.`;
-            let regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nDEVOLVA TODO O CÓDIGO HTML DE PONTA A PONTA. Mantenha todas as seções e mude APENAS o que foi pedido. Retorne um JSON com a chave "codigo_html".\n${regraMenu}\n${regraImagens}`;
-            const reqBody = {
-              systemInstruction: { parts: [{ text: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.\n\n" + regrasObrigatorias }] },
-              contents: [{ role: "user", parts: [{ text: promptSuperContexto }] }],
-              generationConfig: { temperature: 0.2 },
-              safetySettings: [
-                  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-              ]
-          };
+🚨 REGRAS ESTABELECIDAS (OBEDEÇA RIGOROSAMENTE):
+1. Analise o HTML, encontre a(s) parte(s) que precisam ser alteradas e faça as modificações.
+2. PRESERVAÇÃO MÁXIMA: Deixe TODAS as outras seções, textos, imagens, classes Tailwind e IDs rigorosamente INTACTOS. Só altere o que o cliente pediu.
+3. SE o cliente pedir para reescrever o site inteiro, aí sim você deve alterar todo o conteúdo.
+4. RETORNE O HTML COMPLETO: Sua resposta deve conter o documento HTML inteiro, do <!DOCTYPE html> ao </html>.
+5. PROIBIDO MARKDOWN: Não envolva a resposta em blocos de código (como \`\`\`html), retorne APENAS o código cru.`;
 
-            const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
-            let textResponse = null;
-
-            // Tentativas de conexão (para vencer o Erro 503 sem trocar os modelos)
-            for (const modelName of modelosDeTexto) {
-                if (textResponse) break;
-
-                for (let tentativa = 1; tentativa <= 3; tentativa++) {
-                    try {
-                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                                textResponse = data.candidates[0].content.parts[0].text;
-                                break; // Sucesso! Sai das tentativas.
-                            }
-                        } else {
-                            await new Promise(resolve => setTimeout(resolve, 1500));
-                        }
-                    } catch (e) {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-                }
-            }
-
-            if (!textResponse) throw new Error("A API falhou após várias tentativas. Os servidores podem estar sobrecarregados.");
-            htmlFinalLimpo = extrairHtmlDeJsonLocal(textResponse);
-        } 
-        // ROTA VERCEL (SEGURO PARA CRÉDITOS ADMIN)
-        else {
-            const response = await fetch('/api/gerar', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    systemInstruction: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", 
-                    promptParts: [{ text: promptSuperContexto }], 
-                    isSiteRefinement: true, 
-                    clientApiKey: apiKey,
-                    clientUnsplashKey: unsplashKey,
-                    userId: userId,
-                    userEmail: userEmail
-                })
-            });
+        const response = await fetch('/api/gerar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                systemInstruction: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.", 
+                promptParts: [{ text: promptSuperContexto }], 
+                isSiteRefinement: true, 
+                clientApiKey: apiKey,
+                clientUnsplashKey: unsplashKey,
+                userId: userId,
+                userEmail: userEmail
+            })
+        });
+        
+        if (!response.ok) throw new Error(`Erro do Servidor (Status ${response.status})`);
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || "Erro na IA");
+        
+        if (data && data.html) {
+            const cleanHtml = data.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+            const htmlHidratado = await preencherImagensAutomaticamente(cleanHtml);
+            processarRespostaDOM({ html: htmlHidratado }); 
             
-            if (!response.ok) {
-                if(response.status === 504) throw new Error("O servidor cortou a conexão por limite de tempo. Tente modificar blocos individualmente.");
-                throw new Error(`Erro do Servidor (Status ${response.status})`);
-            }
-            const data = await response.json();
-            if (!data.success) throw new Error(data.error || "Erro na IA");
-            htmlFinalLimpo = data.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+            recarregarDadosUsuario();
+            promptInput.value = ''; 
+            (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        } else { 
+            throw new Error("A IA falhou ao processar a modificação global."); 
         }
-
-        // HIDRATA AS IMAGENS E FINALIZA
-        const htmlHidratado = await preencherImagensAutomaticamente(htmlFinalLimpo);
-        processarRespostaDOM({ html: htmlHidratado }); 
-        recarregarDadosUsuario();
-        promptInput.value = ''; 
-        (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-
     } catch (err: any) { 
         (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); 
     } finally { 
@@ -1646,79 +1573,10 @@ O cliente solicitou a seguinte modificação: "${comando}"
     }
   };
 
-  // 🚀 BLOCO 2: CHAMAR MOTOR IA COM VIA EXPRESSA LOCAL (BYOK)
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
     setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está processando o site...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-
-      // 🚀 ROTA EXPRESSA LOCAL: SE O USUÁRIO TEM BYOK, PROCESSA NO PC DELE IGNORANDO A VERCEL!
-      if (apiKey && apiKey.length > 10) {
-          let regraImagens = (!unsplashKey || unsplashKey.trim().length < 5)
-              ? `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img data-ia="descreva_o_prompt_aqui_em_ingles" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet e PROIBIDO usar o atributo src. Use apenas data-ia="...".`
-              : `=== SISTEMA DE MÍDIA (UNSPLASH) ===\n🚨 Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato: <img data-tema="palavra1,palavra2" alt="desc" class="suas classes" />\nNÃO use o atributo src.`;
-              
-          const regraMenu = `Se o layout exigir menu, ele DEVE ser feito com links de âncora internos (href="#alvo").\nA tag HTML principal DEVE incluir class="scroll-smooth". NUNCA redirecione para outras páginas.`;
-          let instrucaoDinamica = dinamicaStyle === 'impacto' ? "OBRIGATÓRIO data-aos=\"fade-up\". Aplique hover:scale-105 nos botões." : "";
-          const anoAtual = new Date().getFullYear();
-
-          let regrasObrigatorias = isElementRefinement 
-              ? `=== MICRO-OTIMIZAÇÃO DE ELEMENTO ===\nAltere o elemento pedido e preserve o id original. Retorne um JSON com a chave "codigo_html".\n${regraImagens}` 
-              : `Retorne EXCLUSIVAMENTE um JSON com a chave "codigo_html".\n🚨 GERE UMA LANDING PAGE PROFISSIONAL COM 7 SEÇÕES.\n🚨 ESPAÇAMENTO: Use mb-4 ou mb-6 nos parágrafos.\n🚨 TIPOGRAFIA E LEITURA (MOBILE-FIRST): É ESTRITAMENTE PROIBIDO criar textos minúsculos. NUNCA use as classes "text-xs" ou "text-sm". Use OBRIGATORIAMENTE as classes "text-base md:text-lg" para parágrafos normais e "text-lg md:text-xl" para destaques.\n🚨 PROIBIÇÃO DE FORMULÁRIOS: É ESTRITAMENTE PROIBIDO gerar tags <form>, <input>, <select> ou <textarea>. NÃO CRIE FORMULÁRIOS DE CONTATO OU CADASTRO.\n${regraMenu}\n${regraImagens}\n${instrucaoDinamica}\nRodapé: <footer class="w-full font-sans py-16 mt-12 border-t"><div class="text-center pt-8 border-t flex flex-col items-center gap-4"><p class="text-sm">&copy; ${anoAtual} Todos os direitos reservados.</p></div></footer>`;    
-              
-          const systemInstructionFinal = (systemInstructionText || '') + '\n\n' + regrasObrigatorias;
-          
-          const reqBody = {
-              system_instruction: { parts: [{ text: systemInstructionFinal }] },
-              contents: [{ role: "user", parts: promptParts.map(p => {
-                  if (p.text) return { text: p.text };
-                  if (p.inlineData) return { inline_data: { mime_type: p.inlineData.mimeType, data: p.inlineData.data } };
-                  return p;
-              }) }],
-              generationConfig: { temperature: 0.4 },
-              safetySettings: [
-                  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-              ]
-          };
-
-          const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
-          let textResponse = null;
-
-          // Tentativas de conexão (para vencer o Erro 503 sem trocar os modelos)
-          for (const modelName of modelosDeTexto) {
-              if (textResponse) break;
-              
-              for (let tentativa = 1; tentativa <= 3; tentativa++) {
-                  try {
-                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-                          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-                      });
-
-                      if (response.ok) {
-                          const data = await response.json();
-                          if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                              textResponse = data.candidates[0].content.parts[0].text;
-                              break; // Sucesso! Sai das tentativas.
-                          }
-                      } else {
-                          // Se der 503 ou 404, espera 1.5 segundos antes de insistir
-                          await new Promise(resolve => setTimeout(resolve, 1500));
-                      }
-                  } catch (e) {
-                      await new Promise(resolve => setTimeout(resolve, 1500));
-                  }
-              }
-          }
-
-          if (!textResponse) throw new Error("A API falhou após várias tentativas. Os servidores podem estar sobrecarregados.");
-          
-          return { success: true, html: extrairHtmlDeJsonLocal(textResponse) };
-      }
-
-      // SE USA CRÉDITOS DO ADMIN, VAI PARA A VERCEL (SEGURO)
       const response = await fetch('/api/gerar', { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
@@ -1736,13 +1594,15 @@ O cliente solicitou a seguinte modificação: "${comando}"
           }) 
       });
       
-      if (!response.ok) throw new Error(`Falha ao comunicar com a IA (Status ${response.status})`);
+      if (!response.ok) {
+          throw new Error(`Falha ao comunicar com a IA (Status ${response.status})`);
+      }
+      
       const responseText = await response.text();
       let data;
       try { data = JSON.parse(responseText); } catch (err) { throw new Error("A Inteligência Artificial retornou dados em um formato inválido."); }
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da Inteligência Artificial atingido. Aguarde 60 segundos." : data.error);
       return data;
-      
     } catch (err: any) {
       let errorMsg = err.message;
       if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) { errorMsg = "Servidor da IA ocupado. Aguarde cerca de um minuto."; }
