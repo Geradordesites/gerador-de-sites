@@ -1581,25 +1581,32 @@ O cliente solicitou a seguinte modificação: "${comando}"
             const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
             let textResponse = null;
 
+            // Tentativas de conexão (para vencer o Erro 503 sem trocar os modelos)
             for (const modelName of modelosDeTexto) {
-                try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-                    });
+                if (textResponse) break;
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            textResponse = data.candidates[0].content.parts[0].text;
-                            break; // Sucesso! Achou um modelo que funcionou e sai do loop.
+                for (let tentativa = 1; tentativa <= 3; tentativa++) {
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                textResponse = data.candidates[0].content.parts[0].text;
+                                break; // Sucesso! Sai das tentativas.
+                            }
+                        } else {
+                            await new Promise(resolve => setTimeout(resolve, 1500));
                         }
+                    } catch (e) {
+                        await new Promise(resolve => setTimeout(resolve, 1500));
                     }
-                } catch (e) {
-                    console.warn(`O modelo ${modelName} falhou na refatoração, tentando o próximo...`);
                 }
             }
 
-            if (!textResponse) throw new Error("Erro na API do Google. A chave esgotou os limites em todos os modelos.");
+            if (!textResponse) throw new Error("A API falhou após várias tentativas. Os servidores podem estar sobrecarregados.");
             htmlFinalLimpo = extrairHtmlDeJsonLocal(textResponse);
         } 
         // ROTA VERCEL (SEGURO PARA CRÉDITOS ADMIN)
@@ -1681,25 +1688,33 @@ O cliente solicitou a seguinte modificação: "${comando}"
           const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
           let textResponse = null;
 
+          // Tentativas de conexão (para vencer o Erro 503 sem trocar os modelos)
           for (const modelName of modelosDeTexto) {
-              try {
-                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-                  });
+              if (textResponse) break;
+              
+              for (let tentativa = 1; tentativa <= 3; tentativa++) {
+                  try {
+                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
+                      });
 
-                  if (response.ok) {
-                      const data = await response.json();
-                      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                          textResponse = data.candidates[0].content.parts[0].text;
-                          break; // Sucesso! Achou um modelo que funcionou e sai do loop.
+                      if (response.ok) {
+                          const data = await response.json();
+                          if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                              textResponse = data.candidates[0].content.parts[0].text;
+                              break; // Sucesso! Sai das tentativas.
+                          }
+                      } else {
+                          // Se der 503 ou 404, espera 1.5 segundos antes de insistir
+                          await new Promise(resolve => setTimeout(resolve, 1500));
                       }
+                  } catch (e) {
+                      await new Promise(resolve => setTimeout(resolve, 1500));
                   }
-              } catch (e) {
-                  console.warn(`O modelo ${modelName} falhou, tentando o próximo da lista...`);
               }
           }
 
-          if (!textResponse) throw new Error("Erro na API do Google. A chave esgotou os limites em todos os modelos.");
+          if (!textResponse) throw new Error("A API falhou após várias tentativas. Os servidores podem estar sobrecarregados.");
           
           return { success: true, html: extrairHtmlDeJsonLocal(textResponse) };
       }
