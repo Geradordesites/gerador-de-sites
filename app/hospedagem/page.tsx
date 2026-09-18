@@ -107,7 +107,7 @@ export default function HospedagemTutorialPage() {
                   {showUnsplashImages ? <ChevronUp className="size-5 ml-1" /> : <ChevronDown className="size-5 ml-1" />}
                 </button>
 
-                {/* Container das Imagens */}
+                {/* Container das Imagens do Tutorial */}
                 {showUnsplashImages && (
                   <div className="mt-6 space-y-6 bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="space-y-2">
