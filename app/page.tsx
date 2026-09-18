@@ -1458,6 +1458,22 @@ export default function Home() {
     }
   };
 
+  function processarRespostaDOM(data: any) {
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    const htmlLimpo = purificarHTML(data.html);
+    if (codEl) {
+        setHistoricoCodigo(prev => {
+            if (prev.length > 0 && prev[prev.length - 1] === codEl.value) return prev;
+            return [...prev, codEl.value];
+        });
+        codEl.value = htmlLimpo;
+    }
+    if (prevEl) {
+        prevEl.srcdoc = htmlLimpo + SCRIPT_PREVIEW;
+    }
+  }
+
   const otimizarComIA = async (comandoOverride?: string) => {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLTextAreaElement;
       const comando = comandoOverride || promptInput?.value.trim();
@@ -1505,12 +1521,18 @@ O cliente solicitou a seguinte modificação: "${comando}"
               
               if(data && data.html) {
                   const cleanHtml = data.html.replace(/```html/gi, '').replace(/```/g, '').trim();
+                  
+                  // 💥 ETAPA 1
+                  processarRespostaDOM({ html: cleanHtml });
+
+                  // 💥 ETAPA 2
                   const htmlHidratado = await preencherImagensAutomaticamente(cleanHtml);
                   processarRespostaDOM({ html: htmlHidratado });
                   
                   if(promptInput) promptInput.value = '';
                   recarregarDadosUsuario();
                   (window as any).showNotification("Modificação global aplicada com sucesso!", "success");
+                  if (modoInspetor) toggleInspetor();
               }
           } catch (error: any) {
               console.error(error);
@@ -1533,10 +1555,14 @@ O cliente solicitou a seguinte modificação: "${comando}"
           if(resData && resData.html) {
               let cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
               
-              cleanHtml = await preencherImagensAutomaticamente(cleanHtml, true);
-              
+              // 💥 ETAPA 1
               const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
               iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
+
+              // 💥 ETAPA 2
+              cleanHtml = await preencherImagensAutomaticamente(cleanHtml, true);
+              iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
+              
               if(promptInput) promptInput.value = '';
               recarregarDadosUsuario();
               (window as any).showNotification("Atualizado com sucesso pelo assistente IA.", "success");
@@ -1585,7 +1611,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
             for (const modelName of modelosDeTexto) {
                 if (textResponse) break;
                 try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                    const response = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${apiKey}`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
                     });
                     const data = await response.json();
@@ -1627,12 +1653,17 @@ O cliente solicitou a seguinte modificação: "${comando}"
             htmlFinalLimpo = data.html.replace(/```html/gi, '').replace(/```/g, '').trim();
         }
 
-        // HIDRATA AS IMAGENS E FINALIZA
+        // 💥 ETAPA 1: Renderiza Layout e Textos Instantaneamente
+        processarRespostaDOM({ html: htmlFinalLimpo });
+
+        // 💥 ETAPA 2: Preenche as imagens
         const htmlHidratado = await preencherImagensAutomaticamente(htmlFinalLimpo);
-        processarRespostaDOM({ html: htmlHidratado }); 
+        processarRespostaDOM({ html: htmlHidratado });
+
         recarregarDadosUsuario();
-        promptInput.value = ''; 
+        promptInput.value = '';
         (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
+        if (modoInspetor) toggleInspetor();
 
     } catch (err: any) { 
         (window as any).showNotification(err.message || "Erro na modificação do site.", "error"); 
@@ -1687,7 +1718,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
           for (const modelName of modelosDeTexto) {
               if (textResponse) break;
               try {
-                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                  const response = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${apiKey}`, {
                       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
                   });
                   const data = await response.json();
@@ -1695,8 +1726,8 @@ O cliente solicitou a seguinte modificação: "${comando}"
                       textResponse = data.candidates[0].content.parts[0].text;
                       break; 
                   } else {
-                      ultimoErro = data.error?.message || `Erro ${response.status} no modelo${modelName}`;
-                      console.warn(`Tentativa falhou no modelo ${modelName}:`, ultimoErro);
+                      ultimoErro = data.error?.message || `Status: ${response.status} - Modelo Inválido ou API Recusada`;
+                      console.warn(`[Local BYOK] A API rejeitou o modelo ${modelName}:`, ultimoErro);
                   }
               } catch (e: any) {
                   ultimoErro = e.message;
@@ -1704,9 +1735,7 @@ O cliente solicitou a seguinte modificação: "${comando}"
           }
 
           if (!textResponse) {
-              setStatusApis({ texto: 'Aguardando Ação', processing: false });
-              (window as any).showNotification(`A API do Google retornou erro: ${ultimoErro}`, "error");
-              return null;
+              throw new Error(`Servidores Google rejeitaram o pedido. Detalhe: ${ultimoErro}`);
           }
           
           return { success: true, html: extrairHtmlDeJsonLocal(textResponse) };
@@ -1800,28 +1829,18 @@ O cliente solicitou a seguinte modificação: "${comando}"
             hHtml = hHtml.replace('<body class="', `<body style="font-family: '${fontFamily}', sans-serif;" class="`);
         }
         
-        hHtml = await preencherImagensAutomaticamente(hHtml, false);
+        // 💥 ETAPA 1: Renderiza Layout e Textos Instantaneamente
+        processarRespostaDOM({ html: hHtml });
+
+        // 💥 ETAPA 2: Preenche as imagens logo em seguida
+        const htmlHidratado = await preencherImagensAutomaticamente(hHtml, false);
         
-        data.html = hHtml;
-        processarRespostaDOM(data);
+        processarRespostaDOM({ html: htmlHidratado });
         recarregarDadosUsuario();
+        (window as any).showNotification(`Pronto! Operação concluída com sucesso.`, 'success');
+        if (modoInspetor) toggleInspetor();
     }
   };
-
-  function processarRespostaDOM(data: any) {
-      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-      const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      const htmlLimpo = purificarHTML(data.html);
-      if (codEl) { 
-          setHistoricoCodigo(prev => [...prev, codEl.value]); 
-          codEl.value = htmlLimpo; 
-      }
-      if (prevEl) {
-          prevEl.srcdoc = htmlLimpo + SCRIPT_PREVIEW; 
-      }
-      (window as any).showNotification(`Pronto! Operação concluída com sucesso.`, 'success');
-      if (modoInspetor) toggleInspetor(); 
-  }
 
   const handleUploadImgElem = async (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
       const file = e.target.files?.[0];
