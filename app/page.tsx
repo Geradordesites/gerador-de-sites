@@ -1578,14 +1578,28 @@ O cliente solicitou a seguinte modificação: "${comando}"
                 ]
             };
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-            });
+            const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
+            let textResponse = null;
 
-            if (!response.ok) throw new Error("Erro na API do Google (Timeout ou Chave Inválida).");
-            const data = await response.json();
-            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!textResponse) throw new Error("A IA falhou em gerar o conteúdo.");
+            for (const modelName of modelosDeTexto) {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            textResponse = data.candidates[0].content.parts[0].text;
+                            break; // Sucesso! Achou um modelo que funcionou e sai do loop.
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`O modelo ${modelName} falhou na refatoração, tentando o próximo...`);
+                }
+            }
+
+            if (!textResponse) throw new Error("Erro na API do Google. A chave esgotou os limites em todos os modelos.");
             htmlFinalLimpo = extrairHtmlDeJsonLocal(textResponse);
         } 
         // ROTA VERCEL (SEGURO PARA CRÉDITOS ADMIN)
@@ -1664,14 +1678,28 @@ O cliente solicitou a seguinte modificação: "${comando}"
               ]
           };
 
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-          });
+          const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
+          let textResponse = null;
 
-          if (!response.ok) throw new Error("Erro na API do Google. Chave inválida ou limite atingido.");
-          const data = await response.json();
-          const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!textResponse) throw new Error("A IA falhou em gerar o conteúdo.");
+          for (const modelName of modelosDeTexto) {
+              try {
+                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
+                  });
+
+                  if (response.ok) {
+                      const data = await response.json();
+                      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                          textResponse = data.candidates[0].content.parts[0].text;
+                          break; // Sucesso! Achou um modelo que funcionou e sai do loop.
+                      }
+                  }
+              } catch (e) {
+                  console.warn(`O modelo ${modelName} falhou, tentando o próximo da lista...`);
+              }
+          }
+
+          if (!textResponse) throw new Error("Erro na API do Google. A chave esgotou os limites em todos os modelos.");
           
           return { success: true, html: extrairHtmlDeJsonLocal(textResponse) };
       }
