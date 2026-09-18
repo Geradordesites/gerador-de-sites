@@ -103,7 +103,7 @@ export default function HospedagemTutorialPage() {
                   className="flex items-center gap-2 px-5 py-3 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-sm rounded-xl transition-colors border border-sky-200"
                 >
                   <ImageIcon className="size-5" />
-                  {showUnsplashImages ? 'Ocultar ilustrações de ajuda' : 'Ver passo a passo em imagens'}
+                  {showUnsplashImages ? 'Ocultar passo a passo visual' : 'Ver passo a passo em imagens'}
                   {showUnsplashImages ? <ChevronUp className="size-5 ml-1" /> : <ChevronDown className="size-5 ml-1" />}
                 </button>
 
