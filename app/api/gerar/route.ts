@@ -170,20 +170,18 @@ export async function POST(req: Request) {
     for (const modelName of modelosDeTextoParaUsar) {
         if (geracaoSucesso) break; 
 
-        for (let tentativa = 1; tentativa <= 2; tentativa++) {
-            try {
-                // Utiliza diretamente o nome do modelo tal como o configurou
-                const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
-                const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } });
-                htmlCode = extrairHtmlDeJson(result.response.text());
-                if (htmlCode && htmlCode.length >= 50) { 
-                    geracaoSucesso = true; 
-                    break; 
-                }
-            } catch (error: any) { 
-                motivoDoErro = error.message;
-                console.warn(`Falha na tentativa ${tentativa} com o modelo ${modelName}:`, error.message); 
+        try {
+            // Tenta diretamente o modelo sem repetições excessivas para evitar Timeout
+            const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemInstructionFinal, safetySettings });
+            const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.2 : 0.4 } });
+            htmlCode = extrairHtmlDeJson(result.response.text());
+            if (htmlCode && htmlCode.length >= 50) { 
+                geracaoSucesso = true; 
+                break; 
             }
+        } catch (error: any) { 
+            motivoDoErro = error.message;
+            console.warn(`Falha rápida com o modelo ${modelName}:`, error.message); 
         }
     }
 
