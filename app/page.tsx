@@ -1580,33 +1580,27 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
             const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
             let textResponse = null;
+            let ultimoErro = null;
 
-            // Tentativas de conexão (para vencer o Erro 503 sem trocar os modelos)
             for (const modelName of modelosDeTexto) {
                 if (textResponse) break;
-
-                for (let tentativa = 1; tentativa <= 3; tentativa++) {
-                    try {
-                        const response = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${apiKey}`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                                textResponse = data.candidates[0].content.parts[0].text;
-                                break; // Sucesso! Sai das tentativas.
-                            }
-                        } else {
-                            await new Promise(resolve => setTimeout(resolve, 1500));
-                        }
-                    } catch (e) {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        textResponse = data.candidates[0].content.parts[0].text;
+                        break; 
+                    } else {
+                        ultimoErro = data.error?.message || `Erro ${response.status} no modelo ${modelName}`;
                     }
+                } catch (e: any) {
+                    ultimoErro = e.message;
                 }
             }
 
-            if (!textResponse) throw new Error("A API falhou após várias tentativas. Os servidores podem estar sobrecarregados.");
+            if (!textResponse) throw new Error(`O Google recusou os modelos: ${ultimoErro}`);
             htmlFinalLimpo = extrairHtmlDeJsonLocal(textResponse);
         } 
         // ROTA VERCEL (SEGURO PARA CRÉDITOS ADMIN)
@@ -1687,34 +1681,33 @@ O cliente solicitou a seguinte modificação: "${comando}"
 
           const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
           let textResponse = null;
+          let ultimoErro = null;
 
-          // Tentativas de conexão (para vencer o Erro 503 sem trocar os modelos)
+          // Sem repetições de 1500ms para mostrar o erro exato do Google imediatamente
           for (const modelName of modelosDeTexto) {
               if (textResponse) break;
-              
-              for (let tentativa = 1; tentativa <= 3; tentativa++) {
-                  try {
-                      const response = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${apiKey}`, {
-                          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
-                      });
-
-                      if (response.ok) {
-                          const data = await response.json();
-                          if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                              textResponse = data.candidates[0].content.parts[0].text;
-                              break; // Sucesso! Sai das tentativas.
-                          }
-                      } else {
-                          // Se der 503 ou 404, espera 1.5 segundos antes de insistir
-                          await new Promise(resolve => setTimeout(resolve, 1500));
-                      }
-                  } catch (e) {
-                      await new Promise(resolve => setTimeout(resolve, 1500));
+              try {
+                  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody)
+                  });
+                  const data = await response.json();
+                  if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                      textResponse = data.candidates[0].content.parts[0].text;
+                      break; 
+                  } else {
+                      ultimoErro = data.error?.message || `Erro ${response.status} no modelo${modelName}`;
+                      console.warn(`Tentativa falhou no modelo ${modelName}:`, ultimoErro);
                   }
+              } catch (e: any) {
+                  ultimoErro = e.message;
               }
           }
 
-          if (!textResponse) throw new Error("A API falhou após várias tentativas. Os servidores podem estar sobrecarregados.");
+          if (!textResponse) {
+              setStatusApis({ texto: 'Aguardando Ação', processing: false });
+              (window as any).showNotification(`A API do Google retornou erro: ${ultimoErro}`, "error");
+              return null;
+          }
           
           return { success: true, html: extrairHtmlDeJsonLocal(textResponse) };
       }
