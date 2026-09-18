@@ -1565,18 +1565,17 @@ O cliente solicitou a seguinte modificação: "${comando}"
             let regraImagens = (!unsplashKey || unsplashKey.trim().length < 5) ? `=== SISTEMA DE GERAÇÃO DE MÍDIA POR IA ===\n🚨 REGRA ABSOLUTA PARA IMAGENS: Para QUALQUER imagem, você DEVE utilizar EXCLUSIVAMENTE a sintaxe abaixo:\n<img data-ia="descreva_o_prompt_aqui_em_ingles" alt="descrição" class="suas classes" />\nÉ ESTRITAMENTE PROIBIDO usar links de internet e PROIBIDO usar o atributo src. Use apenas data-ia="...".` : `=== SISTEMA DE MÍDIA (UNSPLASH) ===\n🚨 Para TODAS as imagens, use OBRIGATORIAMENTE este formato exato: <img data-tema="palavra1,palavra2" alt="desc" class="suas classes" />\nNÃO use o atributo src.`;
             const regraMenu = `Se o layout exigir menu, ele DEVE ser feito com links de âncora internos (href="#alvo").\nA tag HTML principal DEVE incluir class="scroll-smooth". NUNCA redirecione para outras páginas.`;
             let regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nDEVOLVA TODO O CÓDIGO HTML DE PONTA A PONTA. Mantenha todas as seções e mude APENAS o que foi pedido. Retorne um JSON com a chave "codigo_html".\n${regraMenu}\n${regraImagens}`;
-            
             const reqBody = {
-                system_instruction: { parts: [{ text: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.\n\n" + regrasObrigatorias }] },
-                contents: [{ role: "user", parts: [{ text: promptSuperContexto }] }],
-                generationConfig: { temperature: 0.2 },
-                safetySettings: [
-                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                ]
-            };
+              systemInstruction: { parts: [{ text: "Você é um desenvolvedor Sênior especialista em Tailwind CSS e Copywriting.\n\n" + regrasObrigatorias }] },
+              contents: [{ role: "user", parts: [{ text: promptSuperContexto }] }],
+              generationConfig: { temperature: 0.2 },
+              safetySettings: [
+                  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+              ]
+          };
 
             const modelosDeTexto = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
             let textResponse = null;
