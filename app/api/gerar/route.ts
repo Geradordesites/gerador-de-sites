@@ -10,7 +10,8 @@ const MODELOS_TEXTO_GRATIS = [
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
-    "gemini-3.5-flash",    
+    "gemini-3.5-flash",
+    "gemini-2.5-flash"    
 ];
 
 // 2. MODELOS DE TEXTO SUPER ECONÔMICOS PARA A SUA API PAGA
